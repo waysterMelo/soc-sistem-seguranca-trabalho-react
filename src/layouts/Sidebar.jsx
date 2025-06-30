@@ -48,6 +48,15 @@ const menuItems = [
             { name: 'Movimentação de EPI', path: '/seguranca/epi' },
             { name: 'Ordem de Serviço', path: '/seguranca/listar/ordem-servico' }
         ],
+    },
+    {
+        name: 'Medicina do Trabalho',
+        icon: <Shield size={20} />,
+        path: '/medicina',
+        subItems: [
+            { name: 'PCMSO', path: 'medicina/pcmso/listar' },
+            { name: 'PCMSO ANALITICO', path: 'medicina/pcmso-analitico' },
+        ],
     }
 ];
 

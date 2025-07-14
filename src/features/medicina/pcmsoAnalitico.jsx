@@ -1,9 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Search, Plus, Edit, Trash2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, List, Type } from 'lucide-react';
 
-//-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-// Componente Principal da Aplicação
-//-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 export default function PcmsoAnalitico() {
     const [view, setView] = useState('list'); // 'list' ou 'form'
     const [selectedPcmso, setSelectedPcmso] = useState(null);

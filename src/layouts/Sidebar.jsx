@@ -54,9 +54,23 @@ const menuItems = [
         icon: <Shield size={20} />,
         path: '/medicina',
         subItems: [
-            { name: 'PCMSO', path: 'medicina/pcmso/listar' },
-            { name: 'PCMSO ANALITICO', path: 'medicina/pcmso-analitico' },
+            { name: 'PCMSO', path: 'medicina/pcmso' },
+            { name: 'PCMSO Analitico', path: 'medicina/pcmso-analitico' },
+            { name: 'Espirometria', path: 'medicina/espirometria' },
+            { name: 'ASO', path: 'medicina/aso' },
+            { name: 'Afastamento', path: 'medicina/afastamento' },
+            { name: 'Exame Toxicológico.', path: 'medicina/toxicológico' },
+            { name: 'Acuidade Visual.', path: 'medicina/acuidade-visual' },
         ],
+    },
+    {
+        name: 'Configurações Relatórios',
+        icon: <Shield size={20} />,
+        path: '/configiracoes',
+        subItems: [
+            { name: 'Cat', path: 'medicina/config-cat' },
+            { name: 'EPI-EPC', path: 'medicina/config-epi-epc' }
+            ]
     }
 ];
 

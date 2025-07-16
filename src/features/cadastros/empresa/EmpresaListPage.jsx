@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import {
     Upload,
     FileText,
@@ -8,37 +8,10 @@ import {
     Pencil,
     Trash2,
     ChevronLeft,
-    ChevronRight
+    ChevronRight, ChevronsRight, ChevronsLeft
 } from 'lucide-react';
 import {Link} from "react-router-dom";
-
-// Dados de exemplo para as empresas
-const companiesData = [
-    {
-        razaoSocial: 'WAYSTER HENRIQUE CRUZ DE MELO',
-        nomeFantasia: '',
-        documento: '59.413.555/0001-08',
-        status: 'Ativo',
-    },
-    {
-        razaoSocial: 'MARINA GARCIA LOPES CONS EM TEC DA INFOR LTDA',
-        nomeFantasia: 'EXCLUSIVE ARQUINDEX',
-        documento: '44.008.207/0001-88',
-        status: 'Ativo',
-    },
-    {
-        razaoSocial: 'ABC LOGISTICA E TRANSPORTE LTDA',
-        nomeFantasia: 'ABC LOG',
-        documento: '12.345.678/0001-99',
-        status: 'Inativo',
-    },
-    {
-        razaoSocial: 'SOFTWARE HOUSE INOVADORA S.A.',
-        nomeFantasia: 'TECH SOLUTIONS',
-        documento: '98.765.432/0001-11',
-        status: 'Em Revisão',
-    }
-];
+import {empresaService} from "../../../api/services/serviceEmpresas.js";
 
 // Componente para o selo de status
 const StatusBadge = ({ status }) => {
@@ -69,9 +42,29 @@ export default function ListarEmpresas() {
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [entriesPerPage, setEntriesPerPage] = useState(5);
+    const [empresas, setEmpresas] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        const fetchEmpresas = async () => {
+            try {
+                setLoading(true);
+                const response = await empresaService.getAll();
+                setEmpresas(response.data);
+                setError(null);
+            }catch (err){
+                console.error("Erro ao buscar empresas: ", err);
+                setError("Nao foi possivel carregar as empresas")
+            }finally {
+                setLoading(false);
+            }
+        };
+        fetchEmpresas();
+    }, []);
 
     // Filtra as empresas com base no termo de busca
-    const filteredCompanies = companiesData.filter(company =>
+    const filteredCompanies = empresas.filter(company =>
         company.razaoSocial.toLowerCase().includes(searchTerm.toLowerCase()) ||
         company.nomeFantasia.toLowerCase().includes(searchTerm.toLowerCase()) ||
         company.documento.includes(searchTerm)
@@ -90,10 +83,6 @@ export default function ListarEmpresas() {
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
                     <h1 className="text-3xl font-bold text-gray-900 mb-4 sm:mb-0">Empresas</h1>
                     <div className="flex space-x-2">
-                        <button className="flex items-center space-x-2 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-50 transition-colors">
-                            <Upload size={16} />
-                            <span>Importar Empresa</span>
-                        </button>
                         <button className="flex items-center space-x-2 bg-yellow-400 text-gray-800 px-4 py-2 rounded-md text-sm font-medium hover:bg-yellow-500 transition-colors">
                             <FileText size={16} />
                             <span>Gerar Relatório</span>
@@ -126,7 +115,7 @@ export default function ListarEmpresas() {
                             value={entriesPerPage}
                             onChange={(e) => {
                                 setEntriesPerPage(Number(e.target.value));
-                                setCurrentPage(1); // Reset page on changing entries
+                                setCurrentPage(1);
                             }}
                         >
                             <option value="5">5</option>
@@ -137,12 +126,28 @@ export default function ListarEmpresas() {
 
                     {/* Tabela de Empresas */}
                     <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200">
+                        {loading ? (
+                            <div className="text-center py-6">
+                                <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
+                                <p className="mt-2 text-gray-600">Carregando empresas...</p>
+                            </div>
+                        ) : error ? (
+                            <div className="text-center py-6 text-red-600">
+                                <p>{error}</p>
+                                <button
+                                    onClick={() => window.location.reload()}
+                                    className="mt-2 text-blue-600 hover:underline"
+                                >
+                                    Tentar novamente
+                                </button>
+                            </div>
+                        ) : (
+                            <table className="min-w-full divide-y divide-gray-200">
                             <thead className="bg-gray-50">
                             <tr>
                                 <TableHeader>Razão Social</TableHeader>
                                 <TableHeader>Nome Fantasia</TableHeader>
-                                <TableHeader>Documento</TableHeader>
+                                <TableHeader>CNPJ</TableHeader>
                                 <TableHeader>Status</TableHeader>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
                             </tr>
@@ -150,10 +155,10 @@ export default function ListarEmpresas() {
                             <tbody className="bg-white divide-y divide-gray-200">
                             {currentEntries.length > 0 ? (
                                 currentEntries.map((company, index) => (
-                                    <tr key={index} className="hover:bg-gray-50">
+                                    <tr key={company.id || index} className="hover:bg-gray-50">
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{company.razaoSocial}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{company.nomeFantasia || '--'}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{company.documento}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{company.cpfOuCnpj}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                             <StatusBadge status={company.status} />
                                         </td>
@@ -172,28 +177,30 @@ export default function ListarEmpresas() {
                             )}
                             </tbody>
                         </table>
+                            )}
                     </div>
 
                     {/* Paginação */}
+                    {!loading && !error && (
                     <div className="flex flex-col sm:flex-row justify-between items-center pt-4 border-t border-gray-200">
                         <p className="text-sm text-gray-700 mb-2 sm:mb-0">
-                            Mostrando de <span className="font-medium">{indexOfFirstEntry + 1}</span> até <span className="font-medium">{Math.min(indexOfLastEntry, filteredCompanies.length)}</span> de <span className="font-medium">{filteredCompanies.length}</span> registros
+                            Mostrando de <span className="font-medium">{filteredCompanies.length > 0 ? indexOfFirstEntry + 1 : 0}</span> até <span className="font-medium">{Math.min(indexOfLastEntry, filteredCompanies.length)}</span> de <span className="font-medium">{filteredCompanies.length}</span> registros
                         </p>
                         <div className="flex items-center space-x-1">
                             <button
                                 onClick={() => setCurrentPage(1)}
-                                disabled={currentPage === 1}
+                                disabled={currentPage === 1 || currentEntries.length === 0}
                                 className="p-2 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                <ChevronLeft size={16} />
-                                <ChevronLeft size={16} className="-ml-3"/>
+                                <ChevronsLeft size={18} />
                             </button>
                             <button
                                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                                disabled={currentPage === 1}
+                                disabled={currentPage === 1 || currentEntries.length === 0}
                                 className="p-2 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <ChevronLeft size={16} />
+
                             </button>
                             <span className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-md">{currentPage}</span>
                             <button
@@ -208,11 +215,11 @@ export default function ListarEmpresas() {
                                 disabled={currentPage === totalPages || currentEntries.length === 0}
                                 className="p-2 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                <ChevronRight size={16} />
-                                <ChevronRight size={16} className="-ml-3"/>
+                                <ChevronsRight size={18} />
                             </button>
                         </div>
                     </div>
+                        )}
                 </div>
             </div>
         </div>

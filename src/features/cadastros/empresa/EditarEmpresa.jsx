@@ -1,20 +1,20 @@
-import React, {useRef, useState} from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, {useRef, useState, useEffect} from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
     Trash2,
     Search,
     Plus,
     AlertCircle,
     ArrowLeft,
-    Loader, Check
+    Loader,
+    Check
 } from 'lucide-react';
-import { empresaService } from "../../../api/services/cadastros/serviceEmpresas.js";
 import { X } from 'lucide-react';
+import { empresaService } from "../../../api/services/cadastros/serviceEmpresas.js";
 import CnaeSearchModal from "../../../components/modal/cnaeSearchModal.jsx";
 import MedicoSearchModal from "../../../components/modal/medicoSearchModal.jsx";
 
-
-// Um wrapper para seções do formulário com um título
+// Componentes reutilizáveis
 const FormSection = ({ title, children }) => (
     <div className="bg-white p-6 rounded-lg shadow-md mb-8">
         <h3 className="text-xl font-semibold text-gray-800 border-b border-gray-200 pb-4 mb-6">{title}</h3>
@@ -24,7 +24,6 @@ const FormSection = ({ title, children }) => (
     </div>
 );
 
-// Um wrapper para campos de formulário (label + input)
 const FormField = ({ label, required, children, className = '', error }) => (
     <div className={`flex flex-col space-y-1 ${className}`}>
         <label className="text-sm font-medium text-gray-600">
@@ -35,7 +34,6 @@ const FormField = ({ label, required, children, className = '', error }) => (
     </div>
 );
 
-// Input com ícone ou botão
 const InputWithAction = ({ placeholder, actionButton, type = "text", name, value = "", onChange, disabled = false }) => (
     <div className="relative flex items-center">
         <input
@@ -53,10 +51,11 @@ const InputWithAction = ({ placeholder, actionButton, type = "text", name, value
     </div>
 );
 
-
-// --- Componente Principal ---
-export default function CadastrarEmpresa() {
+// Componente principal EditarEmpresa
+export default function EditarEmpresa() {
+    const { id } = useParams();
     const navigate = useNavigate();
+    const [isLoading, setIsLoading] = useState(true);
     const [formData, setFormData] = useState({
         tipoEmpresa: '',
         inscricaoEstadual: '',
@@ -65,8 +64,6 @@ export default function CadastrarEmpresa() {
         razaoSocial: '',
         nomeFantasia: '',
         logomarcaUrl: '',
-
-        // Endereço
         cep: '',
         cidade: '',
         estado: '',
@@ -75,13 +72,9 @@ export default function CadastrarEmpresa() {
         bairro: '',
         complemento: '',
         regiao: '',
-
-        // Contato
         telefonePrincipal: '',
         telefoneSecundario: '',
         email: '',
-
-        // Outras informações
         grauRisco: '',
         cnaePrincipalId: null,
         cnaesSecundarios: [],
@@ -99,25 +92,59 @@ export default function CadastrarEmpresa() {
     const [medicoResponsavel, setMedicoResponsavel] = useState(null);
     const [isCnaeModalOpen, setIsCnaeModalOpen] = useState(false);
     const [isMedicoModalOpen, setIsMedicoModalOpen] = useState(false);
+    const [originalLogo, setOriginalLogo] = useState('');
+
+    useEffect(() => {
+        const fetchEmpresa = async () => {
+            try {
+                setIsLoading(true);
+                const response = await empresaService.getById(id);
+                const empresa = response.data;
+
+                setFormData({
+                    ...empresa,
+                    ...empresa.endereco,
+                    grauRisco: empresa.grauRisco || '',
+                    endereco: undefined
+                });
+
+                setOriginalLogo(empresa.logomarcaUrl);
+
+
+                if (empresa.cnaePrincipal) {
+                    setCnaePrincipal(empresa.cnaePrincipal);
+                }
+
+
+                if (empresa.medicoResponsavel) {
+                    setMedicoResponsavel(empresa.medicoResponsavel);
+                }
+
+            } catch (error) {
+                console.error('Erro ao carregar empresa:', error);
+                setApiError('Não foi possível carregar os dados da empresa.');
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchEmpresa();
+    }, [id, navigate]);
 
     const handleCnaeSelect = (cnae) => {
-        console.log('CNAE selecionado:', cnae);
         setCnaePrincipal(cnae);
-        const cnaeId = typeof cnae.id === 'string' ? parseInt(cnae.id, 10) : cnae.id;
         setFormData(prev => ({
             ...prev,
-            cnaePrincipalId: cnaeId
+            cnaePrincipalId: cnae.id
         }));
         setIsCnaeModalOpen(false);
     };
 
     const handleMedicoSelect = (medico) => {
         setMedicoResponsavel(medico);
-        const medicoId = typeof medico.id === 'string' ? parseInt(medico.id, 10) : medico.id;
         setFormData(prev => ({
             ...prev,
-            medicoResponsavelPcmssoId: medicoId,
-            medicoResponsavelNomeCompleto: `${medico.nome} ${medico.sobrenome || ''}`.trim()
+            medicoResponsavelPcmssoId: medico.id
         }));
         setIsMedicoModalOpen(false);
     };
@@ -135,72 +162,74 @@ export default function CadastrarEmpresa() {
     const handleFileChange = (e) => {
         if (e.target.files && e.target.files[0]){
             const file = e.target.files[0];
-            const MAX_FILE_SIZE_MB = 2; // Define o tamanho máximo permitido em MB
-            const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024; // Converte para bytes
+            const MAX_FILE_SIZE_MB = 2;
+            const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
             if (file.size > MAX_FILE_SIZE_BYTES) {
                 setErrors(prev => ({ ...prev, logomarcaUrl: `O arquivo da logomarca não pode exceder ${MAX_FILE_SIZE_MB}MB.` }));
-                setSelectedFile(null); // Limpa o arquivo selecionado
-                if (fileInputRef.current) fileInputRef.current.value = ''; // Limpa o input file
-                setFormData(prev => ({ ...prev, logomarcaUrl: '' })); // Limpa a URL de preview
-                return; // Interrompe o processamento
+                setSelectedFile(null);
+                if (fileInputRef.current) fileInputRef.current.value = '';
+                return;
             }
+
             setSelectedFile(file);
-            // Opcional: Visualização prévia da imagem
             const reader = new FileReader();
             reader.onload = (event) => {
-                setFormData({
-                    ...formData,
+                setFormData(prev => ({
+                    ...prev,
                     logomarcaUrl: event.target.result
-                });
+                }));
             };
             reader.readAsDataURL(file);
 
+            // Limpar erro se existir
+            if (errors.logomarcaUrl) {
+                setErrors(prev => ({ ...prev, logomarcaUrl: null }));
+            }
         }
     };
 
-    // Handler para atualizar o estado do formulário
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData({
-            ...formData,
+        setFormData(prev => ({
+            ...prev,
             [name]: value
-        });
+        }));
 
-        // Limpa o erro específico quando o campo é alterado
         if (errors[name]) {
-            setErrors({
-                ...errors,
+            setErrors(prev => ({
+                ...prev,
                 [name]: null
-            });
+            }));
         }
     };
 
-    // Validação do formulário
     const validateForm = () => {
         const newErrors = {};
 
-        // Validações dos campos obrigatórios
         if (!formData.tipoEmpresa) newErrors.tipoEmpresa = 'Tipo de empresa é obrigatório';
         if (!formData.razaoSocial) newErrors.razaoSocial = 'Razão Social é obrigatório';
         if (!formData.status) newErrors.status = 'Status é obrigatório';
+        if (!formData.cpfOuCnpj) newErrors.cpfOuCnpj = 'CPF/CNPJ é obrigatório';
 
-        // Validação básica de email
         if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
             newErrors.email = 'Email inválido';
         }
-
-        // Validação de CNPJ/CPF pode ser adicionada aqui
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
 
-    // Handler para o envio do formulário
     const handleSubmit = async (e) => {
         e.preventDefault();
 
         if (!validateForm()) {
+            // Rolar para o primeiro campo com erro
+            const firstErrorKey = Object.keys(errors)[0];
+            const firstErrorElement = document.querySelector(`[name="${firstErrorKey}"]`);
+            if (firstErrorElement) {
+                firstErrorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
             return;
         }
 
@@ -208,11 +237,8 @@ export default function CadastrarEmpresa() {
         setApiError(null);
 
         try {
-            // Preparar os dados para envio
             const empresaData = {
                 ...formData,
-                telefonePrincipal: formData.telefonePrincipal,
-                telefoneSecundario: formData.telefoneSecundario,
                 endereco: {
                     cep: formData.cep,
                     logradouro: formData.logradouro,
@@ -225,7 +251,7 @@ export default function CadastrarEmpresa() {
                 }
             };
 
-            // Remove campos que foram reorganizados
+            // Remover propriedades de endereço do objeto principal
             delete empresaData.cep;
             delete empresaData.logradouro;
             delete empresaData.numero;
@@ -235,34 +261,28 @@ export default function CadastrarEmpresa() {
             delete empresaData.estado;
             delete empresaData.regiao;
 
-            console.log('Dados a serem enviados: ', empresaData);
-
-            // Se tiver um arquivo selecionado, envie-o primeiro e obtenha a URL
+            // Upload de nova logo se necessário
             if (selectedFile) {
-                // Crie um FormData para enviar o arquivo
                 const fileData = new FormData();
                 fileData.append('file', selectedFile);
-
-                // Envie o arquivo para o endpoint de upload
-                try {
-                    const uploadResponse = await empresaService.uploadLogo(fileData);
-                    // Supondo que o backend retorne a URL do arquivo salvo
-                    empresaData.logomarcaUrl = uploadResponse.data.url;
-                } catch (uploadError) {
-                    console.error('Erro ao fazer upload da logo:', uploadError);
-                    // Continuar mesmo sem a logo
-                }
+                const uploadResponse = await empresaService.uploadLogo(fileData);
+                empresaData.logomarcaUrl = uploadResponse.data.url;
+            } else if (!formData.logomarcaUrl && originalLogo) {
+                // Se a logo foi removida
+                empresaData.logomarcaUrl = null;
             }
 
-            const response = await empresaService.create(empresaData);
+            await empresaService.update(id, empresaData);
             setShowSuccessModal(true);
 
         } catch (error) {
-            console.error('Erro ao cadastrar empresa:', error);
+            console.error('Erro ao atualizar empresa:', error);
             setApiError(
                 error.response?.data?.message ||
-                'Não foi possível cadastrar a empresa. Por favor, tente novamente.'
+                'Não foi possível atualizar a empresa. Por favor, tente novamente.'
             );
+            // Rolar para o topo para mostrar o erro
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         } finally {
             setIsSubmitting(false);
         }
@@ -288,15 +308,12 @@ export default function CadastrarEmpresa() {
                             <Check size={24} className="text-green-600" />
                         </div>
                         <p className="text-center text-gray-700">
-                            Empresa cadastrada com sucesso!
+                            Empresa atualizada com sucesso!
                         </p>
                     </div>
                     <div className="flex justify-center">
                         <button
-                            onClick={() => {
-                                setShowSuccessModal(false);
-                                navigate('/cadastros/listar/empresas');
-                            }}
+                            onClick={() => navigate('/cadastros/listar/empresas')}
                             className="bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-700 transition-colors"
                         >
                             OK
@@ -306,6 +323,17 @@ export default function CadastrarEmpresa() {
             </div>
         );
     };
+
+    if (isLoading) {
+        return (
+            <div className="flex justify-center items-center h-screen">
+                <div className="text-center">
+                    <Loader className="animate-spin text-blue-500 mx-auto mb-4" size={40} />
+                    <p className="text-gray-600">Carregando dados da empresa...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="bg-gray-50 min-h-screen p-4 sm:p-6 lg:p-8 font-sans">
@@ -329,14 +357,24 @@ export default function CadastrarEmpresa() {
                         <ArrowLeft size={20} className="mr-2" />
                         Voltar para a lista
                     </button>
-                    <h1 className="text-3xl font-bold text-gray-900">Cadastrar Empresa</h1>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h1 className="text-3xl font-bold text-gray-900">Editar Empresa</h1>
+                            <p className="text-gray-600 mt-2">
+                                Editando: <span className="font-semibold text-blue-600">{formData.razaoSocial}</span>
+                            </p>
+                        </div>
+                        <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+                            ID: {id}
+                        </div>
+                    </div>
                 </header>
 
                 {apiError && (
                     <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6 flex items-start">
                         <AlertCircle size={20} className="mr-2 mt-0.5 flex-shrink-0" />
                         <div>
-                            <p className="font-medium">Erro ao cadastrar empresa</p>
+                            <p className="font-medium">Erro ao atualizar empresa</p>
                             <p className="text-sm">{apiError}</p>
                         </div>
                     </div>
@@ -359,7 +397,7 @@ export default function CadastrarEmpresa() {
                                 <option value="FISICA">Pessoa Física</option>
                             </select>
                         </FormField>
-                        <FormField label="Número do CPF/CNPJ" required className="lg:col-span-1" error={errors.documento}>
+                        <FormField label="Número do CPF/CNPJ" required className="lg:col-span-1" error={errors.cpfOuCnpj}>
                             <input
                                 type="text"
                                 name="cpfOuCnpj"
@@ -416,11 +454,11 @@ export default function CadastrarEmpresa() {
                                 className="w-full py-2 px-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                         </FormField>
-                        <FormField label="Logomarca" className="lg:col-span-4">
+                        <FormField label="Logomarca" className="lg:col-span-4" error={errors.logomarcaUrl}>
                             <div className="flex items-center">
                                 <label className="flex items-center w-full py-2 px-3 border border-gray-300 rounded-l-md bg-white cursor-pointer">
-                <span className="text-gray-500">
-                    {selectedFile ? selectedFile.name : "Selecione uma imagem"}
+                                    <span className="text-gray-500">
+                                        {selectedFile ? selectedFile.name : "Selecione uma imagem"}
                                     </span>
                                     <input
                                         type="file"
@@ -441,10 +479,10 @@ export default function CadastrarEmpresa() {
                                     className="bg-red-500 text-white p-2.5 border border-red-500 rounded-r-md hover:bg-red-600"
                                     onClick={() => {
                                         setSelectedFile(null);
-                                        setFormData({
-                                            ...formData,
+                                        setFormData(prev => ({
+                                            ...prev,
                                             logomarcaUrl: ''
-                                        });
+                                        }));
                                         if (fileInputRef.current) {
                                             fileInputRef.current.value = '';
                                         }
@@ -454,14 +492,17 @@ export default function CadastrarEmpresa() {
                                 </button>
                             </div>
 
-                            {/* Preview da imagem se disponível */}
+                            {/* Preview da imagem */}
                             {formData.logomarcaUrl && (
-                                <div className="mt-2">
+                                <div className="mt-2 flex items-center">
                                     <img
                                         src={formData.logomarcaUrl}
                                         alt="Preview da logo"
                                         className="h-20 object-contain border rounded p-1"
                                     />
+                                    <span className="ml-2 text-sm text-gray-500">
+                                        {selectedFile ? 'Nova logo' : 'Logo atual'}
+                                    </span>
                                 </div>
                             )}
                         </FormField>
@@ -613,14 +654,22 @@ export default function CadastrarEmpresa() {
                                 name="cnaePrincipal"
                                 value={cnaePrincipal ? `${cnaePrincipal.codigo} - ${cnaePrincipal.descricao}` : ''}
                                 readOnly={true}
-                                onChange={handleChange}
-                                placeholder="0111-3/99 - Cultivo de outros..."
+                                placeholder="Selecione um CNAE..."
                                 actionButton={
                                     <>
-                                        <button type="button"
-                                                onClick={() => setIsCnaeModalOpen(true)}
-                                                className="bg-green-500 text-white p-2.5 border border-green-500 hover:bg-green-600">
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsCnaeModalOpen(true)}
+                                            className="bg-green-500 text-white p-2.5 border border-green-500 hover:bg-green-600"
+                                        >
                                             <Search size={18}/>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className="bg-red-500 text-white p-2.5 border border-red-500 rounded-r-md hover:bg-red-600"
+                                            onClick={clearCnaePrincipal}
+                                        >
+                                            <Trash2 size={18}/>
                                         </button>
                                     </>
                                 }
@@ -630,7 +679,7 @@ export default function CadastrarEmpresa() {
                             <select
                                 name="tipoMatrizFilial"
                                 value={formData.tipoMatrizFilial}
-                                onChange={(e) => setFormData({...formData, matriz: e.target.value === "matriz"})}
+                                onChange={handleChange}
                                 className="w-full py-2 px-3 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                             >
                                 <option value="MATRIZ">Matriz</option>
@@ -642,7 +691,7 @@ export default function CadastrarEmpresa() {
                                 name="medicoResponsavel"
                                 value={medicoResponsavel ? `${medicoResponsavel.nome} ${medicoResponsavel.sobrenome || ''}`.trim() : ''}
                                 readOnly={true}
-                                placeholder="Nenhum médico coordenador selecionado"
+                                placeholder="Selecione um médico"
                                 actionButton={
                                     <>
                                         <button
@@ -662,7 +711,7 @@ export default function CadastrarEmpresa() {
                                         <button
                                             type="button"
                                             className="bg-blue-500 text-white p-2.5 border border-blue-500 rounded-r-md hover:bg-blue-600"
-                                            onClick={() => navigate('/cadastros/novo-prestador')}
+                                            onClick={() => navigate('/cadastros/profissionais/novo')}
                                         >
                                             <Plus size={18}/>
                                         </button>
@@ -670,6 +719,7 @@ export default function CadastrarEmpresa() {
                                 }
                             />
                         </FormField>
+
                         <FormField label="Observações" className="lg:col-span-4">
                             <textarea
                                 name="observacoes"
@@ -683,11 +733,11 @@ export default function CadastrarEmpresa() {
                     </FormSection>
 
                     {/* Botões de Ação */}
-                    <div className="flex justify-end space-x-4">
+                    <div className="flex justify-end space-x-4 mt-6">
                         <button
                             type="button"
                             className="bg-white border border-gray-300 text-gray-700 px-6 py-2 rounded-md text-sm font-medium hover:bg-gray-50 transition-colors"
-                            onClick={() => navigate('/cadastros/empresas')}
+                            onClick={() => navigate('/cadastros/listar/empresas')}
                         >
                             Cancelar
                         </button>

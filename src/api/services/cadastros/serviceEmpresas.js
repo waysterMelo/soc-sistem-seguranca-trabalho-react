@@ -1,4 +1,4 @@
-import api from '../apiService.js';
+import api from '../../apiService.js';
 
 const getAllempresas = () => {
     return api.get('/empresas');

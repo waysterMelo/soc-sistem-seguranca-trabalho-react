@@ -14,11 +14,13 @@ import CadastrarPrestador from "../features/cadastros/Prestador/CadastrarPrestad
 import ListarEpiEpc from "../features/cadastros/Epi/ListarEpi.jsx";
 import CadastrarEquipamento from "../features/cadastros/Epi/CadastrarEpi.jsx";
 import ListarAparelhos from "../features/cadastros/aparelho/ListarAparelhos.jsx";
+import EditarEmpresa from "../features/cadastros/empresa/EditarEmpresa.jsx";
 
 const CadastrosRoutes = (
     <>
         <Route path="cadastros/listar/empresas" element={<EmpresaListPage />} />
         <Route path="cadastros/nova-empresa" element={<CadastrarEmpresa />} />
+        <Route path="/cadastros/editar-empresa/:id" element={<EditarEmpresa />} />
         <Route path="cadastros/listar/unidades" element={<ListarUnidades />} />
         <Route path="cadastros/nova-unidade" element={<CadastrarUnidade />} />
         <Route path="cadastros/listar/setores" element={<ListarSetores />} />

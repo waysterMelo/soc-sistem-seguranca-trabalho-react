@@ -1,6 +1,5 @@
 import React, {useEffect, useState} from 'react';
 import {
-    Upload,
     FileText,
     Plus,
     Search,
@@ -8,7 +7,7 @@ import {
     Pencil,
     Trash2,
     ChevronLeft,
-    ChevronRight, ChevronsRight, ChevronsLeft, Check
+    ChevronRight, ChevronsRight, ChevronsLeft, Check, AlertCircle
 } from 'lucide-react';
 import {Link} from "react-router-dom";
 import {empresaService} from "../../../api/services/cadastros/serviceEmpresas.js";
@@ -169,6 +168,39 @@ export default function ListarEmpresas() {
         });
     };
 
+    const handleGerarRelatorio = async () => {
+        try {
+            const response = await empresaService.gerarRelatorio();
+
+            // Criar um objeto URL para o arquivo recebido
+            const pdfUrl = window.URL.createObjectURL(new Blob([response.data]));
+
+            // Criar um link temporário para download
+            const link = document.createElement('a');
+            link.href = pdfUrl;
+            link.setAttribute('download', 'relatorio-empresas.pdf');
+
+            // Adicionar ao DOM, clicar e remover
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            // Mostrar mensagem de sucesso
+            setAlertModal({
+                isOpen: true,
+                type: 'success',
+                message: 'Relatório gerado com sucesso!'
+            });
+        } catch (err) {
+            console.error("Erro ao gerar relatório: ", err);
+            setAlertModal({
+                isOpen: true,
+                type: 'error',
+                message: 'Erro ao gerar relatório. Por favor, tente novamente.'
+            });
+        }
+    };
+
 
     // Filtra as empresas com base no termo de busca
     const filteredCompanies = empresas.filter(company =>
@@ -190,7 +222,8 @@ export default function ListarEmpresas() {
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
                     <h1 className="text-3xl font-bold text-gray-900 mb-4 sm:mb-0">Empresas</h1>
                     <div className="flex space-x-2">
-                        <button className="flex items-center space-x-2 bg-yellow-400 text-gray-800 px-4 py-2 rounded-md text-sm font-medium hover:bg-yellow-500 transition-colors">
+                        <button onClick={handleGerarRelatorio}
+                            className="flex items-center space-x-2 bg-yellow-400 text-gray-800 px-4 py-2 rounded-md text-sm font-medium hover:bg-yellow-500 transition-colors">
                             <FileText size={16} />
                             <span>Gerar Relatório</span>
                         </button>

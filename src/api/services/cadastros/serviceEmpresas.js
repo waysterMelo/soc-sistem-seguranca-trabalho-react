@@ -20,6 +20,10 @@ const deleteEmpresa = (id) => {
     return api.delete(`/empresas/${id}`);
 };
 
+const gerarRelatorio = () => {
+    return api.get('/empresas/relatorio/pdf', {responseType: 'blob'});
+};
+
 const uploadLogo = (fileData) => {
     return api.post('/empresas/logo', fileData, {
         headers: {
@@ -35,6 +39,7 @@ export const empresaService = {
     update: updateEmpresa,
     delete: deleteEmpresa,
     uploadLogo: uploadLogo,
+    gerarRelatorio: gerarRelatorio,
 };
 
 export default empresaService;

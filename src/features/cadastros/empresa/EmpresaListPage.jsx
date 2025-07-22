@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import {Link} from "react-router-dom";
 import {empresaService} from "../../../api/services/cadastros/serviceEmpresas.js";
+import { Chart, Filler } from 'chart.js';
 
 
 const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message }) => {
@@ -105,16 +106,66 @@ export default function ListarEmpresas() {
     const [error, setError] = useState(null);
     const [confirmModal, setConfirmModal] = useState({ isOpen: false, empresaId: null });
     const [alertModal, setAlertModal] = useState({ isOpen: false, type: '', message: '' });
+    const [isSearching, setIsSearching] = useState(false);
+    const [searchTimeout, setSearchTimeout] = useState(null);
+
 
     const fetchEmpresas = async () => {
         try {
             setLoading(true);
             const response = await empresaService.getAll();
-            setEmpresas(response.data);
+
+            // Garantir que sempre seja um array
+            let empresasData = [];
+
+            if (Array.isArray(response.data)) {
+                empresasData = response.data;
+            } else if (response.data && Array.isArray(response.data.content)) {
+                // Caso a API retorne { content: [...], total: x, page: y }
+                empresasData = response.data.content;
+            } else if (response.data && Array.isArray(response.data.data)) {
+                // Caso a API retorne { data: [...], success: true }
+                empresasData = response.data.data;
+            } else if (response.data && typeof response.data === 'object') {
+                // Se for um objeto, tente converter para array
+                empresasData = Object.values(response.data);
+            }
+
+            setEmpresas(empresasData);
+            setIsSearching(false);
             setError(null);
         } catch (err) {
-            console.error("Erro ao buscar empresas: ", err);
             setError("Não foi possível carregar as empresas");
+            setEmpresas([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchEmpresasPorTermo = async (termo) => {
+        try {
+            setLoading(true);
+            const response = await empresaService.buscarEmpresas(termo);
+
+            // Garantir que sempre seja um array (mesma lógica)
+            let empresasData = [];
+
+            if (Array.isArray(response.data)) {
+                empresasData = response.data;
+            } else if (response.data && Array.isArray(response.data.content)) {
+                empresasData = response.data.content;
+            } else if (response.data && Array.isArray(response.data.data)) {
+                empresasData = response.data.data;
+            } else if (response.data && typeof response.data === 'object') {
+                empresasData = Object.values(response.data);
+            }
+
+            setEmpresas(empresasData);
+            setIsSearching(true);
+            setError(null);
+        } catch (err) {
+            setError("Não foi possível realizar a busca");
+            setEmpresas([]); // Sempre garantir que seja um array
         } finally {
             setLoading(false);
         }
@@ -122,7 +173,37 @@ export default function ListarEmpresas() {
 
     useEffect(() => {
         fetchEmpresas();
+        return () => {
+            if (searchTimeout) {
+                clearTimeout(searchTimeout);
+            }
+        };
     }, []);
+
+    const handleSearchTermo = (e) => {
+        const termo = e.target.value;
+        setSearchTerm(termo);
+
+        if(searchTimeout) {
+            clearTimeout(searchTimeout);
+        }
+
+        const timeout = setTimeout(() => {
+            if (termo.trim()){
+                fetchEmpresasPorTermo(termo)
+            }else{
+                fetchEmpresas()
+            }
+            setCurrentPage(1);
+        }, 500);
+        setSearchTimeout(timeout);
+    }
+
+    const handleLimparBuscar = () => {
+        setSearchTerm('')
+        fetchEmpresas();
+        setCurrentPage(1);
+    };
 
     const handleDeleteClick = (empresaId) => {
         setConfirmModal({
@@ -201,19 +282,21 @@ export default function ListarEmpresas() {
         }
     };
 
+    const empresasList = Array.isArray(empresas) ? empresas : [];
 
     // Filtra as empresas com base no termo de busca
     const filteredCompanies = empresas.filter(company =>
-        company.razaoSocial.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        company.nomeFantasia.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        company.documento.includes(searchTerm)
+        (company.razaoSocial && company.razaoSocial.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (company.nomeFantasia && company.nomeFantasia.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (company.documento && company.documento.toString().includes(searchTerm))
     );
 
     // Lógica de paginação
     const indexOfLastEntry = currentPage * entriesPerPage;
     const indexOfFirstEntry = indexOfLastEntry - entriesPerPage;
-    const currentEntries = filteredCompanies.slice(indexOfFirstEntry, indexOfLastEntry);
-    const totalPages = Math.ceil(filteredCompanies.length / entriesPerPage);
+    const currentEntries = empresasList.slice(indexOfFirstEntry, indexOfLastEntry);
+    const totalPages = Math.ceil(empresasList.length / entriesPerPage);
+
 
     return (
         <div className="bg-gray-50 min-h-screen p-4 sm:p-6 lg:p-8 font-sans">
@@ -247,9 +330,17 @@ export default function ListarEmpresas() {
                                 placeholder="Procure por algum registro..."
                                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
+                                onChange={handleSearchTermo}
                             />
-                        </div>
+                            {isSearching && (
+                                <button
+                                    onClick={handleLimparBuscar}
+                                    className="ml-2 text-blue-600 hover:text-blue-800"
+                                >
+                                    Limpar busca
+                                </button>
+                                )}
+                                </div>
                         <select
                             className="w-full sm:w-auto mt-2 sm:mt-0 border border-gray-300 rounded-md px-3 py-2 focus:outline-none"
                             value={entriesPerPage}
@@ -331,7 +422,7 @@ export default function ListarEmpresas() {
                     {!loading && !error && (
                         <div className="flex flex-col sm:flex-row justify-between items-center pt-4 border-t border-gray-200">
                             <p className="text-sm text-gray-700 mb-2 sm:mb-0">
-                                Mostrando de <span className="font-medium">{filteredCompanies.length > 0 ? indexOfFirstEntry + 1 : 0}</span> até <span className="font-medium">{Math.min(indexOfLastEntry, filteredCompanies.length)}</span> de <span className="font-medium">{filteredCompanies.length}</span> registros
+                                Mostrando de <span className="font-medium">{empresasList.length > 0 ? indexOfFirstEntry + 1 : 0}</span> até <span className="font-medium">{Math.min(indexOfLastEntry, empresasList.length)}</span> de <span className="font-medium">{empresasList.length}</span> registros
                             </p>
                             <div className="flex items-center space-x-1">
                                 <button

@@ -32,6 +32,10 @@ const uploadLogo = (fileData) => {
     });
 }
 
+const buscarEmpresas = (termo) => {
+    return api.get(`/empresas/buscar?termo=${encodeURIComponent(termo)}`);
+}
+
 export const empresaService = {
     getAll: getAllempresas,
     getById: getEmpresaById,
@@ -40,6 +44,7 @@ export const empresaService = {
     delete: deleteEmpresa,
     uploadLogo: uploadLogo,
     gerarRelatorio: gerarRelatorio,
+    buscarEmpresas: buscarEmpresas,
 };
 
 export default empresaService;

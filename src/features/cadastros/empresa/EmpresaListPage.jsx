@@ -11,7 +11,6 @@ import {
 } from 'lucide-react';
 import {Link} from "react-router-dom";
 import {empresaService} from "../../../api/services/cadastros/serviceEmpresas.js";
-import { Chart, Filler } from 'chart.js';
 
 
 const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message }) => {

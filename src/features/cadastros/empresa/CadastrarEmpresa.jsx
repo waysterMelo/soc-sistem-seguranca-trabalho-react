@@ -36,7 +36,7 @@ const FormField = ({ label, required, children, className = '', error }) => (
 );
 
 // Input com ícone ou botão
-const InputWithAction = ({ placeholder, actionButton, type = "text", name, value = "", onChange, disabled = false }) => (
+const InputWithAction = ({ placeholder, actionButton, type = "text", name, value = "", onChange, disabled = false, readOnly = false }) => (
     <div className="relative flex items-center">
         <input
             type={type}
@@ -45,6 +45,7 @@ const InputWithAction = ({ placeholder, actionButton, type = "text", name, value
             onChange={onChange}
             disabled={disabled}
             placeholder={placeholder}
+            readOnly={readOnly}
             className="w-full py-2 px-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
         />
         <div className="absolute right-0 flex">

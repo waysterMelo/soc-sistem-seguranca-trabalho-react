@@ -2,27 +2,38 @@ import api from '../../apiService.js';
 
 
 const getAllUnidades = (params) => {
-    return api.get('/unidades-operacionais', { params });
-};
+    const empresaId = params?.empresaId;
 
+    if (!empresaId) {
+        throw new Error('empresaId é obrigatório');
+    }
+
+    return api.get(`/unidade-operacional/${empresaId}/unidades-empresa`, {
+        headers: {
+            'Accept': 'application/json'
+        }
+    });
+};
 
 const getUnidadeById = (id) => {
-    return api.get(`/unidades-operacionais/${id}`);
+    return api.get(`/unidade-operacional/${id}`);
 };
 
+const getTotalSetores = (unidadeId) => {
+    return api.get(`/unidade-operacional/${unidadeId}/total-setores`);
+};
 
 const createUnidade = (unidadeData) => {
-    return api.post('/unidades-operacionais', unidadeData);
+    return api.post('/unidade-operacional', unidadeData);
 };
 
 
 const updateUnidade = (id, unidadeData) => {
-    return api.put(`/unidades-operacionais/${id}`, unidadeData);
+    return api.put(`/unidade-operacional/${id}`, unidadeData);
 };
 
-
 const deleteUnidade = (id) => {
-    return api.delete(`/unidades-operacionais/${id}`);
+    return api.delete(`/unidade-operacional/${id}`);
 };
 
 export const unidadeService = {
@@ -31,4 +42,6 @@ export const unidadeService = {
     create: createUnidade,
     update: updateUnidade,
     delete: deleteUnidade,
+    getTotalSetores: getTotalSetores
+
 };

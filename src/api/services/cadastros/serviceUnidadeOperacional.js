@@ -1,5 +1,17 @@
 import api from '../../apiService.js';
 
+// Função para listar todas as unidades operacionais
+const listarTodasUnidades = (page = 0, size = 10) => {
+    return api.get('/unidade-operacional', {
+        params: {
+            page,
+            size
+        },
+        headers: {
+            'Accept': 'application/json'
+        }
+    });
+};
 
 const getAllUnidades = (params) => {
     const empresaId = params?.empresaId;
@@ -24,20 +36,26 @@ const getTotalSetores = (unidadeId) => {
 };
 
 const createUnidade = (unidadeData) => {
-    const empresaId = unidadeData.empresaId;
-    return api.post(`/unidade-operacional/${empresaId}`, unidadeData);
+    const requestData = {
+        nome: unidadeData.nome.trim(),
+        empresaId: unidadeData.empresaId,
+        descricao: unidadeData.descricao || null,
+        unidadeOperacionalId: unidadeData.unidadeOperacionalId || null
+    };
+    // Faz a chamada para criar o setor
+    return api.post('/setores', requestData);
 };
 
+// Modificando a função de busca para usar o endpoint principal com filtro
 const buscarPorNome = (nome, page = 0, size = 10) => {
-    return api.get(`/unidade-operacional/buscar`, {
+    return api.get(`/unidade-operacional`, {
         params: {
-            nome,
+            nome, // O backend deve filtrar pelo nome como parâmetro de consulta
             page,
             size
         }
     });
 };
-
 
 const updateUnidade = (id, unidadeData) => {
     return api.put(`/unidade-operacional/${id}`, unidadeData);
@@ -54,6 +72,6 @@ export const unidadeService = {
     update: updateUnidade,
     delete: deleteUnidade,
     buscarPorNome,
-    getTotalSetores: getTotalSetores
-
+    getTotalSetores: getTotalSetores,
+    listarTodasUnidades // Exportando a nova função
 };

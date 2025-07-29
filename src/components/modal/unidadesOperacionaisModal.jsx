@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Search, X, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { unidadeService } from "../../api/services/cadastros/serviceUnidadeOperacional.js";
+import api from "../../api/apiService.js";
 
 const UnidadesOperacionaisModal = ({ isOpen, onClose, onSelect, empresaId = 1 }) => {
     const [searchTerm, setSearchTerm] = useState('');
@@ -14,63 +15,92 @@ const UnidadesOperacionaisModal = ({ isOpen, onClose, onSelect, empresaId = 1 })
     const [totalItems, setTotalItems] = useState(0);
     const [pageSize, setPageSize] = useState(10);
 
-    // Função para buscar unidades operacionais
-    const fetchUnidades = useCallback(async () => {
+    // Função para buscar todas as unidades
+    const fetchAllUnidades = useCallback(async () => {
         setLoading(true);
         setError(null);
         
         try {
-            let response;
-            
-            if (searchTerm) {
-                response = await unidadeService.buscarPorNome(searchTerm, currentPage, pageSize);
-            } else {
-                response = await unidadeService.getAll({
+            // Usando o endpoint principal para listar todas as unidades
+            const response = await api.get('/unidade-operacional', {
+                params: {
                     page: currentPage,
-                    size: pageSize,
-                    empresaId: empresaId // Passando o empresaId para a API
-                });
-            }
+                    size: pageSize
+                }
+            });
             
-            // Garantir que a resposta tenha a estrutura esperada
-            let content = [];
-            let pages = 0;
-            let totalElements = 0;
-            
-            if (response.data && Array.isArray(response.data)) {
-                // Se a resposta for um array direto
-                content = response.data;
-                totalElements = response.data.length;
-                pages = Math.ceil(totalElements / pageSize);
-            } else if (response.data && response.data.content) {
-                // Se a resposta tiver o formato de paginação
-                content = response.data.content;
-                pages = response.data.totalPages || Math.ceil(response.data.totalElements / pageSize);
-                totalElements = response.data.totalElements || content.length;
-            } else {
-                // Outros formatos possíveis
-                content = response.data || [];
-                totalElements = content.length;
-                pages = Math.ceil(totalElements / pageSize);
-            }
-            
-            setUnidades(content);
-            setTotalPages(pages);
-            setTotalItems(totalElements);
+            processarResposta(response);
         } catch (err) {
             console.error("Erro ao buscar unidades operacionais:", err);
             setError("Não foi possível carregar as unidades operacionais. Tente novamente mais tarde.");
         } finally {
             setLoading(false);
         }
-    }, [searchTerm, currentPage, pageSize, empresaId]);
+    }, [currentPage, pageSize]);
 
-    // Carrega os dados quando o modal é aberto ou quando os parâmetros de busca mudam
+    // Função para buscar unidades pelo nome
+    const searchUnidades = useCallback(async () => {
+        if (!searchTerm.trim()) {
+            // Se a busca estiver vazia, carrega todas as unidades
+            return fetchAllUnidades();
+        }
+        
+        setLoading(true);
+        setError(null);
+        
+        try {
+            // Usando o endpoint principal com parâmetro de nome
+            const response = await api.get('/unidade-operacional', {
+                params: {
+                    nome: searchTerm,
+                    page: currentPage,
+                    size: pageSize
+                }
+            });
+            
+            processarResposta(response);
+        } catch (err) {
+            console.error("Erro ao buscar unidades operacionais por nome:", err);
+            setError("Não foi possível realizar a busca. Tente novamente mais tarde.");
+        } finally {
+            setLoading(false);
+        }
+    }, [searchTerm, currentPage, pageSize, fetchAllUnidades]);
+
+    // Função auxiliar para processar a resposta da API
+    const processarResposta = (response) => {
+        let content = [];
+        let pages = 0;
+        let totalElements = 0;
+        
+        if (response.data && Array.isArray(response.data)) {
+            // Se a resposta for um array direto
+            content = response.data;
+            totalElements = response.data.length;
+            pages = Math.ceil(totalElements / pageSize);
+        } else if (response.data && response.data.content) {
+            // Se a resposta tiver o formato de paginação
+            content = response.data.content;
+            pages = response.data.totalPages || Math.ceil(response.data.totalElements / pageSize);
+            totalElements = response.data.totalElements || content.length;
+        } else {
+            // Outros formatos possíveis
+            content = response.data || [];
+            totalElements = content.length;
+            pages = Math.ceil(totalElements / pageSize);
+        }
+        
+        setUnidades(content);
+        setTotalPages(pages);
+        setTotalItems(totalElements);
+    };
+
+    // Carrega todas as unidades quando o modal é aberto
     useEffect(() => {
         if (isOpen) {
-            fetchUnidades();
+            fetchAllUnidades();
         }
-    }, [isOpen, fetchUnidades]);
+    }, [isOpen, fetchAllUnidades]);
 
     // Reset de estados quando o modal é aberto
     useEffect(() => {
@@ -79,6 +109,17 @@ const UnidadesOperacionaisModal = ({ isOpen, onClose, onSelect, empresaId = 1 })
             setCurrentPage(0);
         }
     }, [isOpen]);
+
+    // Quando mudar a página, atualiza os dados
+    useEffect(() => {
+        if (isOpen) {
+            if (searchTerm.trim()) {
+                searchUnidades();
+            } else {
+                fetchAllUnidades();
+            }
+        }
+    }, [isOpen, currentPage, searchUnidades, fetchAllUnidades]);
 
     // Manipuladores para a paginação
     const handlePageChange = (page) => {
@@ -101,7 +142,24 @@ const UnidadesOperacionaisModal = ({ isOpen, onClose, onSelect, empresaId = 1 })
     const handleSearch = (e) => {
         e.preventDefault();
         setCurrentPage(0);
-        fetchUnidades();
+        searchUnidades();
+    };
+
+    // Manipulador para quando o usuário limpa o campo de busca
+    const handleClearSearch = () => {
+        setSearchTerm('');
+        setCurrentPage(0);
+        fetchAllUnidades();
+    };
+
+    // Manipulador para alterações no campo de busca
+    const handleSearchChange = (e) => {
+        setSearchTerm(e.target.value);
+        // Se o campo estiver vazio, volta a mostrar todas as unidades
+        if (!e.target.value.trim()) {
+            setCurrentPage(0);
+            fetchAllUnidades();
+        }
     };
 
     // Função para gerar os números das páginas
@@ -157,10 +215,19 @@ const UnidadesOperacionaisModal = ({ isOpen, onClose, onSelect, empresaId = 1 })
                                 type="text"
                                 placeholder="Pesquisar por nome..."
                                 value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
+                                onChange={handleSearchChange}
                                 className="w-full py-3 px-4 pl-12 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             />
                             <Search size={20} className="absolute left-4 top-3.5 text-gray-400" />
+                            {searchTerm && (
+                                <button 
+                                    type="button"
+                                    onClick={handleClearSearch}
+                                    className="absolute right-24 top-3 text-gray-400 hover:text-gray-600"
+                                >
+                                    <X size={20} />
+                                </button>
+                            )}
                             <button 
                                 type="submit"
                                 className="absolute right-3 top-2 bg-blue-600 text-white px-4 py-1.5 rounded-md hover:bg-blue-700"

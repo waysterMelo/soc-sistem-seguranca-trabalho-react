@@ -99,10 +99,7 @@ export default function ListarSetores() {
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
                     <h1 className="text-3xl font-bold text-gray-900 mb-4 sm:mb-0">Setores</h1>
                     <div className="flex space-x-2">
-                        <button className="flex items-center space-x-2 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-50 transition-colors">
-                            <Upload size={16} />
-                            <span>Importar Setor</span>
-                        </button>
+
                         <Link
                             to="/cadastros/novo-setor"
                             className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"

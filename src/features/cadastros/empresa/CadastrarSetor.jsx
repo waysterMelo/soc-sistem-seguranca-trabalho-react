@@ -3,8 +3,13 @@ import {
     Search,
     Trash2,
     AlertCircle,
-    Info
+    Info, ArrowLeft
 } from 'lucide-react';
+import EmpresaSearchModal from '../../../components/modal/empresaSearchModal.jsx';
+import {useNavigate} from "react-router-dom";
+import UnidadesOperacionaisModal from '../../../components/modal/unidadesOperacionaisModal.jsx';
+
+
 
 // --- Componentes Reutilizáveis ---
 
@@ -30,12 +35,15 @@ const FormField = ({ label, required, children, className = '', error }) => (
 );
 
 // Input com botões de ação (como busca e exclusão)
-const InputWithActions = ({ placeholder, actions }) => (
+const InputWithActions = ({ placeholder, actions, value }) => (
     <div className="relative flex items-center">
         <input
             type="text"
             placeholder={placeholder}
-            className="w-full py-2 px-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={value || ''}
+            readOnly
+            className="w-full py-2 px-3 border border-gray-300 rounded-md
+            focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <div className="absolute right-0 flex">
             {actions}
@@ -47,8 +55,34 @@ const InputWithActions = ({ placeholder, actions }) => (
 
 export default function CadastrarSetor() {
     const [nome, setNome] = useState('');
-    const [empresa, setEmpresa] = useState('');
+    const [empresa, setEmpresa] = useState(null);
     const [errors, setErrors] = useState({});
+    const navigate = useNavigate();
+    const [showEmpresaModal, setShowEmpresaModal] = useState(false);
+    const [showUnidadeModal, setShowUnidadeModal] = useState(false);
+    const [unidadeOperacional, setUnidadeOperacional] = useState(null);
+
+
+
+    const handleSelectEmpresa = (selectedEmpresa) => {
+        setEmpresa(selectedEmpresa);
+        setShowEmpresaModal(false);
+
+        // Limpa o erro se houver
+        if (errors.empresa) {
+            setErrors(prev => {
+                const newErrors = {...prev};
+                delete newErrors.empresa;
+                return newErrors;
+            });
+        }
+    };
+
+    const handleSelectUnidade = (selectedUnidade) => {
+        setUnidadeOperacional(selectedUnidade);
+        setShowUnidadeModal(false);
+    };
+
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -65,11 +99,25 @@ export default function CadastrarSetor() {
     };
 
     return (
+
         <div className="bg-gray-50 min-h-screen p-4 sm:p-6 lg:p-8 font-sans">
             <div className="container mx-auto">
                 <header className="mb-6">
-                    <h1 className="text-3xl font-bold text-gray-900">Cadastrar Setor</h1>
+                    <div className="flex justify-between items-center">
+                        <h1 className="text-3xl font-bold text-gray-900">Cadastrar Setor</h1>
+                        <button
+                            type="button"
+                            onClick={() => navigate(-1)} // Volta para a página anterior
+                            className="bg-gray-600 text-white px-4 py-2 rounded-md font-medium hover:bg-gray-700 transition-colors flex items-center"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+                            </svg>
+                            Voltar
+                        </button>
+                    </div>
                 </header>
+
 
                 <form onSubmit={handleSubmit}>
                     {/* Seção Informações do Setor */}
@@ -77,10 +125,17 @@ export default function CadastrarSetor() {
                         <FormField label="Selecione a Empresa ao qual o setor irá pertencer" required className="lg:col-span-4" error={errors.empresa}>
                             <InputWithActions
                                 placeholder="Nenhuma Empresa selecionada"
+                                value={empresa ? empresa.razaoSocial : ''}
                                 actions={
                                     <>
-                                        <button type="button" className="bg-green-500 text-white p-2.5 border border-green-500 hover:bg-green-600"><Search size={18}/></button>
-                                        <button type="button" className="bg-red-500 text-white p-2.5 border border-red-500 rounded-r-md hover:bg-red-600"><Trash2 size={18}/></button>
+                                        <button onClick={() => setShowEmpresaModal(true)} type="button" className="bg-green-500 text-white p-2.5 border border-green-500 hover:bg-green-600"><Search size={18}/></button>
+                                        <button
+                                            type="button"
+                                            className="bg-red-500 text-white p-2.5 border border-red-500 rounded-r-md hover:bg-red-600"
+                                            onClick={() => setEmpresa(null)}
+                                        >
+                                            <Trash2 size={18}/>
+                                        </button>
                                     </>
                                 }
                             />
@@ -108,33 +163,49 @@ export default function CadastrarSetor() {
                         <FormField label="Tipo de Empresa" className="lg:col-span-1">
                             <select className="w-full py-2 px-3 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 <option>Selecione</option>
+                                <option value="matriz">Matriz</option>
+                                <option value="filial">Filial</option>
                             </select>
                         </FormField>
                         <FormField label="Tipo do Documento" required className="lg:col-span-1">
                             <select className="w-full py-2 px-3 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <option>Selecione</option>
+                                <option value="">Selecione</option>
+                                <option value="cnpj">CNPJ</option>
+                                <option value="cei">CEI</option>
+                                <option value="cpf">CPF</option>
+                                <option value="cno">CNO</option>
+                                <option value="caepf">CAEPF</option>
+                                <option value="nit">NIT/PIS/PASEP</option>
+                                <option value="outros">Outros</option>
+
                             </select>
                         </FormField>
                         <FormField label="Número do Documento" required className="lg:col-span-2">
                             <input type="text" placeholder="Digite o número do documento" className="w-full py-2 px-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                        </FormField>
-                        <FormField label="Lotação Tributária" className="lg:col-span-4">
-                            <input type="text" placeholder="Código existente em e-Social - Tabela de Lotações Tributárias" className="w-full py-2 px-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                            <p className="text-xs text-gray-500 mt-1">
-                                * Caso os dados deste setor sejam relacionados ao envio do evento S-2240 do eSocial, a seleção do campo Tipo de Empresa se torna obrigatória.
-                            </p>
-                        </FormField>
-                    </FormSection>
+                        </FormField></FormSection>
 
                     {/* Seção Unidade Operacional */}
                     <FormSection title="Unidade Operacional">
                         <FormField label="Vincular Unidade Operacional" className="lg:col-span-4">
                             <InputWithActions
                                 placeholder="Nenhuma Unidade Operacional selecionada"
+                                value={unidadeOperacional ? unidadeOperacional.nome : ''}
                                 actions={
                                     <>
-                                        <button type="button" className="bg-green-500 text-white p-2.5 border border-green-500 hover:bg-green-600"><Search size={18}/></button>
-                                        <button type="button" className="bg-red-500 text-white p-2.5 border border-red-500 rounded-r-md hover:bg-red-600"><Trash2 size={18}/></button>
+                                        <button
+                                            type="button"
+                                            className="bg-green-500 text-white p-2.5 border border-green-500 hover:bg-green-600"
+                                            onClick={() => setShowUnidadeModal(true)}
+                                        >
+                                            <Search size={18}/>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className="bg-red-500 text-white p-2.5 border border-red-500 rounded-r-md hover:bg-red-600"
+                                            onClick={() => setUnidadeOperacional(null)}
+                                        >
+                                            <Trash2 size={18}/>
+                                        </button>
                                     </>
                                 }
                             />
@@ -142,10 +213,15 @@ export default function CadastrarSetor() {
                         <div className="lg:col-span-4 bg-blue-50 border-l-4 border-blue-400 text-blue-700 p-4 rounded-r-lg">
                             <div className="flex">
                                 <Info size={20} className="mr-3 flex-shrink-0" />
-                                <p className="text-sm">O setor ainda não possui vínculo com nenhuma unidade operacional.</p>
+                                <p className="text-sm">
+                                    {unidadeOperacional
+                                        ? `Unidade Operacional vinculada: ${unidadeOperacional.nome}`
+                                        : 'O setor ainda não possui vínculo com nenhuma unidade operacional.'}
+                                </p>
                             </div>
                         </div>
                     </FormSection>
+
 
                     {/* Botões de Ação */}
                     <div className="flex flex-wrap justify-end space-x-4 mt-8">
@@ -158,6 +234,19 @@ export default function CadastrarSetor() {
                     </div>
                 </form>
             </div>
+
+            <EmpresaSearchModal
+                isOpen={showEmpresaModal}
+                onClose={() => setShowEmpresaModal(false)}
+                onSelect={handleSelectEmpresa}
+            />
+            <UnidadesOperacionaisModal
+                isOpen={showUnidadeModal}
+                onClose={() => setShowUnidadeModal(false)}
+                onSelect={handleSelectUnidade}
+            />
+
         </div>
+
     );
 }

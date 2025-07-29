@@ -102,7 +102,6 @@ export default function CadastrarEmpresa() {
     const [isMedicoModalOpen, setIsMedicoModalOpen] = useState(false);
 
     const handleCnaeSelect = (cnae) => {
-        console.log('CNAE selecionado:', cnae);
         setCnaePrincipal(cnae);
         const cnaeId = typeof cnae.id === 'string' ? parseInt(cnae.id, 10) : cnae.id;
         setFormData(prev => ({
@@ -121,11 +120,6 @@ export default function CadastrarEmpresa() {
             medicoResponsavelNomeCompleto: `${medico.nome} ${medico.sobrenome || ''}`.trim()
         }));
         setIsMedicoModalOpen(false);
-    };
-
-    const clearCnaePrincipal = () => {
-        setCnaePrincipal(null);
-        setFormData(prev => ({...prev, cnaePrincipalId: null}));
     };
 
     const clearMedicoResponsavel = () => {
@@ -191,8 +185,6 @@ export default function CadastrarEmpresa() {
             newErrors.email = 'Email inválido';
         }
 
-        // Validação de CNPJ/CPF pode ser adicionada aqui
-
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -225,18 +217,6 @@ export default function CadastrarEmpresa() {
                     regiao: formData.regiao
                 }
             };
-
-            // Remove campos que foram reorganizados
-            delete empresaData.cep;
-            delete empresaData.logradouro;
-            delete empresaData.numero;
-            delete empresaData.bairro;
-            delete empresaData.complemento;
-            delete empresaData.cidade;
-            delete empresaData.estado;
-            delete empresaData.regiao;
-
-            console.log('Dados a serem enviados: ', empresaData);
 
             // Se tiver um arquivo selecionado, envie-o primeiro e obtenha a URL
             if (selectedFile) {

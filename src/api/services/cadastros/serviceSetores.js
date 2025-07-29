@@ -16,6 +16,11 @@ const createSetor = (setorData) => {
 };
 
 
+const buscarPorNomeEEmpresa = (nome, empresaId) => {
+    return api.get(`/setores/buscar-por-empresa?nome=${nome}&empresaId=${empresaId}`);
+};
+
+
 const updateSetor = (id, setorData) => {
     return api.put(`/setores/${id}`, setorData);
 };

@@ -205,14 +205,36 @@ export default function EditarUnidade() {
         const novosErros = {};
         if (!unidade.nome?.trim()) novosErros.nome = 'Nome é obrigatório';
         if (!unidade.empresa?.id) novosErros.empresa = 'Empresa é obrigatória';
-        if (!unidade.setores || unidade.setores.length === 0) novosErros.setores = 'Pelo menos um setor deve estar vinculado à unidade';
 
         setErrors(novosErros);
         return Object.keys(novosErros).length === 0;
     };
 
     const prepararDadosParaEnvio = () => {
-        return {...unidade};
+
+        const dados = JSON.parse(JSON.stringify(unidade));
+
+        if (dados.empresa && typeof dados.empresa === 'object' && dados.empresa.id) {
+            dados.empresaId = dados.empresa.id;
+
+            delete dados.empresa;
+        } else if (dados.empresa && (typeof dados.empresa !== 'object' || !dados.empresa.id)) {
+
+            delete dados.empresa;
+
+        }
+
+        if (dados.cnaePrincipal && typeof dados.cnaePrincipal === 'object' && dados.cnaePrincipal.id) {
+            dados.cnaePrincipalId = dados.cnaePrincipal.id;
+
+            delete dados.cnaePrincipal;
+        } else if (dados.cnaePrincipal && (typeof dados.cnaePrincipal !== 'object' || !dados.cnaePrincipal.id)) {
+
+            delete dados.cnaePrincipal;
+
+        }
+
+        return dados;
     };
 
     const handleSubmit = async (e) => {

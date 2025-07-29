@@ -24,7 +24,18 @@ const getTotalSetores = (unidadeId) => {
 };
 
 const createUnidade = (unidadeData) => {
-    return api.post('/unidade-operacional', unidadeData);
+    const empresaId = unidadeData.empresaId;
+    return api.post(`/unidade-operacional/${empresaId}`, unidadeData);
+};
+
+const buscarPorNome = (nome, page = 0, size = 10) => {
+    return api.get(`/unidade-operacional/buscar`, {
+        params: {
+            nome,
+            page,
+            size
+        }
+    });
 };
 
 
@@ -42,6 +53,7 @@ export const unidadeService = {
     create: createUnidade,
     update: updateUnidade,
     delete: deleteUnidade,
+    buscarPorNome,
     getTotalSetores: getTotalSetores
 
 };

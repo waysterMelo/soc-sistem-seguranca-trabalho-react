@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import {
     Plus,
     Search,
-    ChevronsUpDown
+    ChevronsUpDown,
+    Trash2,
+    AlertTriangle
 } from 'lucide-react';
 import { Link } from "react-router-dom";
 import { unidadeService } from '../../../api/services/cadastros/serviceUnidadeOperacional.js';
@@ -35,6 +37,73 @@ const StatusBadge = ({ status }) => {
     );
 };
 
+// Modal de confirmação para deletar unidade
+const ConfirmacaoModal = ({ isOpen, onClose, onConfirm, unidadeNome }) => {
+    if (!isOpen) return null;
+    
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Confirmar exclusão</h3>
+                <p className="text-gray-700 mb-6">
+                    Tem certeza que deseja excluir a unidade <span className="font-semibold">{unidadeNome}</span>?
+                    Esta ação não poderá ser desfeita.
+                </p>
+                <div className="flex justify-end space-x-3">
+                    <button
+                        onClick={onClose}
+                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                    >
+                        Cancelar
+                    </button>
+                    <button
+                        onClick={onConfirm}
+                        className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700"
+                    >
+                        Excluir
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// Modal para oferecer alternativa de inativação quando não é possível excluir
+const AlternativaModal = ({ isOpen, onClose, onInativar, unidadeNome }) => {
+    if (!isOpen) return null;
+    
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+                <div className="flex items-start mb-4">
+                    <AlertTriangle className="text-yellow-500 h-6 w-6 mr-3 flex-shrink-0 mt-0.5" />
+                    <h3 className="text-lg font-semibold text-gray-900">Não é possível excluir</h3>
+                </div>
+                <p className="text-gray-700 mb-4">
+                    A unidade <span className="font-semibold">{unidadeNome}</span> não pode ser excluída porque está sendo utilizada em outros registros (LTCAT, PGR ou outros documentos).
+                </p>
+                <p className="text-gray-700 mb-6">
+                    Como alternativa, você pode inativar esta unidade para que ela não apareça em novas operações.
+                </p>
+                <div className="flex justify-end space-x-3">
+                    <button
+                        onClick={onClose}
+                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                    >
+                        Cancelar
+                    </button>
+                    <button
+                        onClick={onInativar}
+                        className="px-4 py-2 text-sm font-medium text-white bg-yellow-600 rounded-md hover:bg-yellow-700"
+                    >
+                        Inativar Unidade
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // --- Componente Principal ---
 
 export default function ListarUnidades() {
@@ -45,6 +114,17 @@ export default function ListarUnidades() {
     const [loading, setLoading] = useState(false);
     const [empresaSelecionada, setEmpresaSelecionada] = useState(null);
     const [showEmpresaModal, setShowEmpresaModal] = useState(false);
+    const [confirmacaoModal, setConfirmacaoModal] = useState({
+        isOpen: false,
+        unidadeId: null,
+        unidadeNome: ''
+    });
+    const [alternativaModal, setAlternativaModal] = useState({
+        isOpen: false,
+        unidadeId: null,
+        unidadeNome: ''
+    });
+    const [processandoUnidade, setProcessandoUnidade] = useState(false);
 
     // Carregar unidades operacionais com base na empresa selecionada
     useEffect(() => {
@@ -114,6 +194,98 @@ export default function ListarUnidades() {
             setUnidades([]);
         } finally {
             setLoading(false);
+        }
+    };
+
+    // Abrir modal de confirmação para deletar unidade
+    const confirmarDeletarUnidade = (unidade) => {
+        setConfirmacaoModal({
+            isOpen: true,
+            unidadeId: unidade.id,
+            unidadeNome: unidade.nome
+        });
+    };
+
+    // Fechar modal de confirmação
+    const fecharModalConfirmacao = () => {
+        setConfirmacaoModal({
+            isOpen: false,
+            unidadeId: null,
+            unidadeNome: ''
+        });
+    };
+
+    // Fechar modal de alternativa
+    const fecharModalAlternativa = () => {
+        setAlternativaModal({
+            isOpen: false,
+            unidadeId: null,
+            unidadeNome: ''
+        });
+    };
+
+    // Função para inativar unidade em vez de excluir
+    const inativarUnidade = async () => {
+        if (!alternativaModal.unidadeId) return;
+        
+        setProcessandoUnidade(true);
+        try {
+            // Buscar detalhes da unidade primeiro
+            const unidadeResponse = await unidadeService.getById(alternativaModal.unidadeId);
+            const unidadeData = unidadeResponse.data;
+            
+            // Atualizar o status para inativo
+            const dadosAtualizados = {
+                ...unidadeData,
+                situacao: 'INATIVO'
+            };
+            
+            await unidadeService.update(alternativaModal.unidadeId, dadosAtualizados);
+            
+            // Atualizar a lista após inativar
+            if (empresaSelecionada) {
+                await buscarUnidadesPorEmpresa(empresaSelecionada.id);
+            }
+            
+            fecharModalAlternativa();
+        } catch (error) {
+            console.error("Erro ao inativar unidade:", error);
+            // Aqui poderia adicionar um toast ou notificação de erro
+        } finally {
+            setProcessandoUnidade(false);
+        }
+    };
+
+    // Deletar unidade após confirmação
+    const deletarUnidade = async () => {
+        if (!confirmacaoModal.unidadeId) return;
+        
+        setProcessandoUnidade(true);
+        try {
+            await unidadeService.delete(confirmacaoModal.unidadeId);
+            // Atualizar a lista após deletar
+            if (empresaSelecionada) {
+                await buscarUnidadesPorEmpresa(empresaSelecionada.id);
+            }
+            fecharModalConfirmacao();
+        } catch (error) {
+            console.error("Erro ao deletar unidade:", error);
+            
+            // Verificar se é um erro de violação de integridade referencial
+            if (error.response?.data?.message?.includes('DataIntegrityViolationException') || 
+                error.message?.includes('foreign key constraint fails')) {
+                
+                // Mostrar modal de alternativa em vez de apenas mostrar erro
+                setAlternativaModal({
+                    isOpen: true,
+                    unidadeId: confirmacaoModal.unidadeId,
+                    unidadeNome: confirmacaoModal.unidadeNome
+                });
+            }
+            
+            fecharModalConfirmacao();
+        } finally {
+            setProcessandoUnidade(false);
         }
     };
 
@@ -222,13 +394,19 @@ export default function ListarUnidades() {
                                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                                             <StatusBadge status={unidade.situacao === 'ATIVO' ? 'Ativo' : 'Inativo'} />
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm flex space-x-4">
                                             <Link
                                                 to={`/cadastros/editar-unidade/${unidade.id}`}
                                                 className="text-blue-600 hover:text-blue-800"
                                             >
                                                 Editar
                                             </Link>
+                                            <button
+                                                onClick={() => confirmarDeletarUnidade(unidade)}
+                                                className="text-red-600 hover:text-red-800"
+                                            >
+                                                Excluir
+                                            </button>
                                         </td>
                                     </tr>
                                 ))
@@ -281,6 +459,22 @@ export default function ListarUnidades() {
                 isOpen={showEmpresaModal}
                 onClose={() => setShowEmpresaModal(false)}
                 onSelect={handleEmpresaSelect}
+            />
+
+            {/* Modal de Confirmação para Deletar Unidade */}
+            <ConfirmacaoModal
+                isOpen={confirmacaoModal.isOpen}
+                onClose={fecharModalConfirmacao}
+                onConfirm={deletarUnidade}
+                unidadeNome={confirmacaoModal.unidadeNome}
+            />
+            
+            {/* Modal de Alternativa para Inativar */}
+            <AlternativaModal
+                isOpen={alternativaModal.isOpen}
+                onClose={fecharModalAlternativa}
+                onInativar={inativarUnidade}
+                unidadeNome={alternativaModal.unidadeNome}
             />
         </div>
     );

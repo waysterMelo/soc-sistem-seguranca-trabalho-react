@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Plus,
     Search,
@@ -10,27 +10,12 @@ import {
     ChevronsLeft,
     ChevronsRight,
     MoreVertical,
-    Upload
+    Loader
 } from 'lucide-react';
-import {Link} from "react-router-dom";
-
-// --- Dados de Exemplo ---
-const sectorsData = [
-    {
-        setor: 'SEGURANÇA DO TRABALHO',
-        empresa: 'WAYSTER HENRIQUE CRUZ DE MELO',
-        unidade: 'N/A',
-        funcionarios: 51,
-        status: 'Ativo'
-    },
-    {
-        setor: 'Comercial e Projetos',
-        empresa: 'MARINA GARCIA LOPES CONS EM TEC DA INFOR LTDA',
-        unidade: 'N/A',
-        funcionarios: 2,
-        status: 'Ativo'
-    }
-];
+import { Link } from "react-router-dom";
+import { setorService } from "../../../api/services/cadastros/serviceSetores.js";
+import EmpresaSearchModal from '../../../components/modal/empresaSearchModal.jsx';
+import UnidadesOperacionaisModal from '../../../components/modal/unidadesOperacionaisModal.jsx';
 
 // --- Componentes Reutilizáveis ---
 
@@ -46,6 +31,8 @@ const TableHeader = ({ children }) => (
 
 // Selo de status colorido
 const StatusBadge = ({ status }) => {
+    if (!status) return <span className="text-gray-400">-</span>;
+    
     const baseClasses = "px-2.5 py-0.5 text-xs font-semibold rounded-full";
     const statusClasses = {
         'Ativo': 'bg-green-100 text-green-700',
@@ -59,12 +46,13 @@ const StatusBadge = ({ status }) => {
 };
 
 // Input com botões de ação
-const InputWithActions = ({ placeholder, disabled = false, actions }) => (
+const InputWithActions = ({ placeholder, value, actions, readOnly = true }) => (
     <div className="relative flex items-center">
         <input
             type="text"
             placeholder={placeholder}
-            disabled={disabled}
+            value={value || ''}
+            readOnly={readOnly}
             className="w-full py-2 pl-4 pr-20 border border-gray-300 rounded-md focus:outline-none transition-colors bg-white focus:ring-2 focus:ring-blue-500"
         />
         <div className="absolute right-0 flex">
@@ -73,24 +61,171 @@ const InputWithActions = ({ placeholder, disabled = false, actions }) => (
     </div>
 );
 
-
 // --- Componente Principal ---
-
 export default function ListarSetores() {
+    // Estados principais
+    const [setores, setSetores] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    
+    // Estados de filtros
     const [searchTerm, setSearchTerm] = useState('');
+    const [empresaFiltro, setEmpresaFiltro] = useState(null);
+    const [unidadeFiltro, setUnidadeFiltro] = useState(null);
+    const [statusFiltro, setStatusFiltro] = useState('todos');
+    
+    // Estados de paginação
     const [currentPage, setCurrentPage] = useState(1);
     const [entriesPerPage, setEntriesPerPage] = useState(5);
+    const [totalElements, setTotalElements] = useState(0);
+    const [totalPages, setTotalPages] = useState(0);
+    
+    // Estados dos modais
+    const [showEmpresaModal, setShowEmpresaModal] = useState(false);
+    const [showUnidadeModal, setShowUnidadeModal] = useState(false);
 
-    // Lógica de paginação (com os dados de exemplo)
-    const filteredSectors = sectorsData.filter(sector =>
-        sector.setor.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        sector.empresa.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const fetchSetores = async () => {
+        try {
+            setLoading(true);
+            setError(null);
 
-    const indexOfLastEntry = currentPage * entriesPerPage;
-    const indexOfFirstEntry = indexOfLastEntry - entriesPerPage;
-    const currentEntries = filteredSectors.slice(indexOfFirstEntry, indexOfLastEntry);
-    const totalPages = Math.ceil(filteredSectors.length / entriesPerPage);
+            const params = {
+                page: currentPage - 1,
+                size: entriesPerPage
+            };
+
+            if (searchTerm && searchTerm.trim() !== '') {
+                params.nome = searchTerm.trim();
+            }
+            if (empresaFiltro && empresaFiltro.id) {
+                params.empresaId = empresaFiltro.id;
+            }
+            if (unidadeFiltro && unidadeFiltro.id) {
+                params.unidadeOperacionalId = unidadeFiltro.id;
+            }
+            if (statusFiltro !== 'todos') {
+                params.status = statusFiltro === 'ativos' ? 'ATIVO' : 'INATIVO';
+            }
+
+            const response = await setorService.buscarComFiltros(params);
+
+            if (response.data) {
+                if (response.data.content) {
+                    // Formato Spring Boot PageImpl
+                    setSetores(response.data.content);
+                    setTotalElements(response.data.totalElements);
+                    setTotalPages(response.data.totalPages);
+                } else if (Array.isArray(response.data)) {
+                    // Formato array simples: filtrar e paginar manualmente
+                    const allSetores = response.data;
+
+                    // 1) Filtrar conforme os filtros atuais
+                    const filtered = allSetores.filter(setor => {
+                        if (searchTerm && !setor.nome.toLowerCase().includes(searchTerm.toLowerCase())) {
+                            return false;
+                        }
+                        if (empresaFiltro && setor.empresa?.id !== empresaFiltro.id) {
+                            return false;
+                        }
+                        if (unidadeFiltro && setor.unidadeOperacional?.id !== unidadeFiltro.id) {
+                            return false;
+                        }
+                        if (statusFiltro !== 'todos') {
+                            const st = statusFiltro === 'ativos' ? 'ATIVO' : 'INATIVO';
+                            if (setor.status !== st) return false;
+                        }
+                        return true;
+                    });
+
+                    const total = filtered.length;
+                    const pages = Math.ceil(total / entriesPerPage);
+                    const start = (currentPage - 1) * entriesPerPage;
+                    const end = start + entriesPerPage;
+                    const paginated = filtered.slice(start, end);
+
+                    setSetores(paginated);
+                    setTotalElements(total);
+                    setTotalPages(pages);
+
+
+                } else {
+                    // Caso não seja nenhum dos formatos esperados
+                    console.error('Formato de resposta inesperado:', response.data);
+                    setSetores([]);
+                    setTotalElements(0);
+                    setTotalPages(0);
+                }
+            } else {
+                setSetores([]);
+                setTotalElements(0);
+                setTotalPages(0);
+            }
+        } catch (err) {
+            console.error('Erro ao buscar setores:', err);
+            setError('Erro ao carregar setores. Tente novamente.');
+            setSetores([]);
+            setTotalElements(0);
+            setTotalPages(0);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchSetores();
+    }, [currentPage, entriesPerPage, searchTerm, empresaFiltro, unidadeFiltro, statusFiltro]);
+
+
+    useEffect(() => {
+        fetchSetores();
+    }, [currentPage]);
+
+    // Handlers dos filtros
+    const handleSelectEmpresa = (empresa) => {
+        setEmpresaFiltro(empresa);
+        setShowEmpresaModal(false);
+        setCurrentPage(1); // Reset para primeira página
+    };
+
+    const handleSelectUnidade = (unidade) => {
+        setUnidadeFiltro(unidade);
+        setShowUnidadeModal(false);
+        setCurrentPage(1); // Reset para primeira página
+    };
+
+    const handleClearEmpresa = () => {
+        setEmpresaFiltro(null);
+        setCurrentPage(1);
+    };
+
+    const handleClearUnidade = () => {
+        setUnidadeFiltro(null);
+        setCurrentPage(1);
+    };
+
+    const handleSearchChange = (e) => {
+        setSearchTerm(e.target.value);
+        setCurrentPage(1); // Reset para primeira página ao pesquisar
+    };
+
+    const handleStatusChange = (e) => {
+        setStatusFiltro(e.target.value);
+        setCurrentPage(1);
+    };
+
+    const handleEntriesPerPageChange = (e) => {
+        setEntriesPerPage(Number(e.target.value));
+        setCurrentPage(1);
+    };
+
+    // Função para formatar dados da tabela
+    const formatarSetor = (setor) => ({
+        nome: setor.nome || '-',
+        empresa: setor.empresa?.razaoSocial || setor.empresa?.nome || '-',
+        unidadeOperacional: setor.unidadeOperacional?.nome || 'N/A',
+        totalFuncionarios: setor.totalFuncionarios || null,
+        status: setor.status || null
+    });
 
     return (
         <div className="bg-gray-50 min-h-screen p-4 sm:p-6 lg:p-8 font-sans">
@@ -99,13 +234,12 @@ export default function ListarSetores() {
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
                     <h1 className="text-3xl font-bold text-gray-900 mb-4 sm:mb-0">Setores</h1>
                     <div className="flex space-x-2">
-
                         <Link
                             to="/cadastros/novo-setor"
                             className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
                         >
                             <Plus size={16} />
-                            <span>Nova Setor</span>
+                            <span>Novo Setor</span>
                         </Link>
                     </div>
                 </div>
@@ -115,25 +249,55 @@ export default function ListarSetores() {
                     {/* Filtros por Empresa e Unidade */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         <div>
-                            <label className="text-sm font-medium text-gray-600">Filtrar por Empresa</label>
+                            <label className="text-sm font-medium text-gray-600 block mb-1">
+                                Filtrar por Empresa
+                            </label>
                             <InputWithActions
                                 placeholder="Selecione uma empresa para filtrar"
+                                value={empresaFiltro ? empresaFiltro.razaoSocial || empresaFiltro.nome : ''}
                                 actions={
                                     <>
-                                        <button type="button" className="bg-green-500 text-white p-2.5 border border-green-500 hover:bg-green-600"><Search size={18}/></button>
-                                        <button type="button" className="bg-red-500 text-white p-2.5 border border-red-500 rounded-r-md hover:bg-red-600"><Trash2 size={18}/></button>
+                                        <button 
+                                            type="button" 
+                                            className="bg-green-500 text-white p-2.5 border border-green-500 hover:bg-green-600"
+                                            onClick={() => setShowEmpresaModal(true)}
+                                        >
+                                            <Search size={18}/>
+                                        </button>
+                                        <button 
+                                            type="button" 
+                                            className="bg-red-500 text-white p-2.5 border border-red-500 rounded-r-md hover:bg-red-600"
+                                            onClick={handleClearEmpresa}
+                                        >
+                                            <Trash2 size={18}/>
+                                        </button>
                                     </>
                                 }
                             />
                         </div>
                         <div>
-                            <label className="text-sm font-medium text-gray-600">Filtrar por Unidade Operacional</label>
+                            <label className="text-sm font-medium text-gray-600 block mb-1">
+                                Filtrar por Unidade Operacional
+                            </label>
                             <InputWithActions
                                 placeholder="Nenhuma Unidade Operacional selecionada"
+                                value={unidadeFiltro ? unidadeFiltro.nome : ''}
                                 actions={
                                     <>
-                                        <button type="button" className="bg-green-500 text-white p-2.5 border border-green-500 hover:bg-green-600"><Search size={18}/></button>
-                                        <button type="button" className="bg-red-500 text-white p-2.5 border border-red-500 rounded-r-md hover:bg-red-600"><Trash2 size={18}/></button>
+                                        <button 
+                                            type="button" 
+                                            className="bg-green-500 text-white p-2.5 border border-green-500 hover:bg-green-600"
+                                            onClick={() => setShowUnidadeModal(true)}
+                                        >
+                                            <Search size={18}/>
+                                        </button>
+                                        <button 
+                                            type="button" 
+                                            className="bg-red-500 text-white p-2.5 border border-red-500 rounded-r-md hover:bg-red-600"
+                                            onClick={handleClearUnidade}
+                                        >
+                                            <Trash2 size={18}/>
+                                        </button>
                                     </>
                                 }
                             />
@@ -147,102 +311,171 @@ export default function ListarSetores() {
                             placeholder="Procure por algum registro..."
                             className="w-full sm:flex-grow pl-4 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                             value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
+                            onChange={handleSearchChange}
                         />
                         <div className='flex w-full sm:w-auto gap-2'>
-                            <select className="w-full sm:w-auto border border-gray-300 rounded-md px-3 py-2 focus:outline-none">
+                            <select 
+                                className="w-full sm:w-auto border border-gray-300 rounded-md px-3 py-2 focus:outline-none"
+                                value={statusFiltro}
+                                onChange={handleStatusChange}
+                            >
+                                <option value="todos">Todos</option>
                                 <option value="ativos">Ativos</option>
                                 <option value="inativos">Inativos</option>
                             </select>
                             <select
                                 className="w-full sm:w-auto border border-gray-300 rounded-md px-3 py-2 focus:outline-none"
                                 value={entriesPerPage}
-                                onChange={(e) => setEntriesPerPage(Number(e.target.value))}
+                                onChange={handleEntriesPerPageChange}
                             >
                                 <option value="5">5</option>
                                 <option value="10">10</option>
                                 <option value="20">20</option>
+                                <option value="50">50</option>
                             </select>
                         </div>
                     </div>
+
+                    {/* Mensagem de erro */}
+                    {error && (
+                        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
+                            {error}
+                        </div>
+                    )}
 
                     {/* Tabela de Setores */}
                     <div className="overflow-x-auto">
                         <table className="min-w-full divide-y divide-gray-200">
                             <thead className="bg-gray-50">
-                            <tr>
-                                <TableHeader>Setor</TableHeader>
-                                <TableHeader>Empresa</TableHeader>
-                                <TableHeader>Unidade Operacional</TableHeader>
-                                <TableHeader>Total de Funcionários</TableHeader>
-                                <TableHeader>Status</TableHeader>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
-                            </tr>
+                                <tr>
+                                    <TableHeader>Setor</TableHeader>
+                                    <TableHeader>Empresa</TableHeader>
+                                    <TableHeader>Unidade Operacional</TableHeader>
+                                    <TableHeader>Status</TableHeader>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Ações
+                                    </th>
+                                </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
-                            {currentEntries.length > 0 ? (
-                                currentEntries.map((sector, index) => (
-                                    <tr key={index} className="hover:bg-gray-50">
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{sector.setor}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{sector.empresa}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{sector.unidade}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{sector.funcionarios}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm"><StatusBadge status={sector.status} /></td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                            <div className="flex items-center space-x-2">
-                                                <button className="text-green-600 hover:text-green-800"><Plus size={18} /></button>
-                                                <button className="text-blue-600 hover:text-blue-800"><Pencil size={18} /></button>
-                                                <button className="text-gray-500 hover:text-gray-700"><MoreVertical size={18} /></button>
+                                {loading ? (
+                                    <tr>
+                                        <td colSpan="6" className="px-6 py-12 text-center">
+                                            <div className="flex items-center justify-center">
+                                                <Loader className="animate-spin mr-2" size={20} />
+                                                <span className="text-gray-500">Carregando setores...</span>
                                             </div>
                                         </td>
                                     </tr>
-                                ))
-                            ) : (
-                                <tr><td colSpan="6" className="px-6 py-12 text-center text-gray-500">Nenhum registro encontrado!</td></tr>
-                            )}
+                                ) : setores.length > 0 ? (
+                                    setores.map((setor, index) => {
+                                        const setorFormatado = formatarSetor(setor);
+                                        return (
+                                            <tr key={setor.id || index} className="hover:bg-gray-50">
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                    {setorFormatado.nome}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    {setorFormatado.empresa}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    {setorFormatado.unidadeOperacional}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                                    <StatusBadge status={setorFormatado.status} />
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                                    <div className="flex items-center space-x-2">
+                                                        <button className="text-green-600 hover:text-green-800" title="Visualizar">
+                                                            <Plus size={18} />
+                                                        </button>
+                                                        <button className="text-blue-600 hover:text-blue-800" title="Editar">
+                                                            <Pencil size={18} />
+                                                        </button>
+                                                        <button className="text-gray-500 hover:text-gray-700" title="Mais opções">
+                                                            <MoreVertical size={18} />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })
+                                ) : (
+                                    <tr>
+                                        <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
+                                            Nenhum registro encontrado!
+                                        </td>
+                                    </tr>
+                                )}
                             </tbody>
                         </table>
                     </div>
 
                     {/* Paginação */}
-                    <div className="flex flex-col sm:flex-row justify-between items-center pt-4 border-t border-gray-200">
-                        <p className="text-sm text-gray-700 mb-2 sm:mb-0">
-                            Mostrando de <span className="font-medium">{indexOfFirstEntry + 1}</span> até <span className="font-medium">{Math.min(indexOfLastEntry, filteredSectors.length)}</span> de <span className="font-medium">{filteredSectors.length}</span> registros
-                        </p>
-                        <div className="flex items-center space-x-1">
-                            <button
-                                onClick={() => setCurrentPage(1)}
-                                disabled={currentPage === 1}
-                                className="p-2 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                <ChevronsLeft size={18} />
-                            </button>
-                            <button
-                                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                                disabled={currentPage === 1}
-                                className="p-2 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                <ChevronLeft size={18} />
-                            </button>
-                            <span className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-md">{currentPage}</span>
-                            <button
-                                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                                disabled={currentPage === totalPages}
-                                className="p-2 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                <ChevronRight size={18} />
-                            </button>
-                            <button
-                                onClick={() => setCurrentPage(totalPages)}
-                                disabled={currentPage === totalPages}
-                                className="p-2 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                <ChevronsRight size={18} />
-                            </button>
+                    {!loading && (
+                        <div className="flex flex-col sm:flex-row justify-between items-center pt-4 border-t border-gray-200">
+                            <p className="text-sm text-gray-700 mb-2 sm:mb-0">
+                                Mostrando de <span className="font-medium">{totalElements > 0 ? ((currentPage - 1) * entriesPerPage) + 1 : 0}</span> até{' '}
+                                <span className="font-medium">
+                {Math.min(currentPage * entriesPerPage, totalElements)}
+            </span> de{' '}
+                                <span className="font-medium">{totalElements}</span> registros
+                            </p>
+                            <div className="flex items-center space-x-1">
+                                <button
+                                    onClick={() => setCurrentPage(1)}
+                                    disabled={currentPage === 1 || totalPages === 0}
+                                    className="p-2 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    title="Primeira página"
+                                >
+                                    <ChevronsLeft size={18} />
+                                </button>
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                    disabled={currentPage === 1 || totalPages === 0}
+                                    className="p-2 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    title="Página anterior"
+                                >
+                                    <ChevronLeft size={18} />
+                                </button>
+                                <span className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-md">
+                {totalPages > 0 ? currentPage : 0}
+            </span>
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                    disabled={currentPage === totalPages || totalPages === 0}
+                                    className="p-2 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    title="Próxima página"
+                                >
+                                    <ChevronRight size={18} />
+                                </button>
+                                <button
+                                    onClick={() => setCurrentPage(totalPages)}
+                                    disabled={currentPage === totalPages || totalPages === 0}
+                                    className="p-2 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    title="Última página"
+                                >
+                                    <ChevronsRight size={18} />
+                                </button>
+                            </div>
                         </div>
-                    </div>
+                    )}
+
                 </div>
             </div>
+
+            {/* Modais */}
+            <EmpresaSearchModal
+                isOpen={showEmpresaModal}
+                onClose={() => setShowEmpresaModal(false)}
+                onSelect={handleSelectEmpresa}
+            />
+            
+            <UnidadesOperacionaisModal
+                isOpen={showUnidadeModal}
+                onClose={() => setShowUnidadeModal(false)}
+                onSelect={handleSelectUnidade}
+            />
         </div>
     );
 }

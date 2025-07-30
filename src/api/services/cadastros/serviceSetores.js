@@ -15,6 +15,10 @@ const createSetor = (setorData) => {
     return api.post('/setores', setorData);
 };
 
+const buscarSetoresComFiltros = (params) => {
+    return api.get('/setores', { params });
+};
+
 
 const buscarPorNomeEEmpresa = (nome, empresaId) => {
     return api.get(`/setores/buscar-por-empresa?nome=${nome}&empresaId=${empresaId}`);
@@ -35,4 +39,6 @@ export const setorService = {
     create: createSetor,
     update: updateSetor,
     delete: deleteSetor,
+    buscarComFiltros: buscarSetoresComFiltros,
+    buscarPorNomeEEmpresa
 };

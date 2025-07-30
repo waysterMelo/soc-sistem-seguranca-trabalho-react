@@ -4,6 +4,7 @@ import DashboardPage from './features/dashboard/DashboardPage';
 import CadastrosRoutes from "./routes/cadastrosRoutes.jsx";
 import SegurancaRoutes from "./routes/segurancaRoutes.jsx";
 import MediciasRoutes from "./routes/medicinaRoutes.jsx";
+import {ToastContainer} from "react-toastify";
 
 
 function NotFound() {
@@ -12,7 +13,9 @@ function NotFound() {
 
 function App() {
     return (
-        <Routes>
+        <>
+            <ToastContainer position="top-right" newestOnTop />
+            <Routes>
             <Route path="/" element={<AppLayout />}>
                 <Route index element={<DashboardPage />} />
                 {CadastrosRoutes}
@@ -21,6 +24,7 @@ function App() {
             </Route>
             <Route path="*" element={<NotFound />} />
         </Routes>
+        </>
     );
 }
 

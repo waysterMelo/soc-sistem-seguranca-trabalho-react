@@ -16,7 +16,8 @@ import { Link } from "react-router-dom";
 import { setorService } from "../../../api/services/cadastros/serviceSetores.js";
 import EmpresaSearchModal from '../../../components/modal/empresaSearchModal.jsx';
 import UnidadesOperacionaisModal from '../../../components/modal/unidadesOperacionaisModal.jsx';
-
+import EditarSetorModal from '../../../components/modal/editarSetorModal.jsx';
+import {toast} from "react-toastify";
 // --- Componentes Reutilizáveis ---
 
 // Cabeçalho da tabela com ícone de ordenação
@@ -33,13 +34,13 @@ const TableHeader = ({ children }) => (
 const StatusBadge = ({ status }) => {
     if (!status) return <span className="text-gray-400">-</span>;
     
-    const baseClasses = "px-2.5 py-0.5 text-xs font-semibold rounded-full";
+    const baseClasses = "px-3 py-1 text-xs font-semibold rounded-full";
     const statusClasses = {
-        'Ativo': 'bg-green-100 text-green-700',
-        'Inativo': 'bg-red-100 text-red-700',
+        'ATIVO': 'bg-green-500 text-white',
+        'INATIVO': 'bg-red-500 text-white',
     };
     return (
-        <span className={`${baseClasses} ${statusClasses[status] || 'bg-gray-100 text-gray-700'}`}>
+        <span className={`${baseClasses} ${statusClasses[status] || 'bg-gray-300 text-gray-800'}`}>
             {status}
         </span>
     );
@@ -83,6 +84,12 @@ export default function ListarSetores() {
     // Estados dos modais
     const [showEmpresaModal, setShowEmpresaModal] = useState(false);
     const [showUnidadeModal, setShowUnidadeModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [selectedSetor, setSelectedSetor] = useState(null);
+
+    const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+    const [setorToDelete, setSetorToDelete] = useState(null);
+
 
     const fetchSetores = async () => {
         try {
@@ -175,11 +182,6 @@ export default function ListarSetores() {
         fetchSetores();
     }, [currentPage, entriesPerPage, searchTerm, empresaFiltro, unidadeFiltro, statusFiltro]);
 
-
-    useEffect(() => {
-        fetchSetores();
-    }, [currentPage]);
-
     // Handlers dos filtros
     const handleSelectEmpresa = (empresa) => {
         setEmpresaFiltro(empresa);
@@ -218,6 +220,26 @@ export default function ListarSetores() {
         setCurrentPage(1);
     };
 
+    const handleEditClick = async (setor) => {
+        try {
+            // Buscar os dados completos do setor antes de abrir o modal
+            const response = await setorService.getById(setor.id);
+            if (response.data) {
+                setSelectedSetor(response.data);
+                setShowEditModal(true);
+            } else {
+                alert("Não foi possível carregar os dados completos do setor.");
+            }
+        } catch (error) {
+            console.error("Erro ao buscar dados do setor:", error);
+            alert("Ocorreu um erro ao carregar os dados do setor.");
+        }
+    }
+
+    const handleSaveEdit = (updatedSetor) => {
+        fetchSetores(); // Atualiza a lista de setores após salvar a edição
+    };
+
     // Função para formatar dados da tabela
     const formatarSetor = (setor) => ({
         nome: setor.nome || '-',
@@ -226,6 +248,77 @@ export default function ListarSetores() {
         totalFuncionarios: setor.totalFuncionarios || null,
         status: setor.status || null
     });
+
+    const handleDeleteClick = (setor) => {
+        setSetorToDelete(setor);
+        setShowDeleteConfirmModal(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!setorToDelete) return;
+
+        setLoading(true);
+        try {
+            await setorService.delete(setorToDelete.id);
+
+            toast.success("Setor excluído com sucesso!"); // Usando toast para sucesso
+            fetchSetores(); // Atualiza a lista
+            setShowDeleteConfirmModal(false);
+            setSetorToDelete(null);
+
+        } catch (err) {
+            // O interceptor já exibiu o toast de erro.
+            // O catch aqui serve para evitar que a aplicação quebre e para logs.
+            console.error("Erro ao excluir setor:", err);
+        } finally {
+            // Garante que o loading seja desativado, mesmo em caso de erro
+            setLoading(false);
+        }
+    }
+
+
+
+    const DeleteConfirmModal = ({ isOpen, onClose, onConfirm, setor, loading }) => {
+        if (!isOpen) return null;
+
+        return (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+                    <h3 className="text-xl font-bold text-gray-900 mb-4">Confirmar Exclusão</h3>
+                    <p className="text-gray-700 mb-6">
+                        Tem certeza que deseja excluir o setor <span className="font-semibold">{setor?.nome}</span>?
+                        Esta ação não pode ser desfeita.
+                    </p>
+                    <div className="flex justify-end space-x-3">
+                        <button
+                            type="button"
+                            className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors"
+                            onClick={onClose}
+                            disabled={loading}
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            type="button"
+                            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors flex items-center"
+                            onClick={onConfirm}
+                            disabled={loading}
+                        >
+                            {loading ? (
+                                <>
+                                    <Loader size={16} className="animate-spin mr-2" />
+                                    <span>Excluindo...</span>
+                                </>
+                            ) : (
+                                <span>Sim, Excluir</span>
+                            )}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
 
     return (
         <div className="bg-gray-50 min-h-screen p-4 sm:p-6 lg:p-8 font-sans">
@@ -386,15 +479,21 @@ export default function ListarSetores() {
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm">
                                                     <div className="flex items-center space-x-2">
-                                                        <button className="text-green-600 hover:text-green-800" title="Visualizar">
-                                                            <Plus size={18} />
-                                                        </button>
-                                                        <button className="text-blue-600 hover:text-blue-800" title="Editar">
+                                                        <button 
+                                                            className="text-blue-600 hover:text-blue-800" 
+                                                            title="Editar"
+                                                            onClick={() => handleEditClick(setor)}
+                                                        >
                                                             <Pencil size={18} />
                                                         </button>
-                                                        <button className="text-gray-500 hover:text-gray-700" title="Mais opções">
-                                                            <MoreVertical size={18} />
+                                                        <button
+                                                            className="text-red-600 hover:text-red-800"
+                                                            title="Excluir"
+                                                            onClick={() => handleDeleteClick(setor)}
+                                                        >
+                                                            <Trash2 size={18} />
                                                         </button>
+
                                                     </div>
                                                 </td>
                                             </tr>
@@ -417,8 +516,8 @@ export default function ListarSetores() {
                             <p className="text-sm text-gray-700 mb-2 sm:mb-0">
                                 Mostrando de <span className="font-medium">{totalElements > 0 ? ((currentPage - 1) * entriesPerPage) + 1 : 0}</span> até{' '}
                                 <span className="font-medium">
-                {Math.min(currentPage * entriesPerPage, totalElements)}
-            </span> de{' '}
+                                    {Math.min(currentPage * entriesPerPage, totalElements)}
+                                </span> de{' '}
                                 <span className="font-medium">{totalElements}</span> registros
                             </p>
                             <div className="flex items-center space-x-1">
@@ -439,8 +538,8 @@ export default function ListarSetores() {
                                     <ChevronLeft size={18} />
                                 </button>
                                 <span className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-md">
-                {totalPages > 0 ? currentPage : 0}
-            </span>
+                                    {totalPages > 0 ? currentPage : 0}
+                                </span>
                                 <button
                                     onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                                     disabled={currentPage === totalPages || totalPages === 0}
@@ -460,7 +559,6 @@ export default function ListarSetores() {
                             </div>
                         </div>
                     )}
-
                 </div>
             </div>
 
@@ -475,6 +573,20 @@ export default function ListarSetores() {
                 isOpen={showUnidadeModal}
                 onClose={() => setShowUnidadeModal(false)}
                 onSelect={handleSelectUnidade}
+            />
+
+            <EditarSetorModal 
+                isOpen={showEditModal}
+                onClose={() => setShowEditModal(false)}
+                setor={selectedSetor}
+                onSave={handleSaveEdit}
+            />
+            <DeleteConfirmModal
+                isOpen={showDeleteConfirmModal}
+                onClose={() => setShowDeleteConfirmModal(false)}
+                onConfirm={handleConfirmDelete}
+                setor={setorToDelete}
+                loading={loading}
             />
         </div>
     );

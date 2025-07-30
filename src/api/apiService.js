@@ -1,4 +1,5 @@
 import axios from 'axios';
+import {toast} from "react-toastify";
 
 
 const api = axios.create({
@@ -6,19 +7,27 @@ const api = axios.create({
 });
 
 api.interceptors.response.use(
-    response => response,
-    error => {
-        if (error.response) {
-            console.error('Erro na resposta:', error.response.data);
-            console.error('Status:', error.response.status);
-        } else if (error.request) {
-            console.error('Erro na requisição:', error.request);
-        } else {
-            console.error('Erro:', error.message);
+    (response) => response, // sucesso passa direto
+    (error) => {
+        // Nem todo erro vem “redondinho”, proteja-se
+        const status = error?.response?.status;
+        const data   = error?.response?.data;
+
+        let mensagem =
+            data?.mensagem ||          // campo padrão que você já recebe
+            data?.titulo   ||          // fallback
+            error.message   || 'Erro inesperado.';
+
+        // Exibe toast para qualquer status >= 400
+        if (status >= 400) {
+            toast.error(mensagem, { autoClose: 5000 });
         }
+
+        // Continua rejeitando para permitir tratamento pontual
         return Promise.reject(error);
     }
 );
+
 
 
 export default api;

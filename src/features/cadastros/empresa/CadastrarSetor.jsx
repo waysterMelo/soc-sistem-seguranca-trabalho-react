@@ -9,6 +9,8 @@ import EmpresaSearchModal from '../../../components/modal/empresaSearchModal.jsx
 import {useNavigate} from "react-router-dom";
 import UnidadesOperacionaisModal from '../../../components/modal/unidadesOperacionaisModal.jsx';
 import {setorService} from "../../../api/services/cadastros/serviceSetores.js";
+import { toast } from 'react-toastify';
+
 
 // Wrapper para seções do formulário
 const FormSection = ({ title, children }) => (
@@ -70,8 +72,10 @@ export default function CadastrarSetor() {
 
     const handleSelectEmpresa = (selectedEmpresa) => {
         setEmpresa(selectedEmpresa);
-        setFormData(prev => ({ ...prev, empresaId: selectedEmpresa.id }));
+        setFormData(prev => ({ ...prev, empresaId: selectedEmpresa.id,
+        unidadeOperacionalId: null}));
         setShowEmpresaModal(false);
+        setUnidadeOperacional(null);
 
         // Limpa o erro se houver
         if (errors.empresaId) {
@@ -141,6 +145,14 @@ export default function CadastrarSetor() {
         }
     };
 
+    const handleUnidadeModal =() => {
+        if (!formData.empresaId){
+            toast.warn('Por favor, selecione uma empresa antes de vincular uma unidade.');
+            return;
+        }
+        setShowUnidadeModal(true);
+    }
+
     return (
         <div className="bg-gray-50 min-h-screen p-4 sm:p-6 lg:p-8 font-sans">
             <div className="container mx-auto">
@@ -190,7 +202,6 @@ export default function CadastrarSetor() {
                                 }
                             />
                         </FormField>
-                        
                         <FormField label="Nome" required className="lg:col-span-4" error={errors.nome}>
                             <input
                                 type="text"
@@ -210,7 +221,6 @@ export default function CadastrarSetor() {
                                 className={`w-full py-2 px-3 border rounded-md focus:outline-none focus:ring-2 transition-colors ${errors.nome ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'}`}
                             />
                         </FormField>
-                        
                         <FormField label="Descrição do Setor" className="lg:col-span-4">
                             <textarea
                                 placeholder="Digite a descrição do setor"
@@ -276,10 +286,14 @@ export default function CadastrarSetor() {
                                         <button
                                             type="button"
                                             className="bg-green-500 text-white p-2.5 border border-green-500 hover:bg-green-600"
-                                            onClick={() => setShowUnidadeModal(true)}
+                                            // Chama a nova função de verificação
+                                            onClick={handleUnidadeModal}
+                                            // Desabilita o botão se nenhuma empresa foi selecionada
+                                            disabled={!formData.empresaId}
                                         >
                                             <Search size={18}/>
                                         </button>
+
                                         <button
                                             type="button"
                                             className="bg-red-500 text-white p-2.5 border border-red-500 rounded-r-md hover:bg-red-600"
@@ -350,6 +364,7 @@ export default function CadastrarSetor() {
                 isOpen={showUnidadeModal}
                 onClose={() => setShowUnidadeModal(false)}
                 onSelect={handleSelectUnidade}
+                empresaId={formData.empresaId}
             />
         </div>
     );

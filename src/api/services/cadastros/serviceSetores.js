@@ -33,6 +33,18 @@ const deleteSetor = (id) => {
     return api.delete(`/setores/${id}`);
 };
 
+const fetchSetores = async () => {
+    try {
+        const response = await axios.get('/api/setores');
+        return response.data;
+    } catch (err) {
+        // normalize o erro
+        const message = err.response?.data?.message || 'Erro ao buscar setores';
+        throw new Error(message);
+    }
+};
+
+
 export const setorService = {
     getAll: getAllSetores,
     getById: getSetorById,
@@ -40,5 +52,6 @@ export const setorService = {
     update: updateSetor,
     delete: deleteSetor,
     buscarComFiltros: buscarSetoresComFiltros,
-    buscarPorNomeEEmpresa
+    buscarPorNomeEEmpresa,
+    fetchSetores
 };

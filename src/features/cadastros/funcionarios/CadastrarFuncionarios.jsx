@@ -7,6 +7,7 @@ import { toast } from 'react-toastify';
 import funcionariosService from '../../../api/services/cadastros/funcionariosServices.js';
 import { useNavigate } from 'react-router-dom';
 import EmpresaSearchModal from "../../../components/modal/empresaSearchModal.jsx";
+import FuncaoSearchModal from "../../../components/modal/funcaoSearchModal.jsx";
 
 // --- Componentes Reutilizáveis ---
 const FormSection = ({ title, children }) => (
@@ -93,12 +94,15 @@ export default function CadastrarFuncionario() {
         telefone: '',
         email: '',
         observacoes: '',
-        matricula: '', // Campo obrigatório
-        empresaId: '', // Campo obrigatório
-        dataAdmissao: '' // Campo obrigatório
+        matricula: '',
+        empresaId: null,
+        funcaoId: null,
+        dataAdmissao: ''
     });
     const [empresa, setEmpresa] = useState(null);
+    const [funcao, setFuncao] = useState(null);
     const [showEmpresaModal, setShowEmpresaModal] = useState(false);
+    const [showFuncaoModal, setShowFuncaoModal] = useState(false);
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
@@ -134,16 +138,22 @@ export default function CadastrarFuncionario() {
         const telefoneLimitado = apenasNumeros.slice(0, 11);
 
         if (telefoneLimitado.length <= 10) {
-            // Formato (XX) XXXX-XXXX
             return telefoneLimitado
                 .replace(/(\d{2})(\d)/, '($1) $2')
                 .replace(/(\d{4})(\d)/, '$1-$2');
         } else {
-            // Formato (XX) XXXXX-XXXX
             return telefoneLimitado
                 .replace(/(\d{2})(\d)/, '($1) $2')
                 .replace(/(\d{5})(\d)/, '$1-$2');
         }
+    };
+
+    // Função para formatar CEP
+    const formatarCep = (valor) => {
+        if (!valor) return '';
+        const apenasNumeros = valor.replace(/\D/g, '');
+        const cepLimitado = apenasNumeros.slice(0, 8);
+        return cepLimitado.replace(/(\d{5})(\d)/, '$1-$2');
     };
 
     const handleChange = (e) => {
@@ -168,6 +178,25 @@ export default function CadastrarFuncionario() {
         }
     };
 
+    const handleEnderecoChange = (e) => {
+        const { name, value } = e.target;
+        
+        let valorFormatado = value;
+        
+        // Formatação específica para CEP
+        if (name === 'cep') {
+            valorFormatado = formatarCep(value);
+        }
+        
+        setFuncionario(prev => ({
+            ...prev,
+            endereco: {
+                ...prev.endereco,
+                [name]: valorFormatado
+            }
+        }));
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -180,6 +209,10 @@ export default function CadastrarFuncionario() {
             toast.error('Empresa é obrigatória');
             return;
         }
+        if (!funcionario.funcaoId) {
+            toast.error('Função é obrigatória');
+            return;
+        }
         if (!funcionario.dataAdmissao) {
             toast.error('Data de admissão é obrigatória');
             return;
@@ -189,42 +222,87 @@ export default function CadastrarFuncionario() {
             return;
         }
 
-        // Garantir que o CPF esteja formatado corretamente
-        const cpfFormatado = formatarCpf(funcionario.cpf);
+        // Validar se o CPF está no formato correto
+        const cpfFormatado = funcionario.cpf.trim();
+        const cpfRegex = /^\d{3}\.\d{3}\.\d{3}-\d{2}$/;
 
-        // Garantir que o telefone esteja formatado corretamente
-        const telefoneFormatado = formatarTelefone(funcionario.telefone);
+        if (!cpfRegex.test(cpfFormatado)) {
+            toast.error('CPF deve estar no formato XXX.XXX.XXX-XX');
+            return;
+        }
 
-
-        // Garantir que o endereço não seja nulo
-        const enderecoParaEnviar = funcionario.endereco || {
-            logradouro: '',
-            numero: '',
-            complemento: '',
-            bairro: '',
-            cidade: '',
-            estado: '',
-            cep: ''
-        };
+        console.log('Dados antes do envio:', JSON.stringify(funcionario, null, 2));
 
         try {
-            const funcionarioParaEnviar = {
-                ...funcionario,
-                cpf: cpfFormatado,
-                telefone: telefoneFormatado,
-                endereco: enderecoParaEnviar
-            };
             setLoading(true);
-            await funcionariosService.create(funcionarioParaEnviar);
+
+            // Criar objeto limpo para envio
+            const funcionarioParaEnviar = {
+                nome: funcionario.nome?.trim() || '',
+                sobrenome: funcionario.sobrenome?.trim() || '',
+                cpf: cpfFormatado, // Manter formatação do CPF
+                rg: funcionario.rg?.trim() || '',
+                dataEmissaoRg: funcionario.dataEmissaoRg || null,
+                estadoEmissorRg: funcionario.estadoEmissorRg || '',
+                orgaoEmissorRg: funcionario.orgaoEmissorRg || '',
+                dataNascimento: funcionario.dataNascimento || null,
+                idade: funcionario.idade ? parseInt(funcionario.idade) : null,
+                sexo: funcionario.sexo || 'NAO_INFORMADO',
+                estadoCivil: funcionario.estadoCivil || 'SOLTEIRO',
+                raca: funcionario.raca || 'NAO_INFORMADO',
+                nomeMae: funcionario.nomeMae?.trim() || '',
+                nomePai: funcionario.nomePai?.trim() || '',
+                telefone: funcionario.telefone?.replace(/\D/g, '') || '', // Remove formatação do telefone
+                email: funcionario.email?.trim() || '',
+                matricula: funcionario.matricula?.trim() || '',
+                dataAdmissao: funcionario.dataAdmissao || null,
+                status: funcionario.status || 'ATIVO',
+                observacoes: funcionario.observacoes?.trim() || '',
+                empresaId: funcionario.empresaId ? parseInt(funcionario.empresaId) : null,
+                funcaoId: funcionario.funcaoId ? parseInt(funcionario.funcaoId) : null,
+                // Endereço como objeto
+                endereco: {
+                    logradouro: funcionario.endereco?.logradouro?.trim() || '',
+                    numero: funcionario.endereco?.numero?.trim() || '',
+                    complemento: funcionario.endereco?.complemento?.trim() || '',
+                    bairro: funcionario.endereco?.bairro?.trim() || '',
+                    cidade: funcionario.endereco?.cidade?.trim() || '',
+                    estado: funcionario.endereco?.estado || '',
+                    cep: funcionario.endereco?.cep?.replace(/\D/g, '') || '' // Remove formatação do CEP
+                }
+            };
+
+            console.log('Dados formatados para envio:', JSON.stringify(funcionarioParaEnviar, null, 2));
+
+            const response = await funcionariosService.create(funcionarioParaEnviar);
+            console.log('Resposta do servidor:', response);
+
             setSuccess(true);
+            toast.success('Funcionário cadastrado com sucesso!');
+
             setTimeout(() => {
                 navigate('/cadastros/listar/funcionarios');
             }, 2000);
 
         } catch (error) {
             console.error('Erro ao cadastrar funcionário:', error);
-            toast.error('Erro ao cadastrar funcionário. Verifique os dados e tente novamente.');
-        }finally {
+            console.error('Resposta do erro:', error.response?.data);
+
+            if (error.response?.data?.message) {
+                toast.error(`Erro: ${error.response.data.message}`);
+            } else if (error.response?.status === 400) {
+                // Tratar erros de validação
+                const validationErrors = error.response?.data?.errors || {};
+                const firstError = Object.values(validationErrors)[0];
+                if (firstError) {
+                    toast.error(`Erro de validação: ${firstError}`);
+                } else {
+                    toast.error('Dados inválidos. Verifique os campos e tente novamente.');
+                }
+            } else {
+                toast.error('Erro ao cadastrar funcionário. Verifique os dados e tente novamente.');
+            }
+        } finally {
             setLoading(false);
         }
     };
@@ -234,12 +312,9 @@ export default function CadastrarFuncionario() {
     };
 
     const estados = [
-        'Acre', 'Alagoas', 'Amapá', 'Amazonas', 'Bahia', 'Ceará',
-        'Distrito Federal', 'Espírito Santo', 'Goiás', 'Maranhão',
-        'Mato Grosso', 'Mato Grosso do Sul', 'Minas Gerais', 'Pará',
-        'Paraíba', 'Paraná', 'Pernambuco', 'Piauí', 'Rio de Janeiro',
-        'Rio Grande do Norte', 'Rio Grande do Sul', 'Rondônia',
-        'Roraima', 'Santa Catarina', 'São Paulo', 'Sergipe', 'Tocantins'
+        'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA',
+        'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN',
+        'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'
     ];
 
     const formatarCpf = (valor) => {
@@ -252,398 +327,459 @@ export default function CadastrarFuncionario() {
             .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
     };
 
-    const handleEnderecoChange = (e) => {
-        const { name, value } = e.target;
-        setFuncionario(prev => ({
-            ...prev,
-            endereco: {
-                ...prev.endereco,
-                [name]: value
-            }
-        }));
-    };
-
     const handleSelectEmpresa = (selectedEmpresa) => {
+        console.log('Empresa selecionada:', selectedEmpresa);
         setEmpresa(selectedEmpresa);
         setFuncionario(prev => ({
-            ...prev, empresaId: selectedEmpresa.id
+            ...prev, 
+            empresaId: selectedEmpresa.id
         }));
         setShowEmpresaModal(false);
 
-        if (errors.empresaId){
+        if (errors.empresaId) {
             setErrors(prev => {
                 const newErros = {...prev};
-                delete newErros.empresa.id;
+                delete newErros.empresaId;
                 return newErros;
-            })
+            });
         }
-    }
+    };
+
+    const handleSelectFuncao = (selectedFuncao) => {
+        console.log('Função selecionada:', selectedFuncao);
+        
+        if (!selectedFuncao || !selectedFuncao.id) {
+            console.error('Função selecionada não possui ID!', selectedFuncao);
+            toast.error('Erro ao selecionar função. ID não encontrado.');
+            return;
+        }
+        
+        setFuncao(selectedFuncao);
+        setFuncionario(prev => ({
+            ...prev, 
+            funcaoId: selectedFuncao.id
+        }));
+        setShowFuncaoModal(false);
+        
+        if (errors.funcaoId) {
+            setErrors(prev => {
+                const newErros = {...prev};
+                delete newErros.funcaoId;
+                return newErros;
+            });
+        }
+    };
+
+    const limparEmpresa = () => {
+        setEmpresa(null);
+        setFuncionario(prev => ({
+            ...prev,
+            empresaId: null
+        }));
+    };
+
+    const limparFuncao = () => {
+        setFuncao(null);
+        setFuncionario(prev => ({
+            ...prev,
+            funcaoId: null
+        }));
+    };
 
     return (
-        <div className="bg-slate-50 min-h-screen p-4 sm:p-8 font-sans">
+        <div className="bg-slate-50 min-h-screen p-4 sm:p-6 lg:p-8 font-sans">
             <div className="container mx-auto">
-                <header className="mb-8">
-                    <h1 className="text-4xl font-bold text-slate-900">Cadastrar Funcionário</h1>
+                <header className="mb-6">
+                    <h1 className="text-3xl font-bold text-slate-900">Cadastrar Funcionário</h1>
                 </header>
+
                 <form onSubmit={handleSubmit}>
                     {/* Seção Informações Básicas */}
-                    <FormSection title="Informações Básicas">
-                        <FormField label="Nome" required className="xl:col-span-2">
+                    <FormSection title="Informações Pessoais">
+                        <FormField label="Nome" required>
                             <InputWithStatus
                                 value={funcionario.nome}
-                                status="valid"
                                 name="nome"
                                 onChange={handleChange}
+                                placeholder="Digite o nome"
                             />
                         </FormField>
-                        <FormField label="Sobrenome" required className="xl:col-span-2">
+
+                        <FormField label="Sobrenome" required>
                             <InputWithStatus
                                 value={funcionario.sobrenome}
-                                status="valid"
                                 name="sobrenome"
                                 onChange={handleChange}
+                                placeholder="Digite o sobrenome"
                             />
-                        </FormField>
-                        <FormField label="Status" required>
-                            <select
-                                value={funcionario.status}
-                                name="status"
-                                onChange={handleChange}
-                                className="w-full py-2 px-3 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            >
-                                <option value="ATIVO">ATIVO</option>
-                                <option value="INATIVO">INATIVO</option>
-                                <option value="AFASTADO">AFASTADO</option>
-                            </select>
                         </FormField>
 
                         <FormField label="CPF" required>
-                            <input
-                                type="text"
+                            <InputWithStatus
+                                value={funcionario.cpf}
                                 name="cpf"
-                                value={funcionario.cpf || ''}
                                 onChange={handleChange}
                                 placeholder="000.000.000-00"
-                                className="w-full py-2 px-3 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                         </FormField>
-                        <FormField label="Número do RG">
-                            <input
-                                type="text"
-                                placeholder="Ex: MG-12.345.678"
+
+                        <FormField label="RG">
+                            <InputWithStatus
+                                value={funcionario.rg}
                                 name="rg"
-                                value={funcionario.rg || ''}
                                 onChange={handleChange}
-                                className="w-full py-2 px-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="Digite o RG"
                             />
                         </FormField>
-                        <FormField label="Orgão Emissor">
-                            <input
-                                type="text"
+
+                        <FormField label="Órgão Emissor RG">
+                            <InputWithStatus
+                                value={funcionario.orgaoEmissorRg}
                                 name="orgaoEmissorRg"
-                                value={funcionario.orgaoEmissorRg || ''}
                                 onChange={handleChange}
-                                className="w-full py-2 px-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="Ex: SSP"
                             />
                         </FormField>
-                        <FormField label="Data Emissão">
-                            <input
-                                type="date"
-                                name="dataEmissaoRg"
-                                value={funcionario.dataEmissaoRg || ''}
-                                onChange={handleChange}
-                                className="w-full py-2 px-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                        </FormField>
-                        <FormField label="Estado Emissor">
+
+                        <FormField label="Estado Emissor RG">
                             <select
                                 name="estadoEmissorRg"
-                                value={funcionario.estadoEmissorRg || ''}
+                                value={funcionario.estadoEmissorRg}
                                 onChange={handleChange}
-                                className="w-full py-2 px-3 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full py-2 px-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                             >
-                                <option value="">Selecione o Estado</option>
-                                {estados.map((estado) => (
+                                <option value="">Selecione o estado</option>
+                                {estados.map(estado => (
                                     <option key={estado} value={estado}>{estado}</option>
                                 ))}
                             </select>
                         </FormField>
+
+                        <FormField label="Data Emissão RG">
+                            <InputWithStatus
+                                type="date"
+                                value={funcionario.dataEmissaoRg}
+                                name="dataEmissaoRg"
+                                onChange={handleChange}
+                            />
+                        </FormField>
+
+                        <FormField label="Data de Nascimento">
+                            <InputWithStatus
+                                type="date"
+                                value={funcionario.dataNascimento}
+                                name="dataNascimento"
+                                onChange={handleChange}
+                            />
+                        </FormField>
+
+                        <FormField label="Idade">
+                            <InputWithStatus
+                                value={funcionario.idade}
+                                name="idade"
+                                placeholder="Calculado automaticamente"
+                                readOnly
+                            />
+                        </FormField>
+
+                        <FormField label="Sexo">
+                            <select
+                                name="sexo"
+                                value={funcionario.sexo}
+                                onChange={handleChange}
+                                className="w-full py-2 px-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option value="NAO_INFORMADO">Não Informado</option>
+                                <option value="MASCULINO">Masculino</option>
+                                <option value="FEMININO">Feminino</option>
+                            </select>
+                        </FormField>
+
                         <FormField label="Raça">
                             <select
-                                value={funcionario.raca}
                                 name="raca"
+                                value={funcionario.raca}
                                 onChange={handleChange}
-                                className="w-full py-2 px-3 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full py-2 px-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                             >
                                 <option value="AMARELA">Amarela</option>
                                 <option value="BRANCA">Branca</option>
-                                <option value="PRETA">Preta</option>
-                                <option value="PARDA">Parda</option>
                                 <option value="INDIGENA">Indígena</option>
+                                <option value="PARDA">Parda</option>
+                                <option value="PRETA">Preta</option>
+                                <option value="NAO_INFORMADO">Não Informado</option>
                             </select>
                         </FormField>
-                        <FormField label="Sexo">
-                            <select
-                                value={funcionario.sexo}
-                                name="sexo"
-                                onChange={handleChange}
-                                className="w-full py-2 px-3 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            >
-                                <option value="NAO_INFORMADO">NÃO INFORMADO</option>
-                                <option value="MASCULINO">MASCULINO</option>
-                                <option value="FEMININO">FEMININO</option>
-                                <option value="OUTRO">OUTRO</option>
-                            </select>
-                        </FormField>
+
                         <FormField label="Estado Civil">
                             <select
-                                value={funcionario.estadoCivil}
                                 name="estadoCivil"
+                                value={funcionario.estadoCivil}
                                 onChange={handleChange}
-                                className="w-full py-2 px-3 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full py-2 px-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                             >
                                 <option value="SOLTEIRO">Solteiro(a)</option>
                                 <option value="CASADO">Casado(a)</option>
                                 <option value="DIVORCIADO">Divorciado(a)</option>
                                 <option value="VIUVO">Viúvo(a)</option>
+                                <option value="SEPARADO">Separado(a)</option>
                             </select>
                         </FormField>
-                        <FormField label="Data de Nascimento">
-                            <input
-                                type="date"
-                                name="dataNascimento"
-                                value={funcionario.dataNascimento || ''}
-                                onChange={handleChange}
-                                className="w-full py-2 px-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                        </FormField>
-                        <FormField label="Idade">
-                            <input
-                                type="number"
-                                name={"idade"}
-                                value={funcionario.idade || ''}
-                                readOnly={true}
-                                className="w-full py-2 px-3 border border-slate-300 rounded-lg bg-slate-100"
-                            />
-                        </FormField>
-                        <FormField label="Nome da Mãe" className="xl:col-span-2">
-                            <input
-                                type="text"
-                                name="nomeMae"
-                                value={funcionario.nomeMae || ''}
-                                onChange={handleChange}
-                                className="w-full py-2 px-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                        </FormField>
-                        <FormField label="Nome do Pai" className="xl:col-span-3">
-                            <input
-                                type="text"
-                                name="nomePai"
-                                value={funcionario.nomePai || ''}
-                                onChange={handleChange}
-                                className="w-full py-2 px-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                        </FormField>
-                    </FormSection>
 
-                    {/* Seção Informações Profissionais */}
-                    <FormSection title="Informações Profissionais">
-                        <FormField label="Selecione a Empresa ao qual o setor irá pertencer" required className="lg:col-span-2" error={errors.empresaId}>
-                            <InputWithActions
-                                placeholder="Nenhuma Empresa selecionada"
-                                value={empresa ? empresa.razaoSocial : ''}
-                                actions={
-                                    <>
-                                        <button
-                                            onClick={() => setShowEmpresaModal(true)}
-                                            type="button"
-                                            className="bg-green-500 text-white p-2.5 border border-green-500 hover:bg-green-600"
-                                        >
-                                            <Search size={18}/>
-                                        </button>
-                                        <button
-                                            type="button"
-                                            className="bg-red-500 text-white p-2.5 border border-red-500 rounded-r-md hover:bg-red-600"
-                                            onClick={() => {
-                                                setEmpresa(null);
-                                                setFuncionario(prev => ({ ...prev, empresaId: null }));
-                                            }}
-                                        >
-                                            <Trash2 size={18}/>
-                                        </button>
-                                    </>
-                                }
+                        <FormField label="Nome da Mãe">
+                            <InputWithStatus
+                                value={funcionario.nomeMae}
+                                name="nomeMae"
+                                onChange={handleChange}
+                                placeholder="Digite o nome da mãe"
                             />
                         </FormField>
-                        <FormField label="Matrícula" required>
-                            <input
-                                type="text"
-                                name="matricula"
-                                value={funcionario.matricula || ''}
+
+                        <FormField label="Nome do Pai">
+                            <InputWithStatus
+                                value={funcionario.nomePai}
+                                name="nomePai"
                                 onChange={handleChange}
-                                className="w-full py-2 px-3 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="Digite o nome do pai"
                             />
                         </FormField>
-                        <FormField label="Data de Admissão" required>
-                            <input
-                                type="date"
-                                name="dataAdmissao"
-                                value={funcionario.dataAdmissao || ''}
+
+                        <FormField label="Telefone">
+                            <InputWithStatus
+                                value={funcionario.telefone}
+                                name="telefone"
                                 onChange={handleChange}
-                                className="w-full py-2 px-3 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="(00) 00000-0000"
+                            />
+                        </FormField>
+
+                        <FormField label="Email">
+                            <InputWithStatus
+                                type="email"
+                                value={funcionario.email}
+                                name="email"
+                                onChange={handleChange}
+                                placeholder="email@exemplo.com"
                             />
                         </FormField>
                     </FormSection>
 
                     {/* Seção Endereço */}
                     <FormSection title="Endereço">
-                        <FormField label="CEP" required>
-                            <input
-                                type="text"
+                        <FormField label="CEP">
+                            <InputWithStatus
+                                value={funcionario.endereco.cep}
                                 name="cep"
-                                value={funcionario.endereco?.cep || ''}
                                 onChange={handleEnderecoChange}
                                 placeholder="00000-000"
-                                className="w-full py-2 px-3 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                         </FormField>
-                        <FormField label="Cidade" required>
-                            <input
-                                type="text"
-                                name="cidade"
-                                value={funcionario.endereco?.cidade || ''}
+
+                        <FormField label="Logradouro" className="col-span-2">
+                            <InputWithStatus
+                                value={funcionario.endereco.logradouro}
+                                name="logradouro"
                                 onChange={handleEnderecoChange}
-                                className="w-full py-2 px-3 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="Digite o logradouro"
                             />
                         </FormField>
-                        <FormField label="Estado" className="xl:col-span-2">
+
+                        <FormField label="Número">
+                            <InputWithStatus
+                                value={funcionario.endereco.numero}
+                                name="numero"
+                                onChange={handleEnderecoChange}
+                                placeholder="Nº"
+                            />
+                        </FormField>
+
+                        <FormField label="Complemento">
+                            <InputWithStatus
+                                value={funcionario.endereco.complemento}
+                                name="complemento"
+                                onChange={handleEnderecoChange}
+                                placeholder="Apto, Bloco, etc."
+                            />
+                        </FormField>
+
+                        <FormField label="Bairro">
+                            <InputWithStatus
+                                value={funcionario.endereco.bairro}
+                                name="bairro"
+                                onChange={handleEnderecoChange}
+                                placeholder="Digite o bairro"
+                            />
+                        </FormField>
+
+                        <FormField label="Cidade">
+                            <InputWithStatus
+                                value={funcionario.endereco.cidade}
+                                name="cidade"
+                                onChange={handleEnderecoChange}
+                                placeholder="Digite a cidade"
+                            />
+                        </FormField>
+
+                        <FormField label="Estado">
                             <select
                                 name="estado"
-                                value={funcionario.endereco?.estado || ''}
+                                value={funcionario.endereco.estado}
                                 onChange={handleEnderecoChange}
-                                className="w-full py-2 px-3 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full py-2 px-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                             >
-                                <option value="">Selecione o Estado</option>
-                                {estados.map((estado) => (
+                                <option value="">Selecione</option>
+                                {estados.map(estado => (
                                     <option key={estado} value={estado}>{estado}</option>
                                 ))}
                             </select>
                         </FormField>
-                        <FormField label="Logradouro">
-                            <input
-                                type="text"
-                                name="logradouro"
-                                value={funcionario.endereco?.logradouro || ''}
-                                onChange={handleEnderecoChange}
-                                className="w-full py-2 px-3 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    </FormSection>
+
+                    {/* Seção Informações Profissionais */}
+                    <FormSection title="Informações Profissionais">
+                        <FormField label="Matrícula" required>
+                            <InputWithStatus
+                                value={funcionario.matricula}
+                                name="matricula"
+                                onChange={handleChange}
+                                placeholder="Digite a matrícula"
                             />
                         </FormField>
-                        <FormField label="Número" >
-                            <input
-                                type="text"
-                                name="numero"
-                                value={funcionario.endereco?.numero || ''}
-                                onChange={handleEnderecoChange}
-                                className="w-full py-2 px-3 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+
+                        <FormField label="Data de Admissão" required>
+                            <InputWithStatus
+                                type="date"
+                                value={funcionario.dataAdmissao}
+                                name="dataAdmissao"
+                                onChange={handleChange}
                             />
                         </FormField>
-                        <FormField label="Bairro" required>
-                            <input
-                                type="text"
-                                name="bairro"
-                                value={funcionario.endereco?.bairro || ''}
-                                onChange={handleEnderecoChange}
-                                className="w-full py-2 px-3 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+
+                        <FormField label="Empresa" required className="col-span-2">
+                            <InputWithActions
+                                placeholder="Selecione uma empresa"
+                                value={empresa ? empresa.razaoSocial || empresa.nome : ''}
+                                actions={
+                                    <>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowEmpresaModal(true)}
+                                            className="p-2.5 text-white bg-green-500 hover:bg-green-600 rounded-l-md border-r border-green-600"
+                                        >
+                                            <Search size={18} />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={limparEmpresa}
+                                            className="p-2.5 text-white bg-red-500 hover:bg-red-600 rounded-r-md"
+                                        >
+                                            <Trash2 size={18} />
+                                        </button>
+                                    </>
+                                }
                             />
                         </FormField>
-                        <FormField label="Complemento">
-                            <input
-                                type="text"
-                                name="complemento"
-                                value={funcionario.endereco?.complemento || ''}
-                                onChange={handleEnderecoChange}
-                                className="w-full py-2 px-3 border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+
+                        <FormField label="Função" required className="col-span-2">
+                            <InputWithActions
+                                placeholder="Selecione uma função"
+                                value={funcao ? funcao.nome : ''}
+                                actions={
+                                    <>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowFuncaoModal(true)}
+                                            className="p-2.5 text-white bg-green-500 hover:bg-green-600 rounded-l-md border-r border-green-600"
+                                        >
+                                            <Search size={18} />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={limparFuncao}
+                                            className="p-2.5 text-white bg-red-500 hover:bg-red-600 rounded-r-md"
+                                        >
+                                            <Trash2 size={18} />
+                                        </button>
+                                    </>
+                                }
                             />
+                        </FormField>
+
+                        <FormField label="Status" className="col-span-1">
+                            <select
+                                name="status"
+                                value={funcionario.status}
+                                onChange={handleChange}
+                                className="w-full py-2 px-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option value="ATIVO">Ativo</option>
+                                <option value="INATIVO">Inativo</option>
+                            </select>
                         </FormField>
                     </FormSection>
 
-                    {/* Seção Informações de Contato */}
-                    <FormSection title="Informações de Contato">
-                        <FormField label="Número telefone" className="xl:col-span-1">
-                            <input
-                                type="text"
-                                name="telefone"
-                                value={funcionario.telefone || ''}
-                                onChange={handleChange}
-                                placeholder="(XX) XXXXX-XXXX"
-                                className="w-full py-2 px-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                        </FormField>
-                        <FormField label="Endereço de E-mail" className="xl:col-span-5">
-                            <input
-                                type="email"
-                                name="email"
-                                value={funcionario.email || ''}
-                                onChange={handleChange}
-                                className="w-full py-2 px-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                        </FormField>
-                    </FormSection>
-
-                    {/* Seção Outras Informações */}
-                    <FormSection title="Outras Informações">
-                        <FormField label="Observações" className="xl:col-span-5">
+                    {/* Seção Observações */}
+                    <FormSection title="Observações">
+                        <FormField label="Observações" className="col-span-full">
                             <textarea
-                                rows="3"
                                 name="observacoes"
-                                value={funcionario.observacoes || ''}
+                                value={funcionario.observacoes}
                                 onChange={handleChange}
+                                rows={4}
+                                placeholder="Digite observações adicionais..."
                                 className="w-full py-2 px-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            ></textarea>
+                            />
                         </FormField>
                     </FormSection>
 
                     {/* Botões de Ação */}
-                    <div className="pt-6 mt-2 flex flex-col items-center">
-                        <div className="flex flex-col sm:flex-row w-full sm:w-auto gap-4">
-                            <button
-                                type="button"
-                                onClick={handleCancel}
-                                className="w-full sm:w-auto bg-white border border-slate-300 text-slate-700 px-8 py-3 rounded-lg font-semibold hover:bg-slate-50 transition-colors"
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="bg-green-600 text-white px-6 py-2.5 rounded-md font-semibold hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {loading ? 'Salvando...' : 'Salvar e Sair'}
-                            </button>
-
-                        </div>
+                    <div className="flex flex-wrap justify-end gap-4 mt-8">
+                        <button
+                            type="button"
+                            onClick={handleCancel}
+                            disabled={loading}
+                            className="bg-red-600 text-white px-8 py-2.5 rounded-md font-semibold hover:bg-red-700 transition-colors disabled:opacity-50"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="bg-green-600 text-white px-8 py-2.5 rounded-md font-semibold hover:bg-green-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                        >
+                            {loading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>}
+                            {loading ? 'Salvando...' : 'Salvar'}
+                        </button>
                     </div>
                 </form>
-            </div>
-            {/* Feedback de sucesso */}
-            {success && (
-                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-                    <div className="bg-white p-6 rounded-lg shadow-lg">
-                        <div className="text-center">
-                            <div className="text-green-600 text-6xl mb-4">✓</div>
-                            <h3 className="text-lg font-semibold text-gray-900 mb-2">Funcionário salvo com sucesso!</h3>
-                            <p className="text-gray-600">Redirecionando...</p>
+
+                {/* Modais */}
+                <EmpresaSearchModal
+                    isOpen={showEmpresaModal}
+                    onClose={() => setShowEmpresaModal(false)}
+                    onSelect={handleSelectEmpresa}
+                />
+
+                <FuncaoSearchModal
+                    isOpen={showFuncaoModal}
+                    onClose={() => setShowFuncaoModal(false)}
+                    onSelect={handleSelectFuncao}
+                />
+
+                {/* Mensagem de Sucesso */}
+                {success && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full mx-4">
+                            <div className="flex items-center space-x-3 text-green-600 mb-4">
+                                <Check size={24} />
+                                <h3 className="text-lg font-semibold">Sucesso!</h3>
+                            </div>
+                            <p className="text-gray-600 mb-4">Funcionário cadastrado com sucesso!</p>
+                            <p className="text-sm text-gray-500">Redirecionando...</p>
                         </div>
                     </div>
-                </div>
-            )}
-            <EmpresaSearchModal
-            isOpen={showEmpresaModal}
-            onClose={() => setShowEmpresaModal(false)}
-            onSelect={handleSelectEmpresa}
-            />
-
+                )}
+            </div>
         </div>
-
     );
 }

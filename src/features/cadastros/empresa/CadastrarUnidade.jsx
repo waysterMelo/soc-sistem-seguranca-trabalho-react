@@ -457,39 +457,6 @@ export default function CadastrarUnidade() {
                         </FormField>
                     </FormSection>
 
-                    {/* Seção Setores a serem vinculados */}
-                    <FormSection title="Setores a serem vinculados à unidade operacional">
-                        <FormField label="Setores" className="lg:col-span-4">
-                            <InputWithActions
-                                placeholder="Selecione os setores para vincular à unidade"
-                                disabled={true}
-                                value=""
-                                actions={
-                                    <>
-                                        <button 
-                                            type="button" 
-                                            className="bg-green-500 text-white p-2.5 border border-green-500 hover:bg-green-600 rounded-r-md"
-                                            onClick={() => setShowSetorModal(true)}
-                                            disabled={!empresaSelecionada}
-                                        >
-                                            <Search size={18}/>
-                                        </button>
-                                    </>
-                                }
-                            />
-                            <SetorChips 
-                                setores={setoresSelecionados} 
-                                onRemove={handleRemoveSetor} 
-                            />
-                            {!empresaSelecionada && (
-                                <p className="text-sm text-amber-600 mt-1">
-                                    Selecione uma empresa primeiro para poder vincular setores
-                                </p>
-                            )}
-                        </FormField>
-                    </FormSection>
-
-
                     {/* Seção Endereço (condicional) */}
                     {!useCompanyAddress && (
                         <FormSection title="Endereço">

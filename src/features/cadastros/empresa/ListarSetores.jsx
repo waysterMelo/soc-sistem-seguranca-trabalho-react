@@ -181,7 +181,6 @@ export default function ListarSetores() {
         fetchSetores();
     }, [currentPage, entriesPerPage, searchTerm, empresaFiltro, unidadeFiltro, statusFiltro]);
 
-    // Handlers dos filtros
     const handleSelectEmpresa = (empresa) => {
         setEmpresaFiltro(empresa);
         setShowEmpresaModal(false);

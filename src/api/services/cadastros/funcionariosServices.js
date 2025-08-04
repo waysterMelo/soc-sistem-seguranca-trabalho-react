@@ -24,6 +24,11 @@ const buscarFuncionarios = (termo) => {
     return api.get(`/funcionarios/buscar?termo=${encodeURIComponent(termo)}`);
 };
 
+const buscarFuncionariosComFiltros = (params) => {
+    return api.get('/funcionarios', { params });
+};
+
+
 export const funcionariosService = {
     getAll: getAllFuncionarios,
     getById: getFuncionarioById,
@@ -31,6 +36,7 @@ export const funcionariosService = {
     update: updateFuncionario,
     delete: deleteFuncionario,
     buscarFuncionarios: buscarFuncionarios,
+    buscarComFiltros: buscarFuncionariosComFiltros
 };
 
 export default funcionariosService;

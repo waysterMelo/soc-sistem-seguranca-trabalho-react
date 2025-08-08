@@ -8,6 +8,7 @@ import funcionariosService from '../../../api/services/cadastros/funcionariosSer
 import { useNavigate } from 'react-router-dom';
 import EmpresaSearchModal from "../../../components/modal/empresaSearchModal.jsx";
 import FuncaoSearchModal from "../../../components/modal/funcaoSearchModal.jsx";
+import SetorSearchModal from "../../../components/modal/SetorSearchModal.jsx";
 
 // --- Componentes Reutilizáveis ---
 const FormSection = ({ title, children }) => (
@@ -97,7 +98,8 @@ export default function CadastrarFuncionario() {
         matricula: '',
         empresaId: null,
         funcaoId: null,
-        dataAdmissao: ''
+        dataAdmissao: '',
+        setorId: null
     });
     const [empresa, setEmpresa] = useState(null);
     const [funcao, setFuncao] = useState(null);
@@ -106,8 +108,17 @@ export default function CadastrarFuncionario() {
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
+    const [setor, setSetor] = useState(null);
+    const [showSetorModal, setShowSetorModal] = useState(false);
 
-    // Calcular idade automaticamente quando a data de nascimento mudar
+    const handleSelectSetor = (setorSelecionado) => {
+        setSetor(setorSelecionado);
+        setFuncionario(prevState => ({
+            ...prevState,
+            setorId: setorSelecionado.id
+        }))
+    };
+
     useEffect(() => {
         if (funcionario.dataNascimento) {
             const calcularIdade = (dataNascimento) => {
@@ -131,7 +142,6 @@ export default function CadastrarFuncionario() {
         }
     }, [funcionario.dataNascimento]);
 
-    // Função para formatar telefone
     const formatarTelefone = (valor) => {
         if (!valor) return '';
         const apenasNumeros = valor.replace(/\D/g, '');
@@ -148,7 +158,6 @@ export default function CadastrarFuncionario() {
         }
     };
 
-    // Função para formatar CEP
     const formatarCep = (valor) => {
         if (!valor) return '';
         const apenasNumeros = valor.replace(/\D/g, '');
@@ -200,29 +209,24 @@ export default function CadastrarFuncionario() {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Validação dos campos obrigatórios
-        if (!funcionario.matricula.trim()) {
-            toast.error('Matrícula é obrigatória');
-            return;
-        }
-        if (!funcionario.empresaId) {
-            toast.error('Empresa é obrigatória');
-            return;
-        }
-        if (!funcionario.funcaoId) {
-            toast.error('Função é obrigatória');
-            return;
-        }
-        if (!funcionario.dataAdmissao) {
-            toast.error('Data de admissão é obrigatória');
-            return;
-        }
-        if (!funcionario.cpf.trim()) {
-            toast.error('CPF é obrigatório');
-            return;
+        // Validação dos campos obrigatórios com objeto de erros
+        const camposObrigatorios = {
+            matricula: 'Matrícula é obrigatória',
+            empresaId: 'Empresa é obrigatória',
+            funcaoId: 'Função é obrigatória',
+            dataAdmissao: 'Data de admissão é obrigatória',
+            cpf: 'CPF é obrigatório'
+        };
+
+        // Verificar campos obrigatórios
+        for (const [campo, mensagem] of Object.entries(camposObrigatorios)) {
+            if (!funcionario[campo] || (typeof funcionario[campo] === 'string' && !funcionario[campo].trim())) {
+                toast.error(mensagem);
+                return;
+            }
         }
 
-        // Validar se o CPF está no formato correto
+        // Validar formato do CPF
         const cpfFormatado = funcionario.cpf.trim();
         const cpfRegex = /^\d{3}\.\d{3}\.\d{3}-\d{2}$/;
 
@@ -231,74 +235,68 @@ export default function CadastrarFuncionario() {
             return;
         }
 
-        console.log('Dados antes do envio:', JSON.stringify(funcionario, null, 2));
-
         try {
             setLoading(true);
 
-            // Criar objeto limpo para envio
+            // Função auxiliar para limpar strings ou retornar valor padrão
+            const limparTexto = (texto, padrao = '') => (texto?.trim() || padrao);
+
+            // Função auxiliar para converter para inteiro ou null
+            const paraInteiro = (valor) => (valor ? parseInt(valor) : null);
+
+            // Função auxiliar para remover formatação
+            const removerFormatacao = (texto) => (texto?.replace(/\D/g, '') || '');
+
+            // Preparar objeto limpo para envio
             const funcionarioParaEnviar = {
-                nome: funcionario.nome?.trim() || '',
-                sobrenome: funcionario.sobrenome?.trim() || '',
-                cpf: cpfFormatado, // Manter formatação do CPF
-                rg: funcionario.rg?.trim() || '',
+                nome: limparTexto(funcionario.nome),
+                sobrenome: limparTexto(funcionario.sobrenome),
+                cpf: cpfFormatado,
+                rg: limparTexto(funcionario.rg),
                 dataEmissaoRg: funcionario.dataEmissaoRg || null,
-                estadoEmissorRg: funcionario.estadoEmissorRg || '',
-                orgaoEmissorRg: funcionario.orgaoEmissorRg || '',
+                estadoEmissorRg: limparTexto(funcionario.estadoEmissorRg),
+                orgaoEmissorRg: limparTexto(funcionario.orgaoEmissorRg),
                 dataNascimento: funcionario.dataNascimento || null,
-                idade: funcionario.idade ? parseInt(funcionario.idade) : null,
+                idade: paraInteiro(funcionario.idade),
                 sexo: funcionario.sexo || 'NAO_INFORMADO',
                 estadoCivil: funcionario.estadoCivil || 'SOLTEIRO',
                 raca: funcionario.raca || 'NAO_INFORMADO',
-                nomeMae: funcionario.nomeMae?.trim() || '',
-                nomePai: funcionario.nomePai?.trim() || '',
-                telefone: funcionario.telefone?.replace(/\D/g, '') || '', // Remove formatação do telefone
-                email: funcionario.email?.trim() || '',
-                matricula: funcionario.matricula?.trim() || '',
+                nomeMae: limparTexto(funcionario.nomeMae),
+                nomePai: limparTexto(funcionario.nomePai),
+                telefone: removerFormatacao(funcionario.telefone),
+                email: limparTexto(funcionario.email),
+                matricula: limparTexto(funcionario.matricula),
                 dataAdmissao: funcionario.dataAdmissao || null,
                 status: funcionario.status || 'ATIVO',
-                observacoes: funcionario.observacoes?.trim() || '',
-                empresaId: funcionario.empresaId ? parseInt(funcionario.empresaId) : null,
-                funcaoId: funcionario.funcaoId ? parseInt(funcionario.funcaoId) : null,
-                // Endereço como objeto
+                observacoes: limparTexto(funcionario.observacoes),
+                empresaId: paraInteiro(funcionario.empresaId),
+                funcaoId: paraInteiro(funcionario.funcaoId),
+                setorId: paraInteiro(funcionario.setorId),
                 endereco: {
-                    logradouro: funcionario.endereco?.logradouro?.trim() || '',
-                    numero: funcionario.endereco?.numero?.trim() || '',
-                    complemento: funcionario.endereco?.complemento?.trim() || '',
-                    bairro: funcionario.endereco?.bairro?.trim() || '',
-                    cidade: funcionario.endereco?.cidade?.trim() || '',
-                    estado: funcionario.endereco?.estado || '',
-                    cep: funcionario.endereco?.cep?.replace(/\D/g, '') || '' // Remove formatação do CEP
+                    logradouro: limparTexto(funcionario.endereco?.logradouro),
+                    numero: limparTexto(funcionario.endereco?.numero),
+                    complemento: limparTexto(funcionario.endereco?.complemento),
+                    bairro: limparTexto(funcionario.endereco?.bairro),
+                    cidade: limparTexto(funcionario.endereco?.cidade),
+                    estado: limparTexto(funcionario.endereco?.estado),
+                    cep: removerFormatacao(funcionario.endereco?.cep)
                 }
             };
 
-            console.log('Dados formatados para envio:', JSON.stringify(funcionarioParaEnviar, null, 2));
-
-            const response = await funcionariosService.create(funcionarioParaEnviar);
-            console.log('Resposta do servidor:', response);
-
+            await funcionariosService.create(funcionarioParaEnviar);
             setSuccess(true);
             toast.success('Funcionário cadastrado com sucesso!');
 
+            // Navegar após sucesso
             setTimeout(() => {
                 navigate('/cadastros/listar/funcionarios');
             }, 2000);
 
         } catch (error) {
-            console.error('Erro ao cadastrar funcionário:', error);
-            console.error('Resposta do erro:', error.response?.data);
-
-            if (error.response?.data?.message) {
-                toast.error(`Erro: ${error.response.data.message}`);
-            } else if (error.response?.status === 400) {
-                // Tratar erros de validação
-                const validationErrors = error.response?.data?.errors || {};
-                const firstError = Object.values(validationErrors)[0];
-                if (firstError) {
-                    toast.error(`Erro de validação: ${firstError}`);
-                } else {
-                    toast.error('Dados inválidos. Verifique os campos e tente novamente.');
-                }
+            // Usar a mensagem de erro do backend, se disponível
+            // Esta mensagem vem do tratamento no serviço
+            if (error.message) {
+                toast.error(error.message);
             } else {
                 toast.error('Erro ao cadastrar funcionário. Verifique os dados e tente novamente.');
             }
@@ -306,6 +304,7 @@ export default function CadastrarFuncionario() {
             setLoading(false);
         }
     };
+
 
     const handleCancel = () => {
         navigate('/cadastros/listar/funcionarios');
@@ -331,7 +330,7 @@ export default function CadastrarFuncionario() {
         console.log('Empresa selecionada:', selectedEmpresa);
         setEmpresa(selectedEmpresa);
         setFuncionario(prev => ({
-            ...prev, 
+            ...prev,
             empresaId: selectedEmpresa.id
         }));
         setShowEmpresaModal(false);
@@ -347,20 +346,20 @@ export default function CadastrarFuncionario() {
 
     const handleSelectFuncao = (selectedFuncao) => {
         console.log('Função selecionada:', selectedFuncao);
-        
+
         if (!selectedFuncao || !selectedFuncao.id) {
             console.error('Função selecionada não possui ID!', selectedFuncao);
             toast.error('Erro ao selecionar função. ID não encontrado.');
             return;
         }
-        
+
         setFuncao(selectedFuncao);
         setFuncionario(prev => ({
-            ...prev, 
+            ...prev,
             funcaoId: selectedFuncao.id
         }));
         setShowFuncaoModal(false);
-        
+
         if (errors.funcaoId) {
             setErrors(prev => {
                 const newErros = {...prev};
@@ -705,6 +704,44 @@ export default function CadastrarFuncionario() {
                             />
                         </FormField>
 
+                        {/* Novo campo para Setor */}
+                        <FormField label="Setor">
+                            <InputWithActions
+                                placeholder="Selecione um setor"
+                                value={setor ? setor.nome : ''}
+                                actions={
+                                    <>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                if (empresa && empresa.id) {
+                                                    setShowSetorModal(true);
+                                                } else {
+                                                    toast.warning('Selecione uma empresa primeiro');
+                                                }
+                                            }}
+                                            className="p-2 text-blue-600 hover:text-blue-800"
+                                        >
+                                            <Search size={20} />
+                                        </button>
+                                        {setor && (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setSetor(null);
+                                                    setFuncionario(prev => ({...prev, setorId: null}));
+                                                }}
+                                                className="p-2 text-red-600 hover:text-red-800"
+                                            >
+                                                <Trash2 size={20} />
+                                            </button>
+                                        )}
+                                    </>
+                                }
+                            />
+                        </FormField>
+
+
                         <FormField label="Status" className="col-span-1">
                             <select
                                 name="status"
@@ -764,6 +801,14 @@ export default function CadastrarFuncionario() {
                     isOpen={showFuncaoModal}
                     onClose={() => setShowFuncaoModal(false)}
                     onSelect={handleSelectFuncao}
+                />
+
+                <SetorSearchModal
+                    isOpen={showSetorModal}
+                    onClose={() => setShowSetorModal(false)}
+                    onSelect={handleSelectSetor}
+                    empresaId={empresa?.id}
+
                 />
 
                 {/* Mensagem de Sucesso */}

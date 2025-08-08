@@ -9,7 +9,14 @@ const getFuncionarioById = (id) => {
 };
 
 const createFuncionario = (funcionarioData) => {
-    return api.post('/funcionarios', funcionarioData);
+    // Adicione o .catch para tratar o erro da API
+    return api.post('/funcionarios', funcionarioData)
+        .catch(err => {
+            // Extrai a mensagem do backend ou usa uma mensagem padrão
+            const backendMsg = err?.response?.data?.message || 'Erro ao cadastrar o funcionário. Verifique os dados e tente novamente.';
+            // Lança um novo erro com a mensagem para o componente capturar
+            throw new Error(backendMsg);
+        });
 };
 
 const updateFuncionario = (id, funcionarioData) => {
@@ -28,6 +35,10 @@ const buscarFuncionariosComFiltros = (params) => {
     return api.get('/funcionarios', { params });
 };
 
+const buscarFuncionariosPeloSetor = (setorId) => {
+    return api.get(`/funcionarios/setor/${setorId}`);
+};
+
 
 export const funcionariosService = {
     getAll: getAllFuncionarios,
@@ -36,7 +47,9 @@ export const funcionariosService = {
     update: updateFuncionario,
     delete: deleteFuncionario,
     buscarFuncionarios: buscarFuncionarios,
-    buscarComFiltros: buscarFuncionariosComFiltros
+    buscarComFiltros: buscarFuncionariosComFiltros,
+    buscarPorSetor: buscarFuncionariosPeloSetor
+
 };
 
 export default funcionariosService;

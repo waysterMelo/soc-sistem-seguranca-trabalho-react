@@ -55,3 +55,5 @@ export const setorService = {
     buscarPorNomeEEmpresa,
     fetchSetores
 };
+
+export default setorService;

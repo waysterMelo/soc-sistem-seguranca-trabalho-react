@@ -32,3 +32,5 @@ export const funcaoService = {
     delete: deleteFuncao,
     buscarComFiltros: buscarFuncoesComFiltros
 };
+
+export default funcaoService;

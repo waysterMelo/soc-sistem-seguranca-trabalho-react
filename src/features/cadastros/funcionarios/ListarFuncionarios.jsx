@@ -17,6 +17,8 @@ import funcionariosService from "../../../api/services/cadastros/funcionariosSer
 import EmpresaSearchModal from '../../../components/modal/empresaSearchModal.jsx';
 import SetorSearchModal from '../../../components/modal/SetorSearchModal.jsx';
 import FuncaoSearchModal from '../../../components/modal/funcaoSearchModal.jsx';
+import { toast } from 'react-toastify'
+
 
 const TableHeader = ({ children }) => (
     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
@@ -101,6 +103,12 @@ export default function ListarFuncionarios() {
     const [showEmpresaModal, setShowEmpresaModal] = useState(false);
     const [showSetorModal, setShowSetorModal] = useState(false);
     const [showFuncaoModal, setShowFuncaoModal] = useState(false);
+
+    // Adicionar novos estados para o modal de confirmação de deleção
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [funcionarioParaDeletar, setFuncionarioParaDeletar] = useState(null);
+    const [deletingFuncionario, setDeletingFuncionario] = useState(false);
+
 
     // Verifica se a busca está disponível (empresa E setor precisam estar selecionados)
     const isBuscaDisponivel = empresaFiltro !== null && setorFiltro !== null;
@@ -379,6 +387,43 @@ export default function ListarFuncionarios() {
         }
     };
 
+// Função para cancelar deleção
+    const cancelDelete = () => {
+        setShowDeleteModal(false);
+        setFuncionarioParaDeletar(null);
+    };
+
+    const handleDeleteFuncionario = (funcionario) => {
+        setFuncionarioParaDeletar(funcionario);
+        setShowDeleteModal(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!funcionarioParaDeletar) return;
+
+        try {
+            setDeletingFuncionario(true);
+            await funcionariosService.delete(funcionarioParaDeletar.id);
+
+            toast.success(`Funcionário ${funcionarioParaDeletar.nome} excluído com sucesso!`);
+
+            // Atualizar a lista após deleção
+            await fetchFuncionarios();
+
+            setShowDeleteModal(false);
+            setFuncionarioParaDeletar(null);
+        } catch (error) {
+            console.error('Erro ao deletar funcionário:', error);
+            toast.error(error.message || 'Erro ao excluir funcionário. Tente novamente.');
+        } finally {
+            setDeletingFuncionario(false);
+        }
+    };
+
+
+
+
+
     // Função para formatar dados da tabela
     const formatarFuncionario = (funcionario) => ({
         nome: funcionario.nome || '-',
@@ -645,22 +690,27 @@ export default function ListarFuncionarios() {
                                             <td className="px-6 py-4 whitespace-nowrap text-sm">
                                                 <StatusBadge status={funcionarioFormatado.status} />
                                             </td>
+
                                             <td className="px-6 py-4 whitespace-nowrap text-sm">
                                                 <div className="flex items-center space-x-2">
-                                                    <button
-                                                        className="text-blue-600 hover:text-blue-800"
-                                                        title="Editar"
+                                                    <Link
+                                                        to={`/cadastros/editar-funcionario/${funcionario.id}`}
+                                                        className="text-blue-600 hover:text-blue-800 flex items-center"
                                                     >
-                                                        <Pencil size={18} />
-                                                    </button>
+                                                        <Pencil size={16} className={'mr-1'} />
+                                                        Editar
+                                                    </Link>
                                                     <button
-                                                        className="text-red-600 hover:text-red-800"
-                                                        title="Excluir"
+                                                        onClick={() => handleDeleteFuncionario(funcionario)}
+                                                        className="text-red-600 hover:text-red-800 transition-colors"
+                                                        title="Excluir funcionário"
                                                     >
                                                         <Trash2 size={18} />
                                                     </button>
+
                                                 </div>
                                             </td>
+
                                         </tr>
                                     );
                                 })
@@ -742,6 +792,59 @@ export default function ListarFuncionarios() {
                         </div>
                     )}
                 </div>
+                {/* Modal de Confirmação de Deleção */}
+                {showDeleteModal && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+                            <div className="p-6">
+                                <div className="flex items-center mb-4">
+                                    <div className="flex-shrink-0 w-10 h-10 mx-auto bg-red-100 rounded-full flex items-center justify-center">
+                                        <AlertTriangle className="w-6 h-6 text-red-600" />
+                                    </div>
+                                    <div className="ml-4">
+                                        <h3 className="text-lg font-semibold text-gray-900">
+                                            Confirmar Exclusão
+                                        </h3>
+                                    </div>
+                                </div>
+
+                                <div className="mb-6">
+                                    <p className="text-sm text-gray-600">
+                                        Tem certeza que deseja excluir o funcionário <strong>{funcionarioParaDeletar?.nome}</strong>?
+                                    </p>
+                                    <p className="text-sm text-gray-500 mt-2">
+                                        Esta ação não pode ser desfeita.
+                                    </p>
+                                </div>
+
+                                <div className="flex justify-end space-x-3">
+                                    <button
+                                        onClick={cancelDelete}
+                                        disabled={deletingFuncionario}
+                                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors disabled:opacity-50"
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        onClick={confirmDelete}
+                                        disabled={deletingFuncionario}
+                                        className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors disabled:opacity-50 flex items-center"
+                                    >
+                                        {deletingFuncionario ? (
+                                            <>
+                                                <Loader className="animate-spin w-4 h-4 mr-2" />
+                                                Excluindo...
+                                            </>
+                                        ) : (
+                                            'Excluir'
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
             </div>
 
             {/* Modais */}

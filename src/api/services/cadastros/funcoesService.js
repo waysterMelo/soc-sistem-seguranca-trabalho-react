@@ -24,13 +24,18 @@ const deleteFuncao = (id) => {
     return api.delete(`/funcoes/${id}`);
 };
 
+const getAllCbo = (cbo) => {
+    return api.get('/cbo', cbo);
+}
+
 export const funcaoService = {
     getAll: getAllFuncoes,
     getById: getFuncaoById,
     create: createFuncao,
     update: updateFuncao,
     delete: deleteFuncao,
-    buscarComFiltros: buscarFuncoesComFiltros
+    buscarComFiltros: buscarFuncoesComFiltros,
+    retornarCbo: getAllCbo
 };
 
 export default funcaoService;

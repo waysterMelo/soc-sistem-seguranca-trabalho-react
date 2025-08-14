@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import {
     Plus,
@@ -9,6 +10,7 @@ import {
     ChevronRight,
     ChevronsLeft,
     ChevronsRight,
+    AlertTriangle
 } from 'lucide-react';
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from 'react-toastify';
@@ -61,6 +63,91 @@ const InputWithActions = ({ placeholder, value, onChange, onSearch, onClear, act
     </div>
 );
 
+// Modal de confirmação para deletar função
+const ConfirmacaoModal = ({ isOpen, onClose, onConfirm, funcaoNome, processando }) => {
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Confirmar exclusão</h3>
+                <p className="text-gray-700 mb-6">
+                    Tem certeza que deseja excluir a função <span className="font-semibold">{funcaoNome}</span>?
+                    Esta ação não poderá ser desfeita.
+                </p>
+                <div className="flex justify-end space-x-3">
+                    <button
+                        onClick={onClose}
+                        disabled={processando}
+                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 disabled:opacity-50"
+                    >
+                        Cancelar
+                    </button>
+                    <button
+                        onClick={onConfirm}
+                        disabled={processando}
+                        className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50 flex items-center gap-2"
+                    >
+                        {processando ? (
+                            <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                Excluindo...
+                            </>
+                        ) : (
+                            'Excluir'
+                        )}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// Modal para oferecer alternativa de inativação quando não é possível excluir
+const AlternativaModal = ({ isOpen, onClose, onInativar, funcaoNome, processando }) => {
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+                <div className="flex items-start mb-4">
+                    <AlertTriangle className="text-yellow-500 h-6 w-6 mr-3 flex-shrink-0 mt-0.5" />
+                    <h3 className="text-lg font-semibold text-gray-900">Não é possível excluir</h3>
+                </div>
+                <p className="text-gray-700 mb-4">
+                    A função <span className="font-semibold">{funcaoNome}</span> não pode ser excluída porque está sendo utilizada em outros registros (funcionários, documentos ou outros cadastros).
+                </p>
+                <p className="text-gray-700 mb-6">
+                    Como alternativa, você pode inativar esta função para que ela não apareça em novas operações.
+                </p>
+                <div className="flex justify-end space-x-3">
+                    <button
+                        onClick={onClose}
+                        disabled={processando}
+                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 disabled:opacity-50"
+                    >
+                        Cancelar
+                    </button>
+                    <button
+                        onClick={onInativar}
+                        disabled={processando}
+                        className="px-4 py-2 text-sm font-medium text-white bg-yellow-600 rounded-md hover:bg-yellow-700 disabled:opacity-50 flex items-center gap-2"
+                    >
+                        {processando ? (
+                            <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                Inativando...
+                            </>
+                        ) : (
+                            'Inativar Função'
+                        )}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // --- Componente Principal ---
 
 export default function ListarFuncoes() {
@@ -74,11 +161,20 @@ export default function ListarFuncoes() {
     const [sortField, setSortField] = useState('nome');
     const [sortDirection, setSortDirection] = useState('asc');
     const [statusFilter, setStatusFilter] = useState('Ativo');
-    
-    // Filtros adicionais
+    const [confirmacaoModal, setConfirmacaoModal] = useState({
+        isOpen: false,
+        funcaoId: null,
+        funcaoNome: ''
+    });
+    const [alternativaModal, setAlternativaModal] = useState({
+        isOpen: false,
+        funcaoId: null,
+        funcaoNome: ''
+    });
     const [empresaFiltro, setEmpresaFiltro] = useState('');
     const [setorFiltro, setSetorFiltro] = useState('');
     const [unidadeFiltro, setUnidadeFiltro] = useState('');
+    const [processando, setProcessando] = useState(false);
 
     useEffect(() => {
         loadFuncoes();
@@ -126,16 +222,99 @@ export default function ListarFuncoes() {
         }
     };
 
-    const handleDelete = async (id) => {
-        if (window.confirm('Tem certeza que deseja excluir esta função?')) {
-            try {
-                await funcaoService.delete(id);
-                toast.success('Função excluída com sucesso!');
-                loadFuncoes();
-            } catch (error) {
-                console.error('Erro ao excluir função:', error);
-                toast.error('Erro ao excluir função. Tente novamente mais tarde.');
+    const confirmarDeletar = (funcao) => {
+        setConfirmacaoModal({
+            isOpen: true,
+            funcaoId: funcao.id,
+            funcaoNome: funcao.nome
+        });
+    };
+
+    const fecharModalConfirmacao = () => {
+        setConfirmacaoModal({
+            isOpen: false,
+            funcaoId: null,
+            funcaoNome: ''
+        });
+    };
+
+    // Fechar modal de alternativa
+    const fecharModalAlternativa = () => {
+        setAlternativaModal({
+            isOpen: false,
+            funcaoId: null,
+            funcaoNome: ''
+        });
+    };
+
+    // Função para inativar função em vez de excluir
+    const inativarFuncao = async () => {
+        if (!alternativaModal.funcaoId) return;
+
+        setProcessando(true);
+        try {
+            // Buscar detalhes da função primeiro
+            const funcaoResponse = await funcaoService.getById(alternativaModal.funcaoId);
+            const funcaoData = funcaoResponse.data;
+
+            // Atualizar o status para inativo
+            const dadosAtualizados = {
+                ...funcaoData,
+                status: 'Inativo'
+            };
+
+            await funcaoService.update(alternativaModal.funcaoId, dadosAtualizados);
+
+            toast.success('Função inativada com sucesso!');
+
+            // Recarregar a lista após inativar
+            await loadFuncoes();
+
+            fecharModalAlternativa();
+        } catch (error) {
+            console.error("Erro ao inativar função:", error);
+            toast.error('Erro ao inativar função. Tente novamente.');
+        } finally {
+            setProcessando(false);
+        }
+    };
+
+    // Deletar função após confirmação
+    const deletarFuncao = async () => {
+        if (!confirmacaoModal.funcaoId) return;
+
+        setProcessando(true);
+        try {
+            await funcaoService.delete(confirmacaoModal.funcaoId);
+
+            toast.success('Função excluída com sucesso!');
+
+            // Recarregar a lista após deletar
+            await loadFuncoes();
+
+            fecharModalConfirmacao();
+        } catch (error) {
+            console.error("Erro ao deletar função:", error);
+
+            // Verificar se é um erro de violação de integridade referencial
+            if (error.response?.status === 409 ||
+                error.response?.data?.message?.includes('DataIntegrityViolationException') ||
+                error.response?.data?.message?.includes('foreign key constraint') ||
+                error.response?.data?.message?.includes('está sendo utilizada')) {
+
+                // Mostrar modal de alternativa em vez de apenas mostrar erro
+                setAlternativaModal({
+                    isOpen: true,
+                    funcaoId: confirmacaoModal.funcaoId,
+                    funcaoNome: confirmacaoModal.funcaoNome
+                });
+            } else {
+                toast.error('Erro ao excluir função. Tente novamente.');
             }
+
+            fecharModalConfirmacao();
+        } finally {
+            setProcessando(false);
         }
     };
 
@@ -228,7 +407,7 @@ export default function ListarFuncoes() {
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                             />
-                            <button 
+                            <button
                                 onClick={handleSearch}
                                 className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                             >
@@ -236,7 +415,7 @@ export default function ListarFuncoes() {
                             </button>
                         </div>
                         <div className='flex w-full sm:w-auto gap-2'>
-                            <select 
+                            <select
                                 className="w-full sm:w-auto border border-gray-300 rounded-md px-3 py-2 focus:outline-none"
                                 value={statusFilter}
                                 onChange={(e) => setStatusFilter(e.target.value)}
@@ -262,14 +441,14 @@ export default function ListarFuncoes() {
                     </div>
 
                     {/* Tabela de Funções */}
+                    {/* Tabela de Funções */}
                     <div className="overflow-x-auto">
                         <table className="min-w-full divide-y divide-gray-200">
                             <thead className="bg-gray-50">
                             <tr>
                                 <TableHeader onSort={handleSort} field="nome">Nome</TableHeader>
                                 <TableHeader onSort={handleSort} field="setor.nome">Setor</TableHeader>
-                                <TableHeader onSort={handleSort} field="empresa.nome">Empresa</TableHeader>
-                                <TableHeader onSort={handleSort} field="cbo.codigo">CBO</TableHeader>
+                                <TableHeader onSort={handleSort} field="empresa.razaoSocial">Empresa</TableHeader>
                                 <TableHeader onSort={handleSort} field="qtdFuncionarios">Total de Funcionários</TableHeader>
                                 <TableHeader onSort={handleSort} field="status">Status</TableHeader>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
@@ -293,25 +472,25 @@ export default function ListarFuncoes() {
                                     <tr key={funcao.id} className="hover:bg-gray-50">
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{funcao.nome}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{funcao.setor?.nome || '-'}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{funcao.empresa?.nome || '-'}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {funcao.cbo ? `${funcao.cbo.codigo} - ${funcao.cbo.descricao}` : '-'}
-                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{funcao.empresa?.razaoSocial || '-'}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{funcao.qtdFuncionarios || 0}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                                             <StatusBadge status={funcao.status} />
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                                             <div className="flex items-center space-x-2">
-                                                <button 
-                                                    onClick={() => handleEdit(funcao.id)} 
+                                                <button
+                                                    onClick={() => handleEdit(funcao.id)}
                                                     className="text-blue-600 hover:text-blue-800"
+                                                    title="Editar função"
                                                 >
                                                     <Pencil size={18} />
                                                 </button>
-                                                <button 
-                                                    onClick={() => handleDelete(funcao.id)} 
+                                                <button
+                                                    onClick={() => confirmarDeletar(funcao)}
                                                     className="text-red-600 hover:text-red-800"
+                                                    title="Excluir função"
+                                                    disabled={processando}
                                                 >
                                                     <Trash2 size={18} />
                                                 </button>
@@ -331,31 +510,31 @@ export default function ListarFuncoes() {
                                 Mostrando de <span className="font-medium">{(currentPage - 1) * entriesPerPage + 1}</span> até <span className="font-medium">{Math.min(currentPage * entriesPerPage, totalItems)}</span> de <span className="font-medium">{totalItems}</span> registros
                             </p>
                             <div className="flex items-center space-x-1">
-                                <button 
-                                    onClick={() => setCurrentPage(1)} 
-                                    disabled={currentPage === 1} 
+                                <button
+                                    onClick={() => setCurrentPage(1)}
+                                    disabled={currentPage === 1}
                                     className="p-2 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <ChevronsLeft size={18} />
                                 </button>
-                                <button 
-                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} 
-                                    disabled={currentPage === 1} 
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                    disabled={currentPage === 1}
                                     className="p-2 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <ChevronLeft size={18} />
                                 </button>
                                 <span className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-md">{currentPage}</span>
-                                <button 
-                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} 
-                                    disabled={currentPage === totalPages || totalPages === 0} 
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                    disabled={currentPage === totalPages || totalPages === 0}
                                     className="p-2 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <ChevronRight size={18} />
                                 </button>
-                                <button 
-                                    onClick={() => setCurrentPage(totalPages)} 
-                                    disabled={currentPage === totalPages || totalPages === 0} 
+                                <button
+                                    onClick={() => setCurrentPage(totalPages)}
+                                    disabled={currentPage === totalPages || totalPages === 0}
                                     className="p-2 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <ChevronsRight size={18} />
@@ -364,6 +543,24 @@ export default function ListarFuncoes() {
                         </div>
                     )}
                 </div>
+
+                {/* Modal de Confirmação de Exclusão */}
+                <ConfirmacaoModal
+                    isOpen={confirmacaoModal.isOpen}
+                    onClose={fecharModalConfirmacao}
+                    onConfirm={deletarFuncao}
+                    funcaoNome={confirmacaoModal.funcaoNome}
+                    processando={processando}
+                />
+
+                {/* Modal de Alternativa (Inativação) */}
+                <AlternativaModal
+                    isOpen={alternativaModal.isOpen}
+                    onClose={fecharModalAlternativa}
+                    onInativar={inativarFuncao}
+                    funcaoNome={alternativaModal.funcaoNome}
+                    processando={processando}
+                />
             </div>
         </div>
     );

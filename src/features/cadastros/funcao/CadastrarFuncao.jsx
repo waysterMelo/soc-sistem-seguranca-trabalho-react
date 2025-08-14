@@ -12,9 +12,10 @@ import ModalCBO from '../../../components/modal/CboModal.jsx';
 import ModalEmpresa from '../../../components/modal/empresaSearchModal.jsx';
 import ModalSetor from '../../../components/modal/SetorSearchModal.jsx';
 import ModalRiscosPGR from '../../../components/modal/RiscoPgrModalSearch.jsx';
+import ModalAgentesNocivos from '../../../components/modal/ModalAgentesNocivos.jsx';
+import ModalExamesPCMSO from '../../../components/modal/ModalExamesPCMSO.jsx';
 import ModalPrestador from '../../../components/modal/PrestadorServico.jsx';
 
-// --- Componentes Reutilizáveis ---
 
 // Secção do formulário com título
 const FormSection = ({ title, children }) => (
@@ -84,25 +85,24 @@ const Notification = ({ message, type }) => {
     return null;
 };
 
+
+
 // --- Componente Principal ---
 
 export default function CadastrarFuncao() {
     const navigate = useNavigate();
     const { id } = useParams();
     const isEditing = !!id;
-
     const [activeTab, setActiveTab] = useState('riscos');
     const [loading, setLoading] = useState(false);
     const [notification, setNotification] = useState({ message: '', type: '' });
-
-    // Modais
     const [modalEmpresaOpen, setModalEmpresaOpen] = useState(false);
     const [modalSetorOpen, setModalSetorOpen] = useState(false);
     const [modalCboOpen, setModalCboOpen] = useState(false);
     const [modalRiscosOpen, setModalRiscosOpen] = useState(false);
+    const [modalAgentesOpen, setModalAgentesOpen] = useState(false);
+    const [modalExamesOpen, setModalExamesOpen] = useState(false);
     const [modalPrestadorOpen, setModalPrestadorOpen] = useState(false);
-
-    // Dados da função
     const [formData, setFormData] = useState({
         nome: '',
         empresa: { id: null, nome: '' },
@@ -115,9 +115,8 @@ export default function CadastrarFuncao() {
         infoComplementar: '',
         status: 'Ativo'
     });
-
-    // Listas relacionadas
     const [riscosPGR, setRiscosPGR] = useState([]);
+    const [riscosDisponiveis, setRiscosDisponiveis] = useState([]);
     const [agentesNocivos, setAgentesNocivos] = useState([]);
     const [examesPCMSO, setExamesPCMSO] = useState([]);
     const [profissionais, setProfissionais] = useState([]);
@@ -167,16 +166,21 @@ export default function CadastrarFuncao() {
         setTimeout(() => setNotification({ message: '', type: '' }), 3000);
     };
 
-    // Handlers para mudanças nos campos
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    // Handlers para seleção de itens nos modais
     const handleEmpresaSelect = (empresa) => {
-        setFormData(prev => ({ ...prev, empresa }));
+        setFormData(prev => ({
+            ...prev,
+            empresa: {
+                id: empresa.id,
+                nome: empresa.nome || empresa.nomeEmpresa || empresa.razaoSocial
+            }
+        }));
         setModalEmpresaOpen(false);
+
     };
 
     const handleSetorSelect = (setor) => {
@@ -194,12 +198,37 @@ export default function CadastrarFuncao() {
     };
 
     const handleRiscoSelect = (risco) => {
-        // Verifica se o risco já existe na lista
         const riscoExistente = riscosPGR.find(r => r.id === risco.id);
         if (!riscoExistente) {
-            setRiscosPGR([...riscosPGR, risco]);
+            setRiscosPGR(prevRiscos => {
+                // Garante que prevRiscos seja um array
+                const riscoArray = Array.isArray(prevRiscos) ? prevRiscos : [];
+                return [...riscoArray, risco];
+            });
         }
         setModalRiscosOpen(false);
+    };
+
+    const handleAgenteSelect = (agente) => {
+        const agenteExistente = agentesNocivos.find(a => a.id === agente.id);
+        if (!agenteExistente) {
+            setAgentesNocivos(prevAgentes => {
+                const agenteArray = Array.isArray(prevAgentes) ? prevAgentes : [];
+                return [...agenteArray, agente];
+            });
+        }
+        setModalAgentesOpen(false);
+    };
+
+    const handleExameSelect = (exame) => {
+        const exameExistente = examesPCMSO.find(e => e.id === exame.id);
+        if (!exameExistente) {
+            setExamesPCMSO(prevExames => {
+                const exameArray = Array.isArray(prevExames) ? prevExames : [];
+                return [...exameArray, exame];
+            });
+        }
+        setModalExamesOpen(false);
     };
 
     const handlePrestadorSelect = (prestador) => {
@@ -211,7 +240,6 @@ export default function CadastrarFuncao() {
         setModalPrestadorOpen(false);
     };
 
-    // Handlers para remover itens das listas
     const handleRemoveRisco = (riscoId) => {
         setRiscosPGR(riscosPGR.filter(risco => risco.id !== riscoId));
     };
@@ -228,7 +256,6 @@ export default function CadastrarFuncao() {
         setProfissionais(profissionais.filter(prof => prof.id !== profissionalId));
     };
 
-    // Limpar campos do formulário
     const handleClearForm = () => {
         setFormData({
             nome: '',
@@ -251,72 +278,300 @@ export default function CadastrarFuncao() {
         showNotification('Formulário limpo com sucesso', 'info');
     };
 
-    // Validação do formulário
     const validateForm = () => {
-        const requiredFields = ['nome', 'empresa.id', 'setor.id'];
+        const validations = [
+            { field: 'nome', value: formData.nome, message: 'Nome da função é obrigatório' },
+            { field: 'descricao', value: formData.descricao, message: 'Descrição da função é obrigatória' },
+            { field: 'empresa', value: formData.empresa?.id, message: 'Empresa é obrigatória' },
+            { field: 'setor', value: formData.setor?.id, message: 'Setor é obrigatório' },
+            { field: 'cbo', value: formData.cbo?.id, message: 'CBO é obrigatório' }
+        ];
 
-        for (const field of requiredFields) {
-            const fieldParts = field.split('.');
-            let value = formData;
-
-            for (const part of fieldParts) {
-                value = value[part];
-                if (value === undefined || value === null) {
-                    return `Campo ${field.split('.')[0]} é obrigatório`;
-                }
+        for (const validation of validations) {
+            if (!validation.value || (typeof validation.value === 'string' && !validation.value.trim())) {
+                return validation.message;
             }
+        }
 
-            if (typeof value === 'string' && !value.trim()) {
-                return `Campo ${field.split('.')[0]} é obrigatório`;
+        // Validação específica para riscos PGR (pelo menos um risco deve ser adicionado)
+        if (!Array.isArray(riscosPGR) || riscosPGR.length === 0) {
+            return 'Pelo menos um risco PGR deve ser adicionado';
+        }
+
+        // Verificar se todos os riscos têm ID válido
+        for (const risco of riscosPGR) {
+            if (!risco.id) {
+                return 'Todos os riscos PGR devem ter IDs válidos';
             }
         }
 
         return null;
     };
 
-    // Envio do formulário
     const handleSubmit = async (e) => {
         e.preventDefault();
-
-        const validationError = validateForm();
-        if (validationError) {
-            showNotification(validationError, 'error');
-            return;
-        }
+        if (validateForm()) return;
 
         setLoading(true);
 
+        // converte o valor do select para o enum do backend
+        const gfipMap = {
+            'Não exposto - sem adicional sobre o RAT': 'NAO_EXPOSTO_SEM_ADICIONAL',
+            'Adicional de 1% - trabalho com baixo risco': 'EXPOSTO_ADICIONAL_1',
+            'Adicional de 2% - trabalho com médio risco': 'EXPOSTO_ADICIONAL_2',
+            'Adicional de 3% - trabalho com alto risco': 'EXPOSTO_ADICIONAL_3'
+        };
+
+        const payload = {
+            nome: formData.nome,
+            descricaoFuncao: formData.descricao,
+            empresaId: formData.empresa.id,
+            setorId: formData.setor.id,
+            cboId: formData.cbo.id,
+            quantidadeFuncionarios: formData.qtdFuncionarios,
+            tipoGfip: gfipMap[formData.gfip] || 'NAO_EXPOSTO_SEM_ADICIONAL',
+            atividadesInsalubres: formData.atividadesInsalubres,
+            informacoesComplementaresRegistrosAmbientais: formData.infoComplementar,
+
+            riscosPGR: riscosPGR.map(r => ({
+                riscoCatalogoId: r.id,
+                grauRisco: r.grauRisco || 'BAIXO'
+            })),
+
+            agentesNocivosEsocial: agentesNocivos.map(a => ({
+                agenteNocivoCatalogoId: a.id
+            })),
+
+            examesPcmso: examesPCMSO.map(ex => ({
+                exameCatalogoId: ex.id,
+                tipoExame: ex.tipoExame || 'ADMISSIONAL',
+                obrigatorio: true,
+                ...(ex.tipoExame === 'PERIODICO' && { periodicidadeMeses: ex.periodicidadeMeses || 12 })
+            })),
+
+            prestadoresResponsaveis: profissionais.map(p => ({
+                prestadorServicoId: p.id
+            }))
+        };
+
         try {
-            const funcaoPayload = {
-                ...formData,
-                riscosPGR,
-                agentesNocivos,
-                examesPCMSO,
-                profissionais
-            };
-
-            if (isEditing) {
-                await funcaoService.update(id, funcaoPayload);
-                showNotification('Função atualizada com sucesso', 'success');
-            } else {
-                await funcaoService.create(funcaoPayload);
-                showNotification('Função cadastrada com sucesso', 'success');
-            }
-
-            // Redireciona para a lista após salvamento bem-sucedido
-            setTimeout(() => navigate('/cadastros/funcoes'), 2000);
-
-        } catch (error) {
-            console.error('Erro ao salvar função:', error);
-            showNotification(`Erro ao salvar função: ${error.response?.data?.message || 'Erro desconhecido'}`, 'error');
+            isEditing
+                ? await funcaoService.update(id, payload)
+                : await funcaoService.create(payload);
+            toast.success('Função salva com sucesso!');
+            setTimeout(() => navigate('/cadastros/listar/funcao'), 1500);
+        } catch (err) {
+            console.error(err);
+            toast.error(err.response?.data?.message || 'Erro ao salvar');
         } finally {
             setLoading(false);
         }
     };
 
-    // Volta para a lista sem salvar
     const handleCancel = () => {
         navigate('/cadastros/funcoes');
+    };
+
+    const renderTabContent = () => {
+        switch(activeTab) {
+            case 'riscos':
+                return (
+                    <>
+                        <div className="flex justify-end mb-4">
+                            <button
+                                type="button"
+                                onClick={() => setModalRiscosOpen(true)}
+                                className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm"
+                            >
+                                <Plus size={16} />
+                                <span>Adicionar Risco</span>
+                            </button>
+                        </div>
+                        <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                            <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grupo</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descrição</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                            </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                            {Array.isArray(riscosPGR) ? riscosPGR.map((risco) => (
+                                <tr key={risco.id}>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{risco.grupo}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{risco.descricao}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemoveRisco(risco.id)}
+                                            className="text-red-500 hover:text-red-700"
+                                        >
+                                            <Trash2 size={18}/>
+                                        </button>
+                                    </td>
+                                </tr>
+                            )) : (
+                                <tr>
+                                    <td colSpan="3" className="px-6 py-4 text-center text-sm text-gray-500">
+                                        Nenhum risco cadastrado
+                                    </td>
+                                </tr>
+                            )}
+                            </tbody>
+                        </table>
+                    </>
+                );
+
+            case 'agentes':
+                return (
+                    <>
+                        <div className="flex justify-end mb-4">
+                            <button
+                                type="button"
+                                onClick={() => setModalAgentesOpen(true)}
+                                className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm"
+                            >
+                                <Plus size={16} />
+                                <span>Adicionar Agente Nocivo</span>
+                            </button>
+                        </div>
+                        <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                            <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Código</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                            </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                            {Array.isArray(agentesNocivos) ? agentesNocivos.map((agente) => (
+                                <tr key={agente.id}>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{agente.codigoEsocial}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{agente.descricao}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemoveAgente(agente.id)}
+                                            className="text-red-500 hover:text-red-700"
+                                        >
+                                            <Trash2 size={18}/>
+                                        </button>
+                                    </td>
+                                </tr>
+                            )) : (
+                                <tr>
+                                    <td colSpan="4" className="px-6 py-4 text-center text-sm text-gray-500">
+                                        Nenhum agente nocivo cadastrado
+                                    </td>
+                                </tr>
+                            )}
+                            </tbody>
+                        </table>
+                    </>
+                );
+
+            case 'exames':
+                return (
+                    <>
+                        <div className="flex justify-end mb-4">
+                            <button
+                                type="button"
+                                onClick={() => setModalExamesOpen(true)}
+                                className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm"
+                            >
+                                <Plus size={16} />
+                                <span>Adicionar Exame</span>
+                            </button>
+                        </div>
+                        <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                            <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Código</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                            </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                            {Array.isArray(examesPCMSO) ? examesPCMSO.map((exame) => (
+                                <tr key={exame.id}>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{exame.codigoExame}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exame.nomeExame}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemoveExame(exame.id)}
+                                            className="text-red-500 hover:text-red-700"
+                                        >
+                                            <Trash2 size={18}/>
+                                        </button>
+                                    </td>
+                                </tr>
+                            )) : (
+                                <tr>
+                                    <td colSpan="5" className="px-6 py-4 text-center text-sm text-gray-500">
+                                        Nenhum exame cadastrado
+                                    </td>
+                                </tr>
+                            )}
+                            </tbody>
+                        </table>
+                    </>
+                );
+
+            case 'profissionais':
+                return (
+                    <>
+                        <div className="flex justify-end mb-4">
+                            <button
+                                type="button"
+                                onClick={() => setModalPrestadorOpen(true)}
+                                className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm"
+                            >
+                                <Plus size={16} />
+                                <span>Adicionar Profissional</span>
+                            </button>
+                        </div>
+                        <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                            <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Conselho</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Registro</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                            </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                            {Array.isArray(profissionais) ? profissionais.map((profissional) => (
+                                <tr key={profissional.id}>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{profissional.nome}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{profissional.conselho || '-'}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{profissional.registro || profissional.crm || '-'}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemoveProfissional(profissional.id)}
+                                            className="text-red-500 hover:text-red-700"
+                                        >
+                                            <Trash2 size={18}/>
+                                        </button>
+                                    </td>
+                                </tr>
+                            )) : (
+                                <tr>
+                                    <td colSpan="4" className="px-6 py-4 text-center text-sm text-gray-500">
+                                        Nenhum profissional cadastrado
+                                    </td>
+                                </tr>
+                            )}
+                            </tbody>
+                        </table>
+                    </>
+                );
+
+
+            default:
+                return null;
+        }
     };
 
     return (
@@ -469,76 +724,7 @@ export default function CadastrarFuncao() {
                             </nav>
                         </div>
                         <div className="p-6">
-                            {/* Botões de Ação da Aba */}
-                            <div className='flex justify-end gap-2 mb-4'>
-                                <button type="button" className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm">
-                                    <Plus size={16} />
-                                    <span>Adicionar</span>
-                                </button>
-                            </div>
-
-                            {/* Conteúdo da Aba: Riscos (PGR) */}
-                            {activeTab === 'riscos' && (
-                                <>
-                                    <div className="flex justify-end mb-4">
-                                        <button
-                                            type="button"
-                                            onClick={() => setModalRiscosOpen(true)}
-                                            className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm"
-                                        >
-                                            <Plus size={16} />
-                                            <span>Adicionar Risco</span>
-                                        </button>
-                                    </div>
-                                    <table className="min-w-full divide-y divide-gray-200">
-                                        <thead className="bg-gray-50">
-                                        <tr>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grupo</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descrição</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
-                                        </tr>
-                                        </thead>
-                                        <tbody className="bg-white divide-y divide-gray-200">
-                                        {riscosPGR.map((risco) => (
-                                            <tr key={risco.id}>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{risco.grupo}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{risco.descricao}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleRemoveRisco(risco.id)}
-                                                        className="text-red-500 hover:text-red-700"
-                                                    >
-                                                        <Trash2 size={18}/>
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                        {riscosPGR.length === 0 && (
-                                            <tr>
-                                                <td colSpan="3" className="px-6 py-4 text-center text-sm text-gray-500">
-                                                    Nenhum risco cadastrado
-                                                </td>
-                                            </tr>
-                                        )}
-                                        </tbody>
-                                    </table>
-                                </>
-                            )}
-
-                            {/* Conteúdo da Aba: Agentes Nocivos (eSocial) */}
-                            {activeTab === 'agentes' && (
-                                <div className="text-center py-4 text-gray-500">
-                                    Funcionalidade em desenvolvimento. O endpoint será implementado em breve.
-                                </div>
-                            )}
-
-                            {/* Conteúdo da Aba: Exames (PCMSO) */}
-                            {activeTab === 'exames' && (
-                                <div className="text-center py-4 text-gray-500">
-                                    Funcionalidade em desenvolvimento. O endpoint será implementado em breve.
-                                </div>
-                            )}
+                            {renderTabContent()}
                         </div>
                     </div>
 
@@ -600,7 +786,8 @@ export default function CadastrarFuncao() {
                         <button
                             type="button"
                             onClick={handleCancel}
-                            className="bg-gray-600 text-white px-6 py-2.5 rounded-md font-semibold hover:bg-gray-700 transition-colors"
+                            className="bg-gray-600 text-white px-6 py-2.5 rounded-md font-semibold
+                             hover:bg-gray-700 transition-colors"
                         >
                             Cancelar
                         </button>
@@ -636,6 +823,17 @@ export default function CadastrarFuncao() {
                 isOpen={modalRiscosOpen}
                 onClose={() => setModalRiscosOpen(false)}
                 onSelect={handleRiscoSelect}
+                riscos={riscosDisponiveis}
+            />
+            <ModalAgentesNocivos
+                isOpen={modalAgentesOpen}
+                onClose={() => setModalAgentesOpen(false)}
+                onSelect={handleAgenteSelect}
+            />
+            <ModalExamesPCMSO
+                isOpen={modalExamesOpen}
+                onClose={() => setModalExamesOpen(false)}
+                onSelect={handleExameSelect}
             />
             <ModalPrestador
                 isOpen={modalPrestadorOpen}

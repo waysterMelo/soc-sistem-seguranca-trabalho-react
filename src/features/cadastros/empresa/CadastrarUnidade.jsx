@@ -87,7 +87,8 @@ const NotificationModal = ({ isOpen, onClose, type, message }) => {
         <XCircle className="text-red-500 h-6 w-6" />;
 
     return (
-        <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 bg-black bg-opacity-30">
+        <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4
+         bg-black bg-opacity-30">
             <div className={`max-w-md w-full p-6 rounded-lg shadow-xl border ${borderColor} ${bgColor}`}>
                 <div className="flex items-center mb-4">
                     {icon}

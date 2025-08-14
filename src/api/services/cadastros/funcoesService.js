@@ -28,6 +28,56 @@ const getAllCbo = (cbo) => {
     return api.get('/cbo', cbo);
 }
 
+const getAllRiscosTrabalistas = (params) => {
+    return api.get('/riscos-catalogo/todos', { params });
+}
+
+const getAllAgentesNocivos = (params) => {
+    return api.get('/agente-nocivo', { params });
+}
+
+const buscarAgentesPorDescricao = (descricao, params = {}) => {
+    return api.get(`/agente-nocivo/buscar/descricao`, {
+        params: { descricao, ...params }
+    });
+};
+
+const buscarAgentesPorCodigo = (codigo, params = {}) => {
+    return api.get(`/agente-nocivo/buscar/codigo`, {
+        params: { codigo, ...params }
+    });
+};
+
+const buscarRiscosPorDescricao = (descricao, params = {}) => {
+    return api.get(`/riscos-catalogo/pesquisa`, {
+        params: {descricao, ...params}
+    });
+}
+
+
+const getAllExamesPCMSO = (params) => {
+    return api.get('/exames', { params });
+}
+
+const buscarExamesPorNome = (nome, params = {}) => {
+    return api.get(`/exames/buscar`, {
+        params: { nome, ...params }
+    });
+};
+
+const getAllPrestadores = (params) => {
+    return api.get('/prestadores', { params });
+}
+
+const buscarPrestadoresPorNome = (nome, params = {}) => {
+    return api.get(`/prestadores/pesquisa`, {
+        params: { nome, ...params }
+    });
+};
+
+
+
+
 export const funcaoService = {
     getAll: getAllFuncoes,
     getById: getFuncaoById,
@@ -35,7 +85,18 @@ export const funcaoService = {
     update: updateFuncao,
     delete: deleteFuncao,
     buscarComFiltros: buscarFuncoesComFiltros,
-    retornarCbo: getAllCbo
+    retornarCbo: getAllCbo,
+    retornarRiscos: getAllRiscosTrabalistas,
+    retornarAgentesNocivos: getAllAgentesNocivos,
+    buscarAgentesPorDescricao,
+    buscarAgentesPorCodigo,
+    buscarRiscosPorDescricao,
+    buscarExamesPorNome,
+    retornarExamesPCMSO: getAllExamesPCMSO,
+    retornarPrestadores: getAllPrestadores,
+    buscarPrestadoresPorNome
+
+
 };
 
 export default funcaoService;

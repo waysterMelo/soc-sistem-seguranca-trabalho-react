@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { Search, X, Check } from 'lucide-react';
 import funcaoService from "../../api/services/cadastros/funcoesService.js";
 
-const ModalPrestador = ({ isOpen, onClose, onSelect }) => {
+const ModalExamesPCMSO = ({ isOpen, onClose, onSelect }) => {
     const [searchTerm, setSearchTerm] = useState('');
-    const [prestadores, setPrestadores] = useState([]);
+    const [exames, setExames] = useState([]);
     const [loading, setLoading] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
@@ -16,9 +15,9 @@ const ModalPrestador = ({ isOpen, onClose, onSelect }) => {
         if (isOpen){
             setSearchTerm('');
             setCurrentPage(1);
-            fetchPrestadores().then();
+            fetchExames().then();
         }else{
-            setPrestadores([]);
+            setExames([]);
             setTotalItems(0);
             setTotalPages(1);
         }
@@ -27,13 +26,13 @@ const ModalPrestador = ({ isOpen, onClose, onSelect }) => {
     useEffect(() => {
         if (isOpen){
             const timeOut = setTimeout(() => {
-                fetchPrestadores().then();
+                fetchExames().then();
             }, searchTerm ? 500 : 0);
             return () => clearTimeout(timeOut);
         }
     }, [isOpen, currentPage, searchTerm]);
 
-    const fetchPrestadores = async () => {
+    const fetchExames = async () => {
         if (!isOpen) return;
         setLoading(true);
         try {
@@ -44,23 +43,25 @@ const ModalPrestador = ({ isOpen, onClose, onSelect }) => {
             };
 
             if (!searchTerm.trim()){
-                response = await funcaoService.retornarPrestadores(paginationParams);
+                response = await funcaoService.retornarExamesPCMSO(paginationParams);
             }else {
-
-                response = await funcaoService.buscarPrestadoresPorNome(
+                response = await funcaoService.buscarExamesPorNome(
                     searchTerm.trim(),
                     paginationParams
                 );
             }
+
+            console.log('Response:', response);
+
             const content = response.data.content || response.data || [];
             const totalElements = response.data.totalElements || content.length;
             const totalPage = response.data.totalPages || Math.ceil(totalElements / itemsPerPage);
 
-            setPrestadores(content);
+            setExames(content);
             setTotalPages(totalPage);
             setTotalItems(totalElements);
         } catch (error) {
-            setPrestadores([]);
+            setExames([]);
             setTotalItems(0);
             setTotalPages(1);
         } finally {
@@ -84,9 +85,9 @@ const ModalPrestador = ({ isOpen, onClose, onSelect }) => {
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl overflow-hidden">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-5xl overflow-hidden">
                 <div className="flex justify-between items-center px-6 py-4 bg-gray-50 border-b">
-                    <h3 className="text-lg font-semibold text-gray-800">Selecionar Prestador de Serviço</h3>
+                    <h3 className="text-lg font-semibold text-gray-800">Selecionar Exames (PCMSO)</h3>
                     <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
                         <X size={20} />
                     </button>
@@ -96,13 +97,13 @@ const ModalPrestador = ({ isOpen, onClose, onSelect }) => {
                     {/* Campo de Busca */}
                     <div className="mb-4">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Pesquisar por nome do prestador
+                            Pesquisar por nome do exame
                         </label>
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                             <input
                                 type="text"
-                                placeholder="Digite o nome do prestador"
+                                placeholder="Digite o nome do exame"
                                 value={searchTerm}
                                 onChange={handleSearchChange}
                                 className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
@@ -121,13 +122,10 @@ const ModalPrestador = ({ isOpen, onClose, onSelect }) => {
                                     <thead className="bg-gray-100 sticky top-0">
                                     <tr>
                                         <th className="text-left py-3 px-4 font-semibold text-gray-600 text-sm">
-                                            Nome
+                                            Código
                                         </th>
                                         <th className="text-left py-3 px-4 font-semibold text-gray-600 text-sm">
-                                            Conselho
-                                        </th>
-                                        <th className="text-left py-3 px-4 font-semibold text-gray-600 text-sm">
-                                            Registro
+                                            Nome do Exame
                                         </th>
                                         <th className="text-center py-3 px-4 font-semibold text-gray-600 text-sm w-20">
                                             Ações
@@ -135,22 +133,19 @@ const ModalPrestador = ({ isOpen, onClose, onSelect }) => {
                                     </tr>
                                     </thead>
                                     <tbody>
-                                    {prestadores.map((prestador) => (
-                                        <tr key={prestador.id} className="border-b border-gray-200 hover:bg-gray-50">
-                                            <td className="py-3 px-4 text-sm text-gray-700">
-                                                {prestador.nome}
-                                            </td>
-                                            <td className="py-3 px-4 text-sm text-gray-700">
-                                                {prestador.conselho || '-'}
-                                            </td>
+                                    {exames.map((exame) => (
+                                        <tr key={exame.id} className="border-b border-gray-200 hover:bg-gray-50">
                                             <td className="py-3 px-4 text-sm text-gray-700 font-mono">
-                                                {prestador.numeroInscricaoConselho || '-'}
+                                                {exame.codigoExame}
+                                            </td>
+                                            <td className="py-3 px-4 text-sm text-gray-700">
+                                                {exame.nomeExame}
                                             </td>
                                             <td className="py-3 px-4 text-center">
                                                 <button
-                                                    onClick={() => onSelect(prestador)}
+                                                    onClick={() => onSelect(exame)}
                                                     className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-100 transition-colors"
-                                                    title="Selecionar prestador"
+                                                    title="Selecionar exame"
                                                 >
                                                     <Check size={18} />
                                                 </button>
@@ -160,7 +155,7 @@ const ModalPrestador = ({ isOpen, onClose, onSelect }) => {
                                     </tbody>
                                 </table>
 
-                                {prestadores.length === 0 && (
+                                {exames.length === 0 && (
                                     <div className="text-center py-12 text-gray-500 bg-gray-50">
                                         <div className="space-y-2">
                                             <p>Nenhum registro encontrado</p>
@@ -172,7 +167,7 @@ const ModalPrestador = ({ isOpen, onClose, onSelect }) => {
                             {/* Paginação */}
                             <div className="flex justify-between items-center mt-4">
                                 <p className="text-sm text-gray-600">
-                                    Mostrando {prestadores.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0}
+                                    Mostrando {exames.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0}
                                     - {Math.min(currentPage * itemsPerPage, totalItems)} de {totalItems} registros
                                 </p>
                                 <div className="flex space-x-2">
@@ -217,4 +212,4 @@ const ModalPrestador = ({ isOpen, onClose, onSelect }) => {
     );
 };
 
-export default ModalPrestador;
+export default ModalExamesPCMSO;

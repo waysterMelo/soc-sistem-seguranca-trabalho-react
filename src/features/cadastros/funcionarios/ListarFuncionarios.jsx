@@ -19,7 +19,6 @@ import SetorSearchModal from '../../../components/modal/SetorSearchModal.jsx';
 import FuncaoSearchModal from '../../../components/modal/funcaoSearchModal.jsx';
 import { toast } from 'react-toastify'
 
-
 const TableHeader = ({ children }) => (
     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
         <div className="flex items-center space-x-1 cursor-pointer hover:text-gray-700">

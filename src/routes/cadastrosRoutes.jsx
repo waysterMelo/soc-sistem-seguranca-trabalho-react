@@ -17,6 +17,7 @@ import ListarAparelhos from "../features/cadastros/aparelho/ListarAparelhos.jsx"
 import EditarEmpresa from "../features/cadastros/empresa/EditarEmpresa.jsx";
 import EditarUnidade from "../features/cadastros/empresa/EditarUnidade.jsx";
 import EditarFuncionario from "../features/cadastros/funcionarios/EditarFuncionario.jsx";
+import EditarFuncao from "../features/cadastros/funcao/EditarFuncao.jsx";
 
 const CadastrosRoutes = (
     <>
@@ -38,6 +39,7 @@ const CadastrosRoutes = (
         <Route path="cadastros/novo-epi" element={<CadastrarEquipamento />} />
         <Route path="cadastros/aparelhos" element={<ListarAparelhos />} />
         <Route path="cadastros/editar-funcionario/:id" element={<EditarFuncionario />} />
+        <Route path="cadastros/editar/funcao/:id" element={<EditarFuncao />} />
     </>
 );
 

@@ -4,6 +4,7 @@ import {Link, useNavigate, useParams} from 'react-router-dom';
 import {unidadeService} from '../../../api/services/cadastros/serviceUnidadeOperacional.js';
 import EmpresaSearchModal from '../../../components/modal/empresaSearchModal.jsx';
 import CnaeSearchModal from '../../../components/modal/cnaeSearchModal.jsx';
+import SetorSearchModal from "../../../components/modal/SetorSearchModal.jsx";
 
 // --- Componentes Reutilizáveis ---
 
@@ -135,6 +136,7 @@ export default function EditarUnidade() {
         type: 'success',
         message: ''
     });
+    const [showSetorModal, setShowSetorModal] = useState(false);
 
     useEffect(() => {
         carregarUnidade();
@@ -211,27 +213,32 @@ export default function EditarUnidade() {
     };
 
     const prepararDadosParaEnvio = () => {
-
+        // Cria uma cópia profunda para não alterar o estado original da tela
         const dados = JSON.parse(JSON.stringify(unidade));
 
+        // --- INÍCIO DA CORREÇÃO ---
+        // 1. Extrai apenas os IDs da lista de objetos de setor
+        if (dados.setores) {
+            dados.setoresIds = dados.setores.map(setor => setor.id);
+        }
+        // 2. Remove o array de objetos 'setores' para evitar enviar dados desnecessários
+        delete dados.setores;
+        // --- FIM DA CORREÇÃO ---
+
+        // Lógica para empresa (já estava correta)
         if (dados.empresa && typeof dados.empresa === 'object' && dados.empresa.id) {
             dados.empresaId = dados.empresa.id;
-
             delete dados.empresa;
-        } else if (dados.empresa && (typeof dados.empresa !== 'object' || !dados.empresa.id)) {
-
+        } else if (dados.empresa) {
             delete dados.empresa;
-
         }
 
+        // Lógica para CNAE (já estava correta)
         if (dados.cnaePrincipal && typeof dados.cnaePrincipal === 'object' && dados.cnaePrincipal.id) {
             dados.cnaePrincipalId = dados.cnaePrincipal.id;
-
             delete dados.cnaePrincipal;
-        } else if (dados.cnaePrincipal && (typeof dados.cnaePrincipal !== 'object' || !dados.cnaePrincipal.id)) {
-
+        } else if (dados.cnaePrincipal) {
             delete dados.cnaePrincipal;
-
         }
 
         return dados;
@@ -242,10 +249,7 @@ export default function EditarUnidade() {
         if (validarFormulario()) {
             try {
                 setSalvando(true);
-
-                // Preparar os dados para envio com formato correto para o backend
                 const dadosParaEnvio = prepararDadosParaEnvio();
-
                 await unidadeService.update(id, dadosParaEnvio);
 
                 setNotification({
@@ -254,7 +258,6 @@ export default function EditarUnidade() {
                     message: 'Unidade operacional atualizada com sucesso!'
                 });
 
-                // Redirecionar após fechar o modal de sucesso
                 setTimeout(() => {
                     navigate('/cadastros/listar/unidades');
                 }, 1500);
@@ -262,17 +265,13 @@ export default function EditarUnidade() {
             } catch (error) {
                 console.error('Erro ao atualizar unidade:', error);
 
+                carregarUnidade();
+
                 let mensagemErro = 'Erro ao atualizar unidade operacional. Tente novamente.';
-                if (error.response) {
-                    if (error.response.status === 400) {
-                        mensagemErro = 'Dados inválidos. Verifique os campos e tente novamente.';
-                    } else if (error.response.status === 404) {
-                        mensagemErro = 'Unidade operacional não encontrada.';
-                    } else if (error.response.status === 403) {
-                        mensagemErro = 'Você não tem permissão para realizar esta operação.';
-                    } else if (error.response.status >= 500) {
-                        mensagemErro = 'Erro no servidor. Tente novamente mais tarde.';
-                    }
+                if (error.response?.data?.mensagem) {
+                    mensagemErro = error.response.data.mensagem;
+                } else if (error.response?.status === 400) {
+                    mensagemErro = 'Dados inválidos. Verifique os campos e tente novamente.';
                 }
 
                 setNotification({
@@ -297,6 +296,46 @@ export default function EditarUnidade() {
         }));
     };
 
+    const handleSetoresSelect = (selecaoDoModal) => {
+        // Se nada for selecionado (null, undefined), apenas fecha o modal.
+        if (!selecaoDoModal) {
+            setShowSetorModal(false);
+            return;
+        }
+
+        const novosSetoresArray = Array.isArray(selecaoDoModal) ? selecaoDoModal : [selecaoDoModal];
+
+        // Se o array resultante estiver vazio, não faz nada.
+        if (novosSetoresArray.length === 0) {
+            setShowSetorModal(false);
+            return;
+        }
+
+        setUnidade(prev => {
+            // Agora o 'spread' é seguro, pois 'novosSetoresArray' é garantidamente um array.
+            const setoresCombinados = [...prev.setores, ...novosSetoresArray];
+
+            const setoresUnicosMap = new Map();
+            setoresCombinados.forEach(setor => setoresUnicosMap.set(setor.id, setor));
+
+            const resultadoFinal = Array.from(setoresUnicosMap.values());
+
+            return {
+                ...prev,
+                setores: resultadoFinal
+            };
+        });
+
+        setShowSetorModal(false);
+    };
+
+    const handleRemoverSetor = (idDoSetorParaRemover) => {
+        setUnidade(prev => ({
+            ...prev,
+            setores: prev.setores.filter(setor => setor.id !== idDoSetorParaRemover)
+        }));
+    };
+
     if (loading) {
         return (
             <div className="flex justify-center items-center min-h-screen">
@@ -305,7 +344,7 @@ export default function EditarUnidade() {
         );
     }
 
-    // Verifica se existem setores vinculados
+
     const temSetores = unidade.setores && unidade.setores.length > 0;
 
     return (
@@ -378,33 +417,53 @@ export default function EditarUnidade() {
 
                     {/* Seção Setores a serem vinculados */}
                     <FormSection title="Setores a serem vinculados à unidade operacional">
-                        <FormField label="Setores" required className="lg:col-span-4" error={errors.setores}>
-                            {temSetores ? (
-                                <InputWithActions
-                                    placeholder="Selecione os setores"
-                                    value={unidade.setores.map(s => s.nome).join(', ')}
-                                    disabled={true}
-                                    actions={
-                                        <>
-                                            <button type="button" className="bg-green-500 text-white p-2.5 border border-green-500 hover:bg-green-600"><Search size={18}/></button>
-                                            <Link
-                                                to="/cadastros/novo-setor"
-                                                className="bg-blue-500 text-white p-2.5 border border-blue-500 rounded-r-md hover:bg-blue-600"
+                        <div className="lg:col-span-4">
+                            {/* Container para os botões de ação */}
+                            <div className="flex">
+                                <button
+                                    type="button"
+                                    className="bg-green-500 text-white p-2.5 border border-green-500 rounded-l-md hover:bg-green-600 flex items-center"
+                                    onClick={() => setShowSetorModal(true)}
+                                >
+                                    <Search size={18} className="mr-2"/> Adicionar Setor
+                                </button>
+                                <Link
+                                    to="/cadastros/novo-setor"
+                                    className="bg-blue-500 text-white p-2.5 border border-blue-500 rounded-r-md hover:bg-blue-600 flex items-center"
+                                >
+                                    <Plus size={18} className="mr-2"/> Novo Setor
+                                </Link>
+                            </div>
+
+                            {/* Container para exibir as tags dos setores selecionados */}
+                            <div className="mt-4 flex flex-wrap gap-2">
+                                {unidade.setores && unidade.setores.length > 0 ? (
+                                    unidade.setores.map((setor) => (
+                                        <div
+                                            key={setor.id}
+                                            className="bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1.5 rounded-full flex items-center gap-2"
+                                        >
+                                            <span>{setor.nome}</span>
+                                            <button
+                                                type="button"
+                                                className="bg-blue-200 hover:bg-blue-300 text-blue-800 rounded-full p-0.5"
+                                                onClick={() => handleRemoverSetor(setor.id)}
                                             >
-                                                <Plus size={18}/>
-                                            </Link>
-                                        </>
-                                    }
-                                />
-                            ) : (
-                                <div className="w-full">
-                                    <div className="flex items-center p-4 mb-2 bg-red-50 border border-red-200 rounded-md">
-                                        <AlertTriangle className="text-red-500 mr-2" size={20} />
-                                        <p className="text-red-700 text-sm">Nenhum setor cadastrado para esta unidade.</p>
+                                                <XCircle size={14} />
+                                            </button>
+                                        </div>
+                                    ))
+                                ) : (
+                                    // Mensagem que aparece se nenhum setor estiver vinculado
+                                    <div className="w-full">
+                                        <div className="flex items-center p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+                                            <Info className="text-yellow-500 mr-2" size={20} />
+                                            <p className="text-yellow-700 text-sm">Nenhum setor vinculado. Clique em "Adicionar Setor" para começar.</p>
+                                        </div>
                                     </div>
-                                </div>
-                            )}
-                        </FormField>
+                                )}
+                            </div>
+                        </div>
                     </FormSection>
 
                     {/* Seção Endereço (condicional) */}
@@ -663,6 +722,13 @@ export default function EditarUnidade() {
                 onClose={closeNotification}
                 type={notification.type}
                 message={notification.message}
+            />
+            <SetorSearchModal
+                isOpen={showSetorModal}
+                onClose={() => setShowSetorModal(false)}
+                onSelect={handleSetoresSelect}
+                initialSelected={unidade.setores}
+                empresaId={unidade.empresa?.id}
             />
         </div>
     );

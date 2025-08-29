@@ -174,7 +174,7 @@ export default function CadastrarFuncao() {
 
     const handleCboSelect = (cbo) => {
         setFormData(prev => ({
-            ...prev, cbo, nome: cbo.descricao // Atualiza o nome automaticamente com a descrição do CBO
+            ...prev, cbo, nome: cbo.descricao
         }));
         setModalCboOpen(false);
     };

@@ -31,7 +31,6 @@ const menuItems = [
             { name: 'Funções', path: '/cadastros/listar/funcao' },
             { name: 'Funcionários', path: '/cadastros/listar/funcionarios' },
             { name: 'Prestadores de Serviços', path: '/cadastros/prestador-servico' },
-            { name: 'EPI/EPC', path: '/cadastros/epi-epc' },
             { name: 'Aparelhos', path: '/cadastros/aparelhos' },
         ],
     },
@@ -43,10 +42,7 @@ const menuItems = [
             { name: 'PGR', path: '/seguranca/pgr' },
             { name: 'LTCAT', path: '/seguranca/ltcat' },
             { name: 'LTIP', path: '/seguranca/ltip' },
-            { name: 'CAT', path: '/seguranca/cat' },
-            { name: 'Treinamentos', path: '/seguranca/treinamentos' },
-            { name: 'Movimentação de EPI', path: '/seguranca/epi' },
-            { name: 'Ordem de Serviço', path: '/seguranca/listar/ordem-servico' }
+            { name: 'CAT', path: '/seguranca/cat' }
         ],
     },
     {
@@ -58,9 +54,7 @@ const menuItems = [
             { name: 'PCMSO Analitico', path: 'medicina/pcmso-analitico' },
             { name: 'Espirometria', path: 'medicina/espirometria' },
             { name: 'ASO', path: 'medicina/aso' },
-            { name: 'Afastamento', path: 'medicina/afastamento' },
-            { name: 'Exame Toxicológico.', path: 'medicina/toxicológico' },
-            { name: 'Acuidade Visual.', path: 'medicina/acuidade-visual' },
+            { name: 'Afastamento', path: 'medicina/afastamento' }
         ],
     },
     {

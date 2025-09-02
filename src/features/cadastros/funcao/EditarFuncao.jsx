@@ -8,7 +8,6 @@ import {
 import {useNavigate, useParams} from 'react-router-dom';
 import {toast} from 'react-toastify';
 import funcaoService from '../../../api/services/cadastros/funcoesService.js';
-
 import ModalEmpresa from '../../../components/modal/empresaSearchModal.jsx';
 import ModalSetor from '../../../components/modal/SetorSearchModal.jsx';
 import ModalCBO from '../../../components/modal/CboModal.jsx';
@@ -122,14 +121,12 @@ export default function EditarFuncao() {
                     razaoSocial: ''
                 },
                 setor: data.setor || {id: null, nome: ''},
-                // --- INÍCIO DA CORREÇÃO ---
-                // Constrói o objeto 'cbo' a partir dos campos recebidos da API
+              
                 cbo: data.cboId ? {
                     id: data.cboId,
                     nomeOcupacao: data.nomeCbo,
                     codigoCbo: data.codigoCbo
                 } : {id: null, codigoCbo: '', nomeOcupacao: ''},
-                // --- FIM DA CORREÇÃO ---
                 quantidadeFuncionarios: data.quantidadeFuncionarios || 0,
                 descricaoFuncao: data.descricaoFuncao || '',
                 tipoGfip: reverseGfipMap[data.tipoGfip] || 'Não exposto - sem adicional sobre o RAT',

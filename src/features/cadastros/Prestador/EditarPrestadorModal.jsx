@@ -56,7 +56,7 @@ export default function EditarPrestador() {
     const [errors, setErrors] = useState({});
     const [saving, setSaving] = useState(false);
     const [isCboModalOpen, setCboModalOpen] = useState(false);
-
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
     const { masked: cpfMasked, handleChange: handleCpfChange, setMasked: setCpfMasked } = useCpfMask();
     const { masked: telefone1Masked, handleChange: handleTelefone1Change, setMasked: setTelefone1Masked } = usePhoneMask();
     const { masked: telefone2Masked, handleChange: handleTelefone2Change, setMasked: setTelefone2Masked } = usePhoneMask();
@@ -162,8 +162,8 @@ export default function EditarPrestador() {
         setSaving(true);
         try {
             await prestadorServicoService.update(id, payload);
-            toast.success("Prestador atualizado com sucesso!");
-            navigate('/cadastros/prestador-servico');
+            setShowSuccessModal(true);
+            setTimeout(() => navigate('/cadastros/prestador-servico'), 1500);
         } catch (error) {
             toast.error(error.response?.data?.message || "Erro ao atualizar prestador.");
         } finally {
@@ -181,7 +181,7 @@ export default function EditarPrestador() {
             <div className="container mx-auto">
                 <header className="mb-6 flex justify-between items-center">
                     <h1 className="text-3xl font-bold text-gray-900">Editar Profissional</h1>
-                    <button onClick={() => navigate('/cadastros/prestadores')}
+                    <button onClick={() => navigate('/cadastros/prestador-servico')}
                             className="flex items-center text-gray-600 hover:text-gray-800">
                         <ArrowLeft size={20} className="mr-2" /> Voltar
                     </button>
@@ -340,7 +340,7 @@ export default function EditarPrestador() {
                     </FormSection>
 
                     <div className="flex justify-end gap-4 mt-8">
-                        <button type="button" onClick={() => navigate('/cadastros/prestadores')}
+                        <button type="button" onClick={() => navigate('/cadastros/prestador-servico')}
                                 className="bg-gray-600 text-white px-8 py-2.5 rounded-md font-semibold hover:bg-gray-700 transition-colors">Cancelar
                         </button>
                         <button type="submit" disabled={saving}
@@ -349,6 +349,17 @@ export default function EditarPrestador() {
                         </button>
                     </div>
                 </form>
+              {showSuccessModal && (
+                    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+                        <div className="bg-white p-6 rounded-lg shadow-lg">
+                            <div className="text-center">
+                                <div className="text-green-600 text-6xl mb-4">✓</div>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-2">Informações atualizadas com sucesso!</h3>
+                                <p className="text-gray-600">Redirecionando...</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
             <CboModal isOpen={isCboModalOpen} onClose={() => setCboModalOpen(false)} onSelect={handleCboSelect} />

@@ -54,10 +54,9 @@ const buscarRiscosPorDescricao = (descricao, params = {}) => {
     });
 }
 
-const getFuncoesBySetor = (setorId, params) => {
-    return api.get(`/funcoes/setor/${setorId}`, { params });
+const createRiscoCatalogo = (riscoData) => {
+    return api.post('/riscos-catalogo', riscoData);
 };
-
 
 const getAllExamesPCMSO = (params) => {
     return api.get('/exames', { params });
@@ -88,8 +87,12 @@ const inativarFuncao = async (id) => {
         console.error(`Erro ao inativar função com id ${id}:`, error);
         throw error;
     }
+
 }
 
+const getFuncoesBySetorId = (setorId, params) => {
+    return api.get(`/funcoes/setor/${setorId}`, { params });
+};
 
 
 
@@ -106,12 +109,13 @@ export const funcaoService = {
     buscarAgentesPorDescricao,
     buscarAgentesPorCodigo,
     buscarRiscosPorDescricao,
+    createRiscoCatalogo,
     buscarExamesPorNome,
     retornarExamesPCMSO: getAllExamesPCMSO,
     retornarPrestadores: getAllPrestadores,
     buscarPrestadoresPorNome,
     inativarFuncao,
-    getFuncoesBySetor
+    getFuncoesBySetorId
 
 
 };

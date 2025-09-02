@@ -19,6 +19,7 @@ import EditarUnidade from "../features/cadastros/empresa/EditarUnidade.jsx";
 import EditarFuncionario from "../features/cadastros/funcionarios/EditarFuncionario.jsx";
 import EditarFuncao from "../features/cadastros/funcao/EditarFuncao.jsx";
 import EditarPrestador from "../features/cadastros/Prestador/EditarPrestadorModal.jsx";
+import EditarAparelho from '../features/cadastros/aparelho/EditarAparelho.jsx';
 
 const CadastrosRoutes = (
     <>
@@ -42,6 +43,8 @@ const CadastrosRoutes = (
         <Route path="cadastros/aparelhos" element={<ListarAparelhos />} />
         <Route path="cadastros/editar-funcionario/:id" element={<EditarFuncionario />} />
         <Route path="cadastros/editar/funcao/:id" element={<EditarFuncao />} />
+        <Route path="/cadastros/aparelhos" element={<ListarAparelhos />} />
+        <Route path="/cadastros/editar-aparelho/:id" element={<EditarAparelho />} />
     </>
 );
 

@@ -177,7 +177,7 @@ export default function ListarFuncoes() {
             let response;
 
             if (setorFiltro.id) {
-                response = await funcaoService.getFuncoesBySetor(setorFiltro.id, params);
+                response = await funcaoService.getFuncoesBySetorId(setorFiltro.id, params);
             } else {
                 response = await funcaoService.buscarComFiltros(params);
             }

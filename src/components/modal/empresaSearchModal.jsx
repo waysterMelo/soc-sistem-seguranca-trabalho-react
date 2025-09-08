@@ -163,7 +163,7 @@ const EmpresaSearchModal = ({ isOpen, onClose, onSelect }) => {
                                             <td className="px-6 py-4 whitespace-nowrap text-sm">
                                                 <button
                                                     onClick={() => onSelect(empresa)}
-                                                    className="text-blue-600 hover:text-blue-800"
+                                                    className="bg-blue-600 text-white px-4 py-2 rounded-md"
                                                 >
                                                     Selecionar
                                                 </button>

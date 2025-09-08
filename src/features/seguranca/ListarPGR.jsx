@@ -2,19 +2,21 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
     Plus,
     Printer,
-    MoreVertical,
     ChevronLeft,
     ChevronRight,
     ChevronsLeft,
     ChevronsRight,
     Search,
     X,
+    Edit,
+    Trash2,
 } from 'lucide-react';
 import { Link } from "react-router-dom";
 import EmpresaSearchModal from '../../components/modal/empresaSearchModal';
 import pgrService from '../../api/services/pgr/pgrService';
 import { useDebounce } from '../../hooks/useDebounce';
 import apiService from '../../api/apiService';
+import {toast} from "react-toastify";
 
 export default function ListarPGR() {
     const [searchTerm, setSearchTerm] = useState('');
@@ -26,15 +28,18 @@ export default function ListarPGR() {
     const [pgrPage, setPgrPage] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [statusFilter, setStatusFilter] = useState('ATIVO');
+    const [isInactivateModalOpen, setIsInactivateModalOpen] = useState(false);
+    const [selectedPgrId, setSelectedPgrId] = useState(null);
 
-    const fetchPGRs = useCallback(async (empresaId, page = 0, size = 5, name = '') => {
+    const fetchPGRs = useCallback(async (empresaId, page = 0, size = 5, name = '', status = 'ATIVO') => {
         setLoading(true);
         setError(null);
         try {
-            const data = await pgrService.getPgrsByEmpresaId(empresaId, page, size, name);
+            const data = await pgrService.getPgrsByEmpresaId(empresaId, page, size, name, status);
             setPgrPage(data);
         } catch (err) {
-            setError('Erro ao buscar PGRs.');
+            setError('Erro ao buscar PGRs.', err);
             setPgrPage(null);
         } finally {
             setLoading(false);
@@ -43,10 +48,10 @@ export default function ListarPGR() {
 
     useEffect(() => {
         if (selectedEmpresa) {
-            fetchPGRs(selectedEmpresa.id, 0, entriesPerPage, debouncedSearchTerm);
+            fetchPGRs(selectedEmpresa.id, 0, entriesPerPage, debouncedSearchTerm, statusFilter);
             setCurrentPage(0);
         }
-    }, [debouncedSearchTerm, selectedEmpresa, entriesPerPage, fetchPGRs]);
+    }, [debouncedSearchTerm, selectedEmpresa, entriesPerPage, statusFilter, fetchPGRs]);
 
     const handleSelectEmpresa = (empresa) => {
         setSelectedEmpresa(empresa);
@@ -63,7 +68,7 @@ export default function ListarPGR() {
     const handlePageChange = (newPage) => {
         if (newPage >= 0 && newPage < pgrPage.totalPages) {
             setCurrentPage(newPage);
-            fetchPGRs(selectedEmpresa.id, newPage, entriesPerPage, debouncedSearchTerm);
+            fetchPGRs(selectedEmpresa.id, newPage, entriesPerPage, debouncedSearchTerm, statusFilter);
         }
     };
 
@@ -75,6 +80,31 @@ export default function ListarPGR() {
     const handlePrintPgr = (pgrId) => {
         const reportUrl = `${apiService.defaults.baseURL}/reports/pgr/${pgrId}`;
         window.open(reportUrl, '_blank');
+    };
+
+    const handleInactivatePgr = (pgrId) => {
+        setSelectedPgrId(pgrId);
+        setIsInactivateModalOpen(true);
+    };
+
+    const confirmInactivatePgr = async () => {
+        if (selectedPgrId) {
+            try {
+                await pgrService.inactivatePgr(selectedPgrId);
+                toast.success('PGR Inativada com sucesso!');                fetchPGRs(selectedEmpresa.id, currentPage, entriesPerPage, debouncedSearchTerm, statusFilter);
+                setIsInactivateModalOpen(false);
+                setSelectedPgrId(null);
+            } catch (err) {
+                setError('Erro ao inativar PGR.');
+                setIsInactivateModalOpen(false);
+                setSelectedPgrId(null);
+            }
+        }
+    };
+
+    const cancelInactivatePgr = () => {
+        setIsInactivateModalOpen(false);
+        setSelectedPgrId(null);
     };
 
     return (
@@ -129,14 +159,18 @@ export default function ListarPGR() {
                     </div>
 
                     <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-2">
-                        <input
-                            type="text"
-                            placeholder="Procure pelo nome da empresa..."
-                            className="w-full sm:flex-grow pl-4 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            disabled={!selectedEmpresa}
-                        />
+                        <div className="flex items-center gap-2">
+                            <label className="text-sm font-medium text-gray-700">Status:</label>
+                            <select
+                                className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                value={statusFilter}
+                                onChange={(e) => setStatusFilter(e.target.value)}
+                            >
+                                <option value="ATIVO">ATIVO</option>
+                                <option value="INATIVO">INATIVO</option>
+                                <option value="">TODOS</option>
+                            </select>
+                        </div>
                         <div className='flex w-full sm:w-auto gap-2'>
                             <select
                                 className="w-full sm:w-auto border border-gray-300 rounded-md px-3 py-2 focus:outline-none"
@@ -167,6 +201,7 @@ export default function ListarPGR() {
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unidade Operacional</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data Documento</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data Revisão</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
                                 </tr>
                                 </thead>
@@ -177,10 +212,21 @@ export default function ListarPGR() {
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{pgr.unidadeOperacional?.nome || 'N/A'}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{pgr.dataDocumento ? new Date(pgr.dataDocumento).toLocaleDateString() : 'N/A'}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{pgr.dataRevisao ? new Date(pgr.dataRevisao).toLocaleDateString() : 'N/A'}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                        <td className="px-6 py-4 whitespace-nowrap">
+  <span
+      className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+          pgr.status === 'ATIVO'
+              ? 'bg-green-100 text-green-800'
+              : 'bg-red-100 text-red-800'
+      }`}
+  >
+    {pgr.status || 'N/A'}
+  </span>
+                                        </td>                                        <td className="px-6 py-4 whitespace-nowrap text-sm">
                                             <div className="flex items-center space-x-3">
                                                 <button onClick={() => handlePrintPgr(pgr.id)} className="text-blue-600 hover:text-blue-800"><Printer size={18} /></button>
-                                                <button className="text-gray-500 hover:text-gray-700"><MoreVertical size={18} /></button>
+                                                <Link to={`/seguranca/editar-pgr/${pgr.id}`} className="text-yellow-600 hover:text-yellow-800"><Edit size={18} /></Link>
+                                                <button onClick={() => handleInactivatePgr(pgr.id)} className="text-red-600 hover:text-red-800"><Trash2 size={18} /></button>
                                             </div>
                                         </td>
                                     </tr>
@@ -212,6 +258,42 @@ export default function ListarPGR() {
                 onClose={() => setIsModalOpen(false)}
                 onSelect={handleSelectEmpresa}
             />
+            
+            {/* Modal de Confirmação de Inativação */}
+            {isInactivateModalOpen && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-semibold text-gray-900">Inativar PGR</h3>
+                        </div>
+                        <div className="mb-6">
+                            <p className="text-gray-700">
+                                Não é possível excluir um PGR. 
+                                Se você não deseja mais utilizá-lo, pode inativá-lo.
+                            </p>
+                            <p className="mt-2 text-gray-700">
+                                Deseja inativar o PGR de ID: <strong className="text-red-600 font-bold text-lg">{selectedPgrId}</strong>?
+                            </p>
+                        </div>
+                        <div className="flex justify-end space-x-3">
+                            <button
+                                type="button"
+                                onClick={cancelInactivatePgr}
+                                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="button"
+                                onClick={confirmInactivatePgr}
+                                className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                            >
+                                Inativar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

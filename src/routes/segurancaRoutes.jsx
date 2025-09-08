@@ -12,11 +12,13 @@ import CadastrarTreinamento from "../features/seguranca/CadastrarTreinamento.jsx
 import MovimentacaoEPI from "../features/seguranca/MovimentacaoEPI.jsx";
 import ListarOrdemServico from "../features/seguranca/OrdemDeServico.jsx";
 import CriarOrdemDeServico from "../features/seguranca/CriarOrdemServico.jsx";
+import EditarPgr from "../features/seguranca/EditarPgr.jsx";
 
 const SegurancaRoutes = (
     <>
         <Route path="seguranca/pgr" element={<ListarPGR />}/>
         <Route path="seguranca/novo-pgr" element={<NovoPgr />} />
+        <Route path="seguranca/editar-pgr/:id" element={<EditarPgr />} />
         <Route path="seguranca/ltcat" element={<ListarLTCAT />} />
         <Route path="seguranca/novo-ltcat" element={<CadastrarLTCAT />} />
         <Route path="seguranca/ltip" element={<ListarLTIP />} />

@@ -18,8 +18,9 @@ import SetorSearchModal from '../../components/modal/SetorSearchModal.jsx';
 import PrestadorServicoModal from '../../components/modal/PrestadorServico.jsx';
 import funcoesService from '../../api/services/cadastros/funcoesService.js';
 import UnidadesOperacionaisModal from '../../components/modal/unidadesOperacionaisModal.jsx';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import pgrService from '../../api/services/pgr/pgrService.js';
+import apiService from '../../api/apiService.js';
 
 const metodologias = {
   '5W2H_PDCA': `<b>5W2H + PDCA:</b><br>
@@ -108,11 +109,10 @@ const TabButton = ({ label, isActive, onClick }) => (
     <button
         type="button"
         onClick={onClick}
-        className={`px-4 py-3 -mb-px text-sm font-semibold whitespace-nowrap transition-colors border-b-2
-            ${isActive
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-            }`
+        className={`px-4 py-3 -mb-px text-sm font-semibold whitespace-nowrap transition-colors border-b-2\n            ${isActive
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                }`
         }
     >
         {label}
@@ -127,8 +127,7 @@ const InputWithActions = ({ placeholder, value, actions, onClick, disabled }) =>
             value={value}
             readOnly
             disabled={disabled}
-            className={`w-full py-2 pl-4 pr-20 border border-gray-300 rounded-md focus:outline-none transition-colors 
-                ${disabled ? 'bg-gray-100 cursor-not-allowed' : 'bg-white focus:ring-2 focus:ring-blue-500 cursor-pointer'}`
+            className={`w-full py-2 pl-4 pr-20 border border-gray-300 rounded-md focus:outline-none transition-colors \n                ${disabled ? 'bg-gray-100 cursor-not-allowed' : 'bg-white focus:ring-2 focus:ring-blue-500 cursor-pointer'}`
             }
         />
         <div className="absolute right-0 flex">
@@ -137,9 +136,13 @@ const InputWithActions = ({ placeholder, value, actions, onClick, disabled }) =>
     </div>
 );
 
-const TabCapa = ({ onFileChange }) => { 
+const TabCapa = ({ onFileChange, initialPreviewUrl }) => { 
     const fileInputRef = React.useRef(null);
-    const [previewUrl, setPreviewUrl] = useState(null);
+    const [previewUrl, setPreviewUrl] = useState(initialPreviewUrl);
+
+    useEffect(() => {
+        setPreviewUrl(initialPreviewUrl);
+    }, [initialPreviewUrl]);
 
     const handleImageChange = (event) => {
         const file = event.target.files[0];
@@ -240,7 +243,7 @@ const TabDocumentoBase = ({ content, onContentChange }) => {
     </div>
   );
 };
-const TabDadosEmpresa = ({ dataDocumento, onDataDocumentoChange, responsavel, onResponsavelChange, termo, onTermoChange }) => (
+const TabDadosEmpresa = ({ dataDocumento, onDataDocumentoChange, responsavel, onResponsavelChange, termo, onTermoChange, dataRevisao, onDataRevisaoChange }) => (
     <div className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
@@ -262,14 +265,14 @@ const TabDadosEmpresa = ({ dataDocumento, onDataDocumentoChange, responsavel, on
             </div>
             <div>
                 <label className="text-sm font-medium text-gray-600">Data de Revisão</label>
-                <input type="text" placeholder="dd/mm/aaaa" className="mt-1 w-full py-2 px-3 border border-gray-300 rounded-md bg-gray-100" disabled/>
+                <input type="date" value={dataRevisao} onChange={(e) => onDataRevisaoChange(e.target.value)} className="mt-1 w-full py-2 px-3 border border-gray-300 rounded-md"/>
             </div>
         </div>
         <p className="text-sm text-gray-600">Personalize o termo de ciência do responsável preenchendo o campo abaixo</p>
         <SimpleTextarea 
             value={termo}
             onChange={onTermoChange}
-            placeholder="O Responsável pela Empresa declara ter ciência do conteúdo integral do presente documento..."
+            placeholder="O Responsável pela Empresa declara ter ciência do conteúdo integral do presente documento e se compromete em prover todos os recursos necessários para que o PGR atinja seus objetivos em prol da segurança e saúde dos seus trabalhadores."
         />
     </div>
 );
@@ -280,13 +283,14 @@ const TabConsideracoesFinais = ({ content, onContentChange }) => (
         <RichTextEditor 
             content={content}
             onChange={onContentChange}
+        
         />
     </div>
 );
 
 const TabPlanoDeAcao = ({
     metodologia, onMetodologiaChange, texto, onTextoChange,
-    riscos, onRemoverRisco, onPlanoAcaoChange, hasSetorSelecionado
+    riscos, onRemoverRisco, onPlanoAcaoChange, hasSetorSelecionado,
 }) => {
     return (
         <div className="space-y-8">
@@ -321,6 +325,7 @@ const TabPlanoDeAcao = ({
             <div className="space-y-4">
                 <div className="flex justify-between items-center pb-2 border-b">
                     <h3 className="text-lg font-semibold text-gray-800">Ações de Controle de Risco</h3>
+                    
                 </div>
 
                 {!hasSetorSelecionado && (
@@ -383,7 +388,8 @@ const TabPlanoDeAcao = ({
 };
 
 
-export default function CadastrarPGR() {
+export default function EditarPGR() {
+    const { id } = useParams();
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('capa');
     const [isEmpresaModalOpen, setIsEmpresaModalOpen] = useState(false);
@@ -395,6 +401,7 @@ export default function CadastrarPGR() {
     const [isUnidadeModalOpen, setIsUnidadeModalOpen] = useState(false);
     const [selectedEngenheiro, setSelectedEngenheiro] = useState(null);
     const [dataDocumento, setDataDocumento] = useState('');
+    const [dataRevisao, setDataRevisao] = useState('');
     const [riscosDoSetor, setRiscosDoSetor] = useState([]);
     const [loadingRiscos, setLoadingRiscos] = useState(false);
     const [metodologiaSelecionada, setMetodologiaSelecionada] = useState('5W2H_PDCA');
@@ -404,64 +411,56 @@ export default function CadastrarPGR() {
     const [saveSuccess, setSaveSuccess] = useState(false);
     const [saveError, setSaveError] = useState(null);
     const [capaFile, setCapaFile] = useState(null);
+    const [capaPreview, setCapaPreview] = useState(null);
     const [termoValidacaoContent, setTermoValidacaoContent] = useState('Os profissionais abaixo assinados reconhecem o teor de todas as páginas contidas neste documento por meio de sua assinatura de próprio punho e/ou digitalizada.');
-    const textoPadraoDocumentoBase = `
-    <p><strong>O PGR - PROGRAMA DE GESTÃO DE RISCOS -</strong> está regulamentado pela <strong>NR01</strong> 
-  (PORTARIA 6.730 de 9 DE MARÇO DE 2020).</p>
-
-  <p>Tem por objetivo estabelecer as disposições gerais, o campo de aplicação, os termos e as definições 
-  comuns às Normas Regulamentadoras - NR - relativas à segurança e saúde no trabalho; às diretrizes e 
-  aos requisitos para o gerenciamento de riscos ocupacionais e às medidas de prevenção em 
-  Segurança e Saúde no Trabalho - SST.</p>
-
-  <p><strong>ABRANGÊNCIA</strong></p>
-
-  <p>Este programa abrange as instalações, os processos de trabalho e as respectivas atividades e 
-  operações desenvolvidas na empresa, e, conforme NR-01, devem ser considerados os seguintes riscos:</p>
-
-  <ul>
-    <li>Físico</li>
-    <li>Químico</li>
-    <li>Biológico</li>
-    <li>Ergonômico</li>
-    <li>Acidental</li>
-  </ul>
-`;
-    const [documentoBaseContent, setDocumentoBaseContent] = useState(textoPadraoDocumentoBase);
+    const [documentoBaseContent, setDocumentoBaseContent] = useState('');
     const [dadosEmpresaResponsavel, setDadosEmpresaResponsavel] = useState('');
     const [termoCienciaResponsavel, setTermoCienciaResponsavel] = useState('O Responsável pela Empresa declara ter ciência do conteúdo integral do presente documento e se compromete em prover todos os recursos necessários para que o PGR atinja seus objetivos em prol da segurança e saúde dos seus trabalhadores.');
-    const textoConsideracoesFinaisPadrao = `<p>
-    O presente <strong>Programa de Gerenciamento de Riscos (PGR)</strong> foi elaborado com base na 
-    <strong>Norma Regulamentadora nº 01 (NR-01)</strong>, conforme estabelecido pela 
-    <strong>Portaria MTPS nº 1.474, de 6 de julho de 2023</strong>, e representa o 
-    <strong>compromisso institucional da empresa</strong> com a prevenção de acidentes e doenças ocupacionais, 
-    promovendo a <strong>saúde e segurança dos trabalhadores</strong>.
-  </p>
-
-  <p>
-    As ações aqui definidas foram planejadas a partir da <strong>identificação de riscos</strong>, 
-    <strong>avaliação de riscos</strong> e <strong>estabelecimento de medidas de controle</strong>, 
-    considerando a <strong>hierarquia de controles</strong> prevista na legislação 
-    (eliminação, substituição, controles de engenharia, administrativos e EPIs).
-  </p>
-
-  <p>
-    A <strong>implementação efetiva deste PGR</strong> será monitorada periodicamente por meio de 
-    <strong>auditorias internas</strong>, <strong>atualizações de riscos</strong>, 
-    <strong>programas de conscientização</strong>, <strong>treinamentos</strong> e 
-    <strong>participação dos trabalhadores</strong>, por meio das 
-    <strong>Comissões Internas de Prevenção de Acidentes (CIPAs)</strong> e dos 
-    <strong>Serviços Especializados em Engenharia de Segurança e em Medicina do Trabalho (SESMT)</strong>.
-  </p>
-
-  <p>
-    A empresa se compromete a <strong>revisar este PGR sempre que ocorrerem alterações significativas</strong> 
-    nas condições de trabalho, nos processos, nos equipamentos ou na legislação aplicável, 
-    garantindo sua <strong>contínua eficácia</strong> e <strong>melhoria contínua</strong> do 
-    <strong>Sistema de Gestão de Segurança e Saúde no Trabalho</strong>.
-  </p>`;
-    const [consideracoesFinaisContent, setConsideracoesFinaisContent] = useState(textoConsideracoesFinaisPadrao);
+    const [consideracoesFinaisContent, setConsideracoesFinaisContent] = useState('');
     const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [status, setStatus] = useState('ATIVO');
+
+    useEffect(() => {
+        const fetchPgr = async () => {
+            try {
+                
+                const data = await pgrService.getPgrById(id); 
+                setSelectedEmpresa(data.unidadeOperacional.empresa);
+                setSelectedUnidade(data.unidadeOperacional);
+                const setor = data.unidadeOperacional?.setores?.[0] || null;
+                setSelectedSetor(setor);
+                
+                // Configurar o prestador de serviço (responsável PGR)
+                if (data.prestadorServico) {
+                    setSelectedEngenheiro({
+                        id: data.prestadorServico.id,
+                        nome: data.prestadorServico.nome || ''
+                    });
+                }
+                setDataDocumento(data.dataDocumento.split('T')[0]);
+                setDataRevisao(data.dataRevisao ? data.dataRevisao.split('T')[0] : '');
+                setMetodologiaSelecionada(data.planoAcaoMetodologia);
+                setTextoMetodologia(data.planoAcaoOrientacoes);
+                setPlanoAcaoRiscos(data.planoAcaoRiscos || []);
+                setTermoValidacaoContent(data.termoValidacao);
+                setDocumentoBaseContent(data.documentoBase);
+                setDadosEmpresaResponsavel(data.responsavelEmpresa);
+                setTermoCienciaResponsavel(data.termoCiencia);
+                setConsideracoesFinaisContent(data.consideracoesFinais);
+                setStatus(data.status || 'ATIVO');
+                if (data.capaUrl) {
+                    const fullUrl = data.capaUrl.startsWith('http') 
+                        ? data.capaUrl 
+                        : `${apiService.defaults.baseURL.replace('/api', '')}${data.capaUrl.startsWith('/') ? '' : '/'}${data.capaUrl}`;
+                    setCapaPreview(fullUrl);
+                }
+            } catch (err) {
+                setSaveError('Falha ao carregar dados do PGR.');
+                console.error(err);
+            }
+        };
+        fetchPgr();
+    }, [id]);
 
     const handlePlanoAcaoChange = (index, field, value) => {
         const novosRiscos = [...planoAcaoRiscos];
@@ -511,7 +510,6 @@ export default function CadastrarPGR() {
         setIsPrestadorModalOpen(false);
     };
 
-    // Efeito para buscar riscos quando o setor muda
     useEffect(() => {
         if (selectedSetor && selectedSetor.id) {
             setLoadingRiscos(true);
@@ -545,20 +543,24 @@ export default function CadastrarPGR() {
         }
     }, [selectedSetor]);
 
-    // Efeito para sincronizar riscos do setor com o plano de ação
     useEffect(() => {
-        const novasAcoes = riscosDoSetor.map(risco => ({
-            id: `${risco.id}-${Date.now()}`,
-            risco: risco,
-            acao: '',
-            responsavel: '',
-            prazo: '',
-            status: 'A Fazer'
-        }));
-        setPlanoAcaoRiscos(novasAcoes);
+        const riscosAtuais = new Set(planoAcaoRiscos.map(r => r.risco.id));
+        const novasAcoes = riscosDoSetor
+            .filter(risco => !riscosAtuais.has(risco.id))
+            .map(risco => ({
+                id: `${risco.id}-${Date.now()}`,
+                risco: risco,
+                acao: '',
+                responsavel: '',
+                prazo: '',
+                status: 'A Fazer'
+            }));
+        if (novasAcoes.length > 0) {
+            setPlanoAcaoRiscos(prev => [...prev, ...novasAcoes]);
+        }
     }, [riscosDoSetor]);
 
-    const handleSave = async () => {
+    const handleUpdate = async () => {
         setSaveError(null);
         setSaveSuccess(false);
         setIsSaving(true);
@@ -569,6 +571,7 @@ export default function CadastrarPGR() {
             setorId: selectedSetor?.id,
             prestadorServicoId: selectedEngenheiro?.id,
             dataDocumento,
+            dataRevisao,
             planoAcaoMetodologia: metodologiaSelecionada,
             planoAcaoOrientacoes: textoMetodologia,
             planoAcaoRiscos: planoAcaoRiscos.map(acao => ({
@@ -583,13 +586,14 @@ export default function CadastrarPGR() {
             responsavelEmpresa: dadosEmpresaResponsavel,
             termoCiencia: termoCienciaResponsavel,
             consideracoesFinais: consideracoesFinaisContent,
+            status: status
         };
 
         try {
-            await pgrService.savePGR(pgrData, capaFile);
+            await pgrService.updatePgr(id, pgrData, capaFile);
             setShowSuccessModal(true);
             setTimeout(() => {
-                navigate("/seguranca/pgr");
+                navigate("/seguranca/listar-pgr");
             }, 1500);
         } catch (error) {
             setSaveError(error.message);
@@ -619,7 +623,7 @@ export default function CadastrarPGR() {
     const renderTabContent = () => {
         switch (activeTab) {
             case 'capa': 
-                return <TabCapa onFileChange={setCapaFile}/>;
+                return <TabCapa onFileChange={setCapaFile} initialPreviewUrl={capaPreview} />; 
             case 'termo': 
                 return (
                     <TabTermoValidacao
@@ -631,7 +635,7 @@ export default function CadastrarPGR() {
                     />
                 );
             case 'base': 
-                return <TabDocumentoBase content={documentoBaseContent} onContentChange={setDocumentoBaseContent} />;
+                return <TabDocumentoBase content={documentoBaseContent} onContentChange={setDocumentoBaseContent} />; 
             case 'dados': 
                 return (
                     <TabDadosEmpresa 
@@ -641,6 +645,8 @@ export default function CadastrarPGR() {
                         onResponsavelChange={setDadosEmpresaResponsavel}
                         termo={termoCienciaResponsavel}
                         onTermoChange={setTermoCienciaResponsavel}
+                        dataRevisao={dataRevisao}
+                        onDataRevisaoChange={setDataRevisao}
                     />
                 );
             case 'mapa':
@@ -716,7 +722,7 @@ export default function CadastrarPGR() {
             <div className="bg-gray-50 min-h-screen p-4 sm:p-6 lg:p-8 font-sans">
                 <div className="container mx-auto">
                     <header className="mb-6">
-                        <h1 className="text-3xl font-bold text-gray-900">Cadastrar PGR</h1>
+                        <h1 className="text-3xl font-bold text-gray-900">Editar/Revisar PGR</h1>
                     </header>
                     <form>
                         <div className="bg-white p-6 rounded-lg shadow-md mb-8">
@@ -726,6 +732,7 @@ export default function CadastrarPGR() {
                                     <InputWithActions
                                         value={selectedEmpresa?.razaoSocial || ""}
                                         onClick={() => setIsEmpresaModalOpen(true)}
+                                        disabled={true}
                                         actions={
                                             <>
                                                 <button type="button" onClick={(e) => { e.stopPropagation(); setIsEmpresaModalOpen(true); }} className="p-2.5 text-white bg-green-500 hover:bg-green-600"><Search size={18} /></button>
@@ -740,7 +747,7 @@ export default function CadastrarPGR() {
                                         placeholder="Selecione uma empresa primeiro"
                                         value={selectedUnidade?.nome || ""}
                                         onClick={() => setIsUnidadeModalOpen(true)}
-                                        disabled={!selectedEmpresa}
+                                        disabled={!selectedEmpresa || true}
                                         actions={
                                             <>
                                                 <button type="button" disabled={!selectedEmpresa} onClick={(e) => { e.stopPropagation(); setIsUnidadeModalOpen(true); }} className="p-2.5 text-white bg-green-500 hover:bg-green-600 disabled:bg-gray-400"><Search size={18} /></button>
@@ -748,6 +755,17 @@ export default function CadastrarPGR() {
                                             </>
                                         }
                                     />
+                                </div>
+                                <div>
+                                    <label className="text-sm font-medium text-gray-600">Status</label>
+                                    <select
+                                        value={status}
+                                        onChange={(e) => setStatus(e.target.value)}
+                                        className="mt-1 w-full py-2 px-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    >
+                                        <option value="ATIVO">ATIVO</option>
+                                        <option value="INATIVO">INATIVO</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
@@ -776,7 +794,7 @@ export default function CadastrarPGR() {
                     {saveSuccess && (
                         <div className="mt-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg flex items-center gap-2">
                             <CheckCircle size={20} />
-                            <span>PGR salvo com sucesso! Redirecionando...</span>
+                            <span>PGR atualizado com sucesso! Redirecionando...</span>
                         </div>
                     )}
 
@@ -793,12 +811,12 @@ export default function CadastrarPGR() {
                         </button>
                         <button
                             type="button"
-                            onClick={handleSave}
+                            onClick={handleUpdate}
                             disabled={isSaving || saveSuccess}
                             className="flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {isSaving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
-                            {isSaving ? 'Salvando...' : 'Salvar'}
+                            {isSaving ? 'Salvando...' : 'Salvar Alterações'}
                         </button>
                     </div>
                 </div>
@@ -807,7 +825,7 @@ export default function CadastrarPGR() {
                         <div className="bg-white p-6 rounded-lg shadow-lg">
                             <div className="text-center">
                                 <div className="text-green-600 text-6xl mb-4">✓</div>
-                                <h3 className="text-lg font-semibold text-gray-900 mb-2">Pgr salva com sucesso!</h3>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-2">PGR atualizado com sucesso!</h3>
                                 <p className="text-gray-600">Redirecionando...</p>
                             </div>
                         </div>
@@ -848,4 +866,3 @@ export default function CadastrarPGR() {
         </>
     );
 }
-

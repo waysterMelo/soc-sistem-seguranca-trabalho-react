@@ -1,19 +1,15 @@
 import React, {useState, useEffect} from 'react';
 import {useParams, useNavigate} from 'react-router-dom';
 import {toast, ToastContainer} from 'react-toastify';
-// import 'react-toastify/dist/ReactToastify.css'; // This import should be in a global file like App.jsx or main.jsx
 import ltcatService from '../../api/services/ltcat/ltcatService.js';
 import setorService from '../../api/services/cadastros/Setor/setorService.js';
-
-// Importe seus modais
 import EmpresaSearchModal from '../../components/modal/empresaSearchModal.jsx';
 import UnidadesOperacionaisModal from '../../components/modal/unidadesOperacionaisModal.jsx';
 import PrestadorServicoSearchModal from '../../components/modal/PrestadorServico.jsx';
 import SetorSearchModal from '../../components/modal/SetorSearchModal.jsx';
 
 import {
-    Search, Trash2, Plus, RefreshCw, Paperclip, Bold, Italic, Underline, Strikethrough,
-    AlignLeft, AlignCenter, AlignRight, List, Link2, Image as ImageIcon, X
+    Search, Trash2, Plus, Bold, Italic, Underline, List, Image as ImageIcon, X
 } from 'lucide-react';
 
 // --- COMPONENTES REUTILIZÁVEIS ---
@@ -25,6 +21,7 @@ const FormSection = ({title, children, className}) => (
         </div>
     </div>
 );
+
 const InputWithActions = ({placeholder, value, actions, className = '', onClick}) => (
     <div className="relative flex items-center">
         <input
@@ -38,46 +35,152 @@ const InputWithActions = ({placeholder, value, actions, className = '', onClick}
         <div className="absolute right-0 flex">{actions}</div>
     </div>
 );
-const RichTextEditor = ({name, value, onChange, rows = 6}) => (
-    <div className="border border-gray-300 rounded-lg">
-        <div className="flex flex-wrap items-center p-2 border-b border-gray-200 bg-gray-50 rounded-t-lg">
-            <select className="text-sm border-gray-300 rounded-md mr-2">
-                <option>Normal</option>
-            </select>
-            <div className="flex items-center space-x-1">
-                {[Bold, Italic, Underline, Strikethrough, AlignLeft, AlignCenter, AlignRight, List, Link2, ImageIcon].map((Icon, index) => (
-                    <button key={index} type="button" className="p-2 text-gray-600 rounded-md hover:bg-gray-200"><Icon
-                        size={16}/></button>
-                ))}
-            </div>
+
+const RichTextEditor = ({ content, onChange, heightClass = 'h-64', readOnly = false }) => {
+    const editorRef = React.useRef(null);
+
+    const handleContentChange = (event) => {
+        if (!readOnly && onChange) {
+            onChange(event.target.innerHTML);
+        }
+    };
+
+    const formatDoc = (command, value = null) => {
+        if (readOnly || !editorRef.current) return;
+        editorRef.current.focus();
+        document.execCommand(command, false, value);
+        if (onChange) {
+            onChange(editorRef.current.innerHTML);
+        }
+    };
+
+    React.useEffect(() => {
+        if (editorRef.current && editorRef.current.innerHTML !== content) {
+            editorRef.current.innerHTML = content || '';
+        }
+    }, [content]);
+
+    const editorButtons = [
+        { icon: Bold, action: () => formatDoc('bold') },
+        { icon: Italic, action: () => formatDoc('italic') },
+        { icon: Underline, action: () => formatDoc('underline') },
+        { icon: List, action: () => formatDoc('insertUnorderedList') },
+    ];
+
+    return (
+        <div className="border border-gray-300 rounded-lg">
+            {!readOnly && (
+                <div className="flex flex-wrap items-center p-2 border-b border-gray-200 bg-gray-50 rounded-t-lg">
+                    <div className="flex items-center space-x-1">
+                        {editorButtons.map(({ icon: Icon, action }, index) => (
+                            <button 
+                                key={index} 
+                                type="button" 
+                                onClick={action} 
+                                className="p-2 text-gray-600 rounded-md hover:bg-gray-200"
+                            >
+                                <Icon size={16} />
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+            <div
+                ref={editorRef}
+                contentEditable={!readOnly}
+                onInput={handleContentChange}
+                className={`w-full p-4 ${heightClass} overflow-y-auto focus:outline-none rounded-b-lg ${readOnly ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+            ></div>
         </div>
-        <textarea name={name} value={value || ''} onChange={onChange} rows={rows}
-                  className="w-full p-4 focus:outline-none rounded-b-lg"></textarea>
-    </div>
-);
+    );
+};
+
+const TabCapa = ({ onFileChange }) => { 
+        const fileInputRef = React.useRef(null);
+        const [previewUrl, setPreviewUrl] = useState(null);
+    
+        const handleImageChange = (event) => {
+            const file = event.target.files[0];
+            if (file && file.type.startsWith('image/')) {
+                setPreviewUrl(URL.createObjectURL(file)); 
+                onFileChange(file);
+            }
+        };
+    
+        const handleRemoveImage = () => {
+            setPreviewUrl(null);
+            onFileChange(null);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = "";
+            }
+        };
+    
+        const triggerFileSelect = () => fileInputRef.current.click();
+    
+        return (
+            <div className="space-y-6">
+                <p className="text-sm text-gray-600">Selecione uma imagem para a capa do documento.</p>
+                <div
+                    className="w-full h-64 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-center cursor-pointer hover:border-blue-500 hover:bg-gray-50 transition-colors"
+                    onClick={triggerFileSelect}
+                >
+                    {previewUrl ? (
+                        <img src={previewUrl} alt="Pré-visualização da Capa" className="max-h-full max-w-full object-contain" />
+                    ) : (
+                        <div className="text-gray-500">
+                            <ImageIcon size={48} className="mx-auto mb-2" />
+                            <span>Clique para selecionar uma imagem</span>
+                        </div>
+                    )}
+                </div>
+                <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleImageChange}
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                />
+    
+                {previewUrl && (
+                    <button
+                        type="button"
+                        onClick={handleRemoveImage}
+                        className="flex items-center justify-center gap-2 mx-auto px-4 py-2 text-sm font-medium text-red-600 bg-red-100 rounded-md hover:bg-red-200"
+                    >
+                        <Trash2 size={16} />
+                        Remover Imagem
+                    </button>
+                )}
+            </div>
+        );
+};
+
 const TabButton = ({label, isActive, onClick}) => (<button type="button" onClick={onClick}
-                                                           className={`px-4 py-3 -mb-px text-sm font-semibold whitespace-nowrap transition-colors border-b-2 ${isActive ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'}`}>{label}</button>);
+    className={`px-4 py-3 -mb-px text-sm font-semibold whitespace-nowrap transition-colors border-b-2 ${isActive ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'}`}>{label}</button>);
 
 // --- COMPONENTE PRINCIPAL ---
 export default function CadastrarLTCAT() {
     const {id} = useParams();
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('capa');
-
-    // Estados para modais
     const [isEmpresaModalOpen, setIsEmpresaModalOpen] = useState(false);
     const [isUnidadeModalOpen, setIsUnidadeModalOpen] = useState(false);
     const [isPrestadorModalOpen, setIsPrestadorModalOpen] = useState(false);
     const [isSetorModalOpen, setIsSetorModalOpen] = useState(false);
-
-    // Estados para seleções
     const [selectedEmpresa, setSelectedEmpresa] = useState(null);
     const [selectedUnidade, setSelectedUnidade] = useState(null);
     const [selectedProfissionais, setSelectedProfissionais] = useState([]);
     const [selectedSetores, setSelectedSetores] = useState([]);
     const [paginaAtual, setPaginaAtual] = useState(1);
     const ITENS_POR_PAGINA = 5;
-
+    const [laudoSubTab, setLaudoSubTab] = useState('responsabilidade');
+    const laudoSubTabs = [
+        { id: 'responsabilidade', label: 'Responsabilidade Técnica', field: 'laudoResponsabilidadeTecnica' },
+        { id: 'introducao', label: 'Introdução', field: 'laudoIntroducao' },
+        { id: 'objetivos', label: 'Objetivos', field: 'laudoObjetivos' },
+        { id: 'consideracoes', label: 'Considerações Gerais', field: 'laudoConsideracoesGerais' },
+        { id: 'criterios', label: 'Critérios de Avaliação', field: 'laudoCriteriosAvaliacao' },
+        ];
     const [ltcatData, setLtcatData] = useState({
         unidadeOperacionalId: null,
         dataDocumento: new Date().toISOString().split('T')[0],
@@ -89,44 +192,244 @@ export default function CadastrarLTCAT() {
         comentariosInternos: '',
         condicoesPreliminares: '',
         conteudoCapa: '',
-        laudoResponsabilidadeTecnica: '',
-        laudoIntroducao: '',
-        laudoObjetivos: '',
-        laudoConsideracoesGerais: '',
-        laudoCriteriosAvaliacao: '',
-        recomendacoesTecnicas: '',
-        conclusao: '',
-        planejamentoAnual: '',
+        laudoResponsabilidadeTecnica: `
+        <p>O presente documento terá a responsabilidade técnica e é assinado pelo <strong>Engenheiro de Segurança do Trabalho [NOME DO PROFISSIONAL SELECIONADO]</strong>.</p>
+
+<p>A habilitação para executar tal tarefa está explícita na <strong>Constituição Federal</strong>, no <strong>Título II – dos Direitos e Garantias Fundamentais</strong>, <strong>Capítulo I – dos Direitos e Deveres Individuais</strong> e <strong>Artigo 5º – Item XIII</strong>; no <strong>Artigo 195 da CLT</strong>; e na <strong>Resolução nº 359 de 31/07/91</strong>, do <strong>Conselho Federal de Engenharia – CONFEA</strong>.</p>
+        `,
+        laudoIntroducao: `
+            <p>O <strong>Laudo Técnico das Condições Ambientais de Trabalho (LTCAT)</strong> é um documento técnico legal, assinado por profissional responsável qualificado e legalmente constituído, podendo ser utilizado para subsidiar a elaboração de programas e ações de prevenção referentes à segurança e saúde ocupacional, tais como:</p>
+
+<ul>
+  <li>Programa de Gerenciamento de Riscos (PGR)</li>
+  <li>Programa de Controle Médico de Saúde Ocupacional (PCMSO)</li>
+  <li>Emissão do Perfil Profissiográfico Previdenciário (PPP)</li>
+</ul>
+
+<p>Esse documento apresenta-se tanto como um <strong>atestado das ações preventivas já implementadas na empresa</strong>, quanto como uma <strong>ferramenta de gestão na busca de melhorias nas condições de trabalho</strong>.</p>
+        `,
+        laudoObjetivos: `
+        <p>O LTCAT tem por finalidade:</p>
+
+<ul>
+  <li>
+    Cumprir as exigências da legislação previdenciária – <strong>Art. 58 da Lei nº 9.528, de 10.12.97</strong>;
+  </li>
+  <li>
+    Dar sustentabilidade técnica às condições ambientais existentes na empresa e subsidiar o enquadramento de tais atividades no referente ao recolhimento das denominadas <strong>Alíquotas Suplementares do Seguro de Acidentes do Trabalho (SAT)</strong>, criadas pelo texto da <strong>Lei nº 9.732, de 11.12.98</strong>;
+  </li>
+  <li>
+    Avaliar as condições, os ambientes de trabalho e determinar a caracterização da exposição dos empregados aos agentes nocivos, segundo a legislação trabalhista e previdenciária vigentes;
+  </li>
+  <li>
+    Caracterizar as condições do ambiente de trabalho quanto à <strong>insalubridade ou não</strong> e quanto à <strong>periculosidade ou não</strong> das atividades e operações desenvolvidas pelos empregados.
+  </li>
+</ul>
+        `,
+        laudoConsideracoesGerais: `
+            <p>O presente <strong>Laudo Técnico de Condições Ambientais de Trabalho (LTCAT)</strong> foi elaborado com base em vistorias técnicas, medições ambientais e análise documental, observando-se a legislação trabalhista e previdenciária vigente, em especial as Normas Regulamentadoras do Ministério do Trabalho e Emprego (MTE) e demais normas aplicáveis.</p>
+<p>Ressalta-se que as informações aqui contidas <strong>refletem as condições existentes na data da inspeção</strong>, podendo sofrer alterações em decorrência de modificações no ambiente de trabalho, processos produtivos, tecnologias ou organização do trabalho.</p>
+<p>Assim, recomenda-se a <strong>constante atualização do presente laudo</strong>, bem como a <strong>implementação de medidas de controle e prevenção de riscos ocupacionais</strong>, visando garantir a integridade física e a saúde dos trabalhadores.</p>
+        `,
+        laudoCriteriosAvaliacao: `
+        <p>A avaliação das condições ambientais de trabalho foi conduzida segundo os parâmetros estabelecidos pela legislação vigente, incluindo:</p>
+<ul>
+    <li>Consolidação das Leis do Trabalho (CLT)</li>
+    <li>Normas Regulamentadoras (NRs)</li>
+    <li>Notas Técnicas e Instruções Normativas do INSS</li>
+    <li>Normas de Higiene Ocupacional (NHOs) da FUNDACENTRO</li>
+    <li>Normas Brasileiras (NBRs) aplicáveis</li>
+</ul>
+<p>Foram utilizados <strong>métodos reconhecidos de amostragem, medição e análise</strong> de agentes físicos, químicos e biológicos, comparando-se os resultados obtidos com os limites de tolerância definidos pela legislação e referências técnicas nacionais e internacionais.</p>
+<p>O enquadramento das atividades e a caracterização da exposição consideraram, ainda, a <strong>habitualidade e permanência do trabalhador</strong> frente aos agentes nocivos, em conformidade com os critérios técnicos e legais.</p>
+        `,
+        recomendacoesTecnicas: `
+        <p>Com base na análise realizada, recomenda-se a <strong>adoção contínua de medidas de prevenção e controle dos riscos ambientais</strong> identificados, em conformidade com a legislação trabalhista e previdenciária vigente.</p>
+<p>Devem ser priorizadas as seguintes ações:</p>
+<ul>
+    <li><strong>Eliminação ou redução da exposição</strong> a agentes nocivos, por meio de melhorias nos processos, adequação de máquinas e equipamentos, e utilização de tecnologias mais seguras.</li>
+    <li>Implementação de <strong>medidas de proteção coletiva (EPCs)</strong>.</li>
+    <li>Fornecimento e gestão adequada de <strong>Equipamentos de Proteção Individual (EPIs)</strong>.</li>
+</ul>
+<p>Recomenda-se ainda a <strong>manutenção de programas de saúde ocupacional</strong>, como o PCMSO e o PGR, além de <strong>treinamentos periódicos</strong> aos trabalhadores, de forma a garantir a conscientização e o uso correto das medidas de proteção implementadas.</p>
+        `,
+        conclusao: `
+        <p>O presente <strong>Laudo Técnico de Condições Ambientais de Trabalho (LTCAT)</strong> foi elaborado de acordo com os critérios técnicos e legais aplicáveis, refletindo a realidade das condições laborais observadas na data de sua emissão.</p>
+<p>As informações aqui registradas visam subsidiar o cumprimento das exigências previdenciárias e trabalhistas, bem como orientar a adoção de medidas de prevenção e promoção da saúde ocupacional.</p>
+<p>Ressalta-se a <strong>necessidade de atualização periódica do laudo</strong>, especialmente em situações de alteração de processos, ambientes ou organização do trabalho, garantindo assim a efetividade do gerenciamento de riscos e a preservação da saúde dos trabalhadores.</p>
+        `,
     });
+    const [capaImagemFile, setCapaImagemFile] = useState(null);
+
+    useEffect(() => {
+        // Usar apenas o primeiro profissional selecionado
+        if (selectedProfissionais.length > 0) {
+            const profissional = selectedProfissionais[0];
+            const nomeCompleto = `${profissional.nome} ${profissional.sobrenome}`;
+            
+            setLtcatData(prev => ({
+                ...prev,
+                laudoResponsabilidadeTecnica: prev.laudoResponsabilidadeTecnica.replace(
+                    '[NOME DO PROFISSIONAL SELECIONADO]',
+                    nomeCompleto
+                )
+            }));
+        }
+    }, [selectedProfissionais]);
+
+    useEffect(() => {
+    if (!id) return;
+
+    const carregarLTCAT = async () => {
+        try {
+            const data = await ltcatService.getLtcatById(id);
+
+            setLtcatData({
+                ...data,
+                dataDocumento: data.dataDocumento?.split('T')[0] || '',
+                dataVencimento: data.dataVencimento?.split('T')[0] || '',
+            });
+
+            setSelectedEmpresa(data.empresa);
+            setSelectedUnidade(data.unidadeOperacional);
+            setSelectedProfissionais(data.prestadoresServico || []);
+            setSelectedSetores(data.setores || []);
+
+        } catch (error) {
+            console.error("Erro ao carregar LTCAT:", error);
+            toast.error("Erro ao carregar os dados do LTCAT.");
+            navigate('/ltcat'); // ou para onde quiser
+        }
+    };
+
+    carregarLTCAT();
+}, [id, navigate]);
 
     const handleInputChange = (e) => {
         const {name, value} = e.target;
         setLtcatData(prev => ({...prev, [name]: value}));
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        const funcoesIds = [...new Set(selectedSetores.flatMap(setor => (setor.funcoes || []).map(f => f.id)))];
-        const agentesNocivos = selectedSetores.flatMap(setor =>
-            (setor.funcoes || []).flatMap(funcao =>
-                (funcao.agentesNocivosEsocial || []).map(agente => ({
-                    agenteNocivoId: agente.agenteNocivoCatalogo.id,
-                    funcaoId: funcao.id
-                }))
-            )
-        );
-        const payload = {
-            ...ltcatData,
-            prestadoresServicoIds: selectedProfissionais.map(p => p.id),
-            funcoesIds: funcoesIds,
-            agentesNocivos: agentesNocivos,
-            profissionaisAmbientaisIds: [], aparelhosIds: [], bibliografiasIds: [], empresasContratantesIds: [],
-        };
-        console.log("Enviando para API:", payload);
-        // ... Lógica de envio
+    const validarFormulario = () => {
+    const erros = [];
+
+    if (!selectedEmpresa) erros.push("Empresa é obrigatória.");
+    if (!selectedUnidade) erros.push("Unidade Operacional é obrigatória.");
+    if (selectedProfissionais.length === 0) erros.push("Selecione pelo menos um profissional.");
+    if (selectedSetores.length === 0) erros.push("Selecione pelo menos um setor.");
+    if (!ltcatData.dataDocumento) erros.push("Data do documento é obrigatória.");
+    if (!ltcatData.dataVencimento) erros.push("Data de vencimento é obrigatória.");
+
+    if (erros.length > 0) {
+        erros.forEach(msg => toast.warning(msg));
+        return false;
+    }
+    return true;
     };
 
-    // --- Handlers dos Modais ---
+    const handleSubmit = async (e) => {
+
+        e.preventDefault();
+
+        if (!validarFormulario()) return;
+
+        try {
+
+        const funcoesIds = [
+
+        ...new Set(
+
+        selectedSetores.flatMap(setor =>
+
+        (setor.funcoes || []).map(f => f.id)
+
+        )
+
+        )
+
+        ];
+
+
+
+        const agentesNocivos = selectedSetores.flatMap(setor =>
+
+        (setor.funcoes || []).flatMap(funcao =>
+
+        (funcao.agentesNocivosEsocial || []).map(agente => ({
+
+        agenteNocivoId: agente.agenteNocivoCatalogo.id,
+
+        funcaoId: funcao.id
+
+        }))
+
+        )
+
+        );
+
+
+
+
+
+        const payload = {
+
+        ...ltcatData,
+
+        unidadeOperacionalId: selectedUnidade?.id || null,
+
+        prestadoresServicoIds: selectedProfissionais.map(p => p.id),
+
+        funcoesIds: funcoesIds,
+
+        agentesNocivos: agentesNocivos,
+
+        profissionaisAmbientaisIds: [],
+
+        aparelhosIds: [],
+
+        bibliografiasIds: [],
+
+        empresasContratantesIds: [],
+
+        };
+
+
+
+        delete payload.imagemCapa;
+
+
+
+
+
+        if (id) {
+
+        await ltcatService.updateLtcat(id, payload, capaImagemFile);
+
+        toast.success("LTCAT atualizado com sucesso!");
+
+        } else {
+
+        await ltcatService.createLtcat(payload, capaImagemFile);
+
+        toast.success("LTCAT criado com sucesso!");
+
+        }
+
+
+
+        navigate('/seguranca/ltcat');
+
+        } catch (error) {
+
+        console.error("Erro ao salvar LTCAT:", error);
+
+        toast.error("Erro ao salvar LTCAT. Verifique os dados e tente novamente.");
+
+        }
+
+    };
+
+
     const handleSelectEmpresa = (empresa) => {
         setSelectedEmpresa(empresa);
         setIsEmpresaModalOpen(false);
@@ -140,7 +443,7 @@ export default function CadastrarLTCAT() {
     };
     const handleSelectUnidade = (unidade) => {
         setSelectedUnidade(unidade);
-        setLtcatData(p => ({...p, unidadeOperacionalId: unidade.id, cidade: unidade.cidade, estado: unidade.estado}));
+        setLtcatData(p => ({...p, unidadeOperacionalId: unidade.unidadeOperacionalId, cidade: unidade.cidade, estado: unidade.estado}));
         setIsUnidadeModalOpen(false);
     };
     const handleSelectPrestador = (prestador) => {
@@ -201,9 +504,38 @@ export default function CadastrarLTCAT() {
 
     const handleRemoveSetor = (setorId) => setSelectedSetores(prev => prev.filter(s => s.id !== setorId));
 
-    // --- SUB-COMPONENTES DAS ABAS ---
-    const TabCapa = () => <RichTextEditor name="conteudoCapa" value={ltcatData.conteudoCapa}
-                                          onChange={handleInputChange}/>;
+
+    const TabLaudoTecnico = () => {
+        const activeSubTab = laudoSubTabs.find(tab => tab.id === laudoSubTab);
+        if (!activeSubTab) return null;
+        const contentField = activeSubTab.field;
+
+        return (
+            <div className="space-y-6">
+                <div className="border-b border-gray-200 overflow-x-auto">
+                    <nav className="flex space-x-2">
+                        {laudoSubTabs.map(tab => (
+                            <TabButton
+                                key={tab.id}
+                                label={tab.label}
+                                isActive={laudoSubTab === tab.id}
+                                onClick={() => setLaudoSubTab(tab.id)}
+                            />
+                        ))}
+                    </nav>
+                </div>
+            
+                <RichTextEditor
+                    content={ltcatData[contentField] || ''}
+                    onChange={(html) => {
+                        setLtcatData(prev => ({ ...prev, [contentField]: html }));
+                    }}
+                    readOnly={true}
+                />
+            </div>
+        );
+    };
+
     const TabProfissionais = () => (
         <div className="space-y-4">
             <div>
@@ -248,25 +580,31 @@ export default function CadastrarLTCAT() {
     );
 
     const mainTabs = [
-        {id: 'capa', label: 'Capa', component: <TabCapa/>},
+        {id: 'capa', label: 'Capa', component: <TabCapa onFileChange={setCapaImagemFile} initialImageUrl={ltcatData.imagemCapa} />},
         {id: 'profissionais', label: 'Profissionais', component: <TabProfissionais/>},
         {id: 'setores', label: 'Setores', component: <TabSetores/>},
         {
             id: 'laudo',
             label: 'Laudo Técnico',
-            component: <RichTextEditor name="laudoIntroducao" value={ltcatData.laudoIntroducao}
-                                       onChange={handleInputChange}/>
+            component: <TabLaudoTecnico/>
         },
         {
             id: 'recomendacoes',
             label: 'Recomendações',
-            component: <RichTextEditor name="recomendacoesTecnicas" value={ltcatData.recomendacoesTecnicas}
-                                       onChange={handleInputChange}/>
+            component: <RichTextEditor
+                key="recomendacoes"
+                content={ltcatData.recomendacoesTecnicas}
+                onChange={(html) => setLtcatData(p => ({...p, recomendacoesTecnicas: html}))}
+            />
         },
         {
             id: 'conclusao',
             label: 'Conclusão',
-            component: <RichTextEditor name="conclusao" value={ltcatData.conclusao} onChange={handleInputChange}/>
+            component: <RichTextEditor
+                key="conclusao"
+                content={ltcatData.conclusao}
+                onChange={(html) => setLtcatData(p => ({...p, conclusao: html}))}
+            />
         },
     ];
 
@@ -352,9 +690,14 @@ export default function CadastrarLTCAT() {
                                                                        className="mt-1 w-full py-2 px-3 border border-gray-300 rounded-md"/>
                         </div>
                         <div className="col-span-full"><label className="text-sm font-medium text-gray-600">Condições
-                            Preliminares</label><RichTextEditor name="condicoesPreliminares"
-                                                                value={ltcatData.condicoesPreliminares}
-                                                                onChange={handleInputChange} rows={3}/></div>
+                            Preliminares</label>
+                            <RichTextEditor
+                                key="condicoesPreliminares"
+                                content={ltcatData.condicoesPreliminares}
+                                onChange={(html) => setLtcatData(p => ({...p, condicoesPreliminares: html}))}
+                                heightClass="h-40"
+                            />
+                        </div>
                     </FormSection>
 
                     <div className="bg-white rounded-lg shadow-md mt-6">
@@ -455,3 +798,4 @@ export default function CadastrarLTCAT() {
         </div>
     );
 }
+

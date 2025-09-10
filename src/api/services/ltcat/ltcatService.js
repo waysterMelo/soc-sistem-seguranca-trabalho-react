@@ -1,35 +1,47 @@
-import apiService from '../../apiService'; // Verifique se este é o caminho correto para sua configuração do axios
+import apiService from '../../apiService';
+
+
 
 const ltcatService = {
-    getLtcatById: async (id) => {
-        try {
-            const response = await apiService.get(`/ltcat/${id}`);
-            return response.data;
-        } catch (error) {
-            console.error("Erro ao buscar LTCAT por ID:", error);
-            throw error;
-        }
-    },
+  getLtcatById: async (id) => {
+    const response = await apiService.get(`/ltcat/${id}`);
+    return response.data;
+  },
 
-    createLtcat: async (ltcatData) => {
-        try {
-            const response = await apiService.post('/ltcat', ltcatData);
-            return response.data;
-        } catch (error) {
-            console.error("Erro ao criar LTCAT:", error);
-            throw error;
-        }
-    },
+  createLtcat: async (ltcatData, imagemCapaFile) => {
+  
+    const formData = new FormData();
 
-    updateLtcat: async (id, ltcatData) => {
-        try {
-            const response = await apiService.put(`/ltcat/${id}`, ltcatData);
-            return response.data;
-        } catch (error) {
-            console.error("Erro ao atualizar LTCAT:", error);
-            throw error;
-        }
-    },
+  
+    formData.append('ltcat', new Blob([JSON.stringify(ltcatData)], {
+        type: 'application/json'
+    }));
+
+  
+    if (imagemCapaFile) {
+        formData.append('imagemCapa', imagemCapaFile);
+    }
+
+
+    const response = await apiService.post('/ltcat', formData);
+    return response.data;
+  },
+
+  updateLtcat: async (id, ltcatData, imagemCapaFile) => {
+    const formData = new FormData();
+
+    formData.append('ltcat', new Blob([JSON.stringify(ltcatData)], {
+      type: 'application/json'
+    }));
+
+    if (imagemCapaFile) {
+      formData.append('imagemCapa', imagemCapaFile);
+    }
+
+    // A lógica para update é idêntica, mas usando o método PUT.
+    const response = await apiService.put(`/ltcat/${id}`, formData);
+    return response.data;
+  },
 };
 
 export default ltcatService;

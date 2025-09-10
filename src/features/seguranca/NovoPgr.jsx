@@ -66,14 +66,19 @@ const RichTextEditor = ({ content, onChange }) => {
     };
 
     const formatDoc = (command, value = null) => {
-        if (editorRef.current) {
-            editorRef.current.focus();
-            document.execCommand(command, false, value);
-            if (onChange) {
-                onChange(editorRef.current.innerHTML);
-            }
+    if (editorRef.current) {
+        // 1. Devolve o foco para o editor de texto
+        editorRef.current.focus(); 
+        
+        // 2. Aplica o comando (negrito, itálico, etc.)
+        document.execCommand(command, false, value);
+        
+        // 3. Garante que o estado do React seja atualizado imediatamente
+        if (onChange) {
+            onChange(editorRef.current.innerHTML);
         }
-    };
+    }
+};
 
     const editorButtons = [
         { icon: Bold, action: () => formatDoc('bold') },

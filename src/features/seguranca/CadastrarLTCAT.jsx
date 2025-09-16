@@ -99,13 +99,20 @@ const TabCapa = ({ onFileChange, initialImageUrl }) => {
     const fileInputRef = React.useRef(null);
     const [previewUrl, setPreviewUrl] = useState(null);
 
-    useEffect(() => {
-        // Este efeito será executado apenas quando a URL inicial for recebida.
+     useEffect(() => {
         if (initialImageUrl) {
-            const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
-            setPreviewUrl(apiBaseUrl + initialImageUrl);
+            const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+            
+        
+            try {
+                 const fullUrl = new URL(apiBaseUrl + initialImageUrl);
+                 setPreviewUrl(fullUrl.href);
+            } catch (error) {
+                 console.error("URL da imagem inválida:", error);
+                 setPreviewUrl(apiBaseUrl + initialImageUrl);
+            }
         }
-    }, [initialImageUrl]); // Dependa apenas da URL inicial
+    }, [initialImageUrl]);
 
     const handleImageChange = (event) => {
         const file = event.target.files[0];
@@ -271,6 +278,7 @@ export default function CadastrarLTCAT() {
     });
     const [capaImagemFile, setCapaImagemFile] = useState(null);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [funcoesDoLTCAT, setFuncoesDoLTCAT] = useState([]);
 
     useEffect(() => {
     if (id) {
@@ -300,6 +308,7 @@ export default function CadastrarLTCAT() {
                 setInitialImageUrl(data.imagemCapa);
                 setSelectedProfissionais(data.prestadoresServico || []);
                 setSelectedAparelhos(data.aparelhos || []);
+                setFuncoesDoLTCAT(data.funcoes || []);
 
                 // 4. Extrai e define os setores a partir das funções retornadas
                 if (data.funcoes && data.funcoes.length > 0) {
@@ -359,90 +368,52 @@ export default function CadastrarLTCAT() {
     return true;
     };
 
-    const handleSubmit = async (e) => {
+   const handleSubmit = async (e) => {
+    e.preventDefault();
+  if (!validarFormulario()) return;
 
-        e.preventDefault();
+  try {
+   
+    const fonteDeFuncoes = id ? funcoesDoLTCAT : selectedSetores.flatMap(setor => setor.funcoes || []);
+    const funcoesIds = [...new Set(fonteDeFuncoes.map(f => f.id))];
 
-        if (!validarFormulario()) return;
-
-        try {
-
-        const funcoesIds = [
-
-        ...new Set(
-
-        selectedSetores.flatMap(setor =>
-
-        (setor.funcoes || []).map(f => f.id)
-
-        )
-
-        )
-
-        ];
-
-        const agentesNocivos = selectedSetores.flatMap(setor =>
-
-        (setor.funcoes || []).flatMap(funcao =>
-
-        (funcao.agentesNocivosEsocial || []).map(agente => ({
-
+    const agentesNocivos = fonteDeFuncoes.flatMap(funcao =>
+    (funcao.agentesNocivosEsocial || []).map(agente => ({
         agenteNocivoId: agente.agenteNocivoCatalogo.id,
-
         funcaoId: funcao.id
+    }))
+    );
 
-        }))
+    // Prepara o payload final
+    const payload = {
+      ...ltcatData,
+      unidadeOperacionalId: selectedUnidade?.id || null,
+      prestadoresServicoIds: selectedProfissionais.map(p => p.id),
+      funcoesIds,
+      agentesNocivos,
+      profissionaisAmbientaisIds: [],
+      aparelhosIds: selectedAparelhos.map(a => a.id),
+      bibliografiasIds: [],
+      empresasContratantesIds: []
+    };
 
-        )
+    // Remove campo não utilizado na API
+    delete payload.imagemCapa;
 
-        );
-
-        const payload = {
-
-        ...ltcatData,
-
-        unidadeOperacionalId: selectedUnidade?.id || null,
-
-        prestadoresServicoIds: selectedProfissionais.map(p => p.id),
-
-        funcoesIds: funcoesIds,
-
-        agentesNocivos: agentesNocivos,
-
-        profissionaisAmbientaisIds: [],
-
-        aparelhosIds: selectedAparelhos.map(a => a.id),
-
-        bibliografiasIds: [],
-
-        empresasContratantesIds: [],
-
-        };
-
-        delete payload.imagemCapa;
-
-        if (id) {
-
-        await ltcatService.updateLtcat(id, payload, capaImagemFile);
-
-            setShowSuccessModal(true);
-            setTimeout(() => navigate('/seguranca/ltcat'), 1500);
-
-        } else {
-
-        await ltcatService.createLtcat(payload, capaImagemFile);
-
-            setShowSuccessModal(true);
-            setTimeout(() => navigate('/seguranca/ltcat'), 2000);
-        }
-        } catch (error) {
-
-        console.error("Erro ao salvar LTCAT:", error);
-
-        toast.error("Erro ao salvar LTCAT. Verifique os dados e tente novamente.");
-
-        }
-
+    // Envia os dados
+    if (id) {
+      await ltcatService.updateLtcat(id, payload, capaImagemFile);
+      setShowSuccessModal(true);
+      setTimeout(() => navigate('/seguranca/ltcat'), 1500);
+    } else {
+      await ltcatService.createLtcat(payload, capaImagemFile);
+      setShowSuccessModal(true);
+      setTimeout(() => navigate('/seguranca/ltcat'), 2000);
+    }
+  } catch (error) {
+    console.error('Erro ao salvar LTCAT:', error);
+    toast.error('Erro ao salvar LTCAT. Verifique os dados e tente novamente.');
+     }
     };
 
     const handleSelectAparelho = (aparelho) => {
@@ -657,12 +628,11 @@ export default function CadastrarLTCAT() {
         },
     ];
 
-    const todasFuncoes = selectedSetores.flatMap(setor =>
-        (setor.funcoes || []).map(funcao => ({
-            ...funcao,
-            nomeSetor: setor.nome
-        }))
-    );
+    const todasFuncoes = (id ? funcoesDoLTCAT : selectedSetores.flatMap(setor => setor.funcoes || []))
+    .map(funcao => ({
+        ...funcao,
+        nomeSetor: funcao.setor?.nome || 'N/A'
+    }));
 
     // Paginação
     const totalPaginas = Math.ceil(todasFuncoes.length / ITENS_POR_PAGINA);
@@ -825,10 +795,17 @@ export default function CadastrarLTCAT() {
 
                     <div className="flex flex-wrap justify-end gap-4 mt-8">
                         <button type="button" onClick={() => navigate(-1)}
-                                className="bg-red-600 text-white px-8 py-2.5 rounded-md font-semibold hover:bg-red-700 transition-colors">Cancelar
+                                className="bg-gray-500 text-white px-8 py-2.5 rounded-md font-semibold hover:bg-gray-600 transition-colors">Cancelar
                         </button>
+                         {id && (
+                            <button type="button" onClick={handleSubmit}
+                                    className="bg-red-600 text-white px-8 py-2.5 rounded-md font-semibold hover:bg-red-700 transition-colors">
+                                Inativar
+                            </button>   
+                        )}
                         <button type="submit"
-                                className="bg-green-600 text-white px-8 py-2.5 rounded-md font-semibold hover:bg-green-700 transition-colors">Salvar
+                                className="bg-green-600 text-white px-8 py-2.5 rounded-md font-semibold hover:bg-green-700 transition-colors">
+                            {id ? 'Salvar Alterações' : 'Salvar'}
                         </button>
                     </div>
                 </form>
@@ -837,7 +814,7 @@ export default function CadastrarLTCAT() {
                         <div className="bg-white p-6 rounded-lg shadow-lg">
                             <div className="text-center">
                                 <div className="text-green-600 text-6xl mb-4">✓</div>
-                                <h3 className="text-lg font-semibold text-gray-900 mb-2">LTCAT salva com sucesso!</h3>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-2">LTCAT salva com sucesso</h3>
                                 <p className="text-gray-600">Redirecionando...</p>
                             </div>
                         </div>
@@ -862,4 +839,3 @@ export default function CadastrarLTCAT() {
         </div>
     );
 }
-

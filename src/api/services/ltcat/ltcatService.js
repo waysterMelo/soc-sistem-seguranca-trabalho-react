@@ -37,8 +37,12 @@ const ltcatService = {
       formData.append('imagemCapa', imagemCapaFile);
     }
 
-    // A lógica para update é idêntica, mas usando o método PUT.
     const response = await apiService.put(`/ltcat/${id}`, formData);
+    return response.data;
+  },
+
+  inactivateLtcat: async (id) => {
+    const response = await apiService.patch(`/ltcat/${id}/inactivate`);
     return response.data;
   },
 
@@ -59,7 +63,7 @@ const ltcatService = {
 
   async deleteLtcat(id) {
         try {
-            await this.api.delete(`${this.endpoint}/${id}`);
+            await apiService.delete(`/ltcat/${id}`);
         } catch (error) {
             console.error(`Erro ao deletar LTCAT com ID ${id}:`, error);
             throw error;

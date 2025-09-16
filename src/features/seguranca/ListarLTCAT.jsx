@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Edit, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
-import { toast, ToastContainer } from 'react-toastify';
+import { Plus, Edit, Trash2, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react';
 import ltcatService from '../../api/services/ltcat/ltcatService';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -11,6 +10,11 @@ export default function ListarLTCAT() {
     const [loading, setLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [selectedLtcatId, setSelectedLtcatId] = useState(null);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [showErrorModal, setShowErrorModal] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
 
     const fetchLtcats = async (page) => {
         setLoading(true);
@@ -19,7 +23,9 @@ export default function ListarLTCAT() {
             setLtcats(data.content);
             setTotalPages(data.totalPages);
         } catch (error) {
-            toast.error("Erro ao carregar a lista de LTCATs.");
+            const msg = error.response?.data?.message || "Erro ao carregar a lista de LTCATs.";
+            setErrorMessage(msg);
+            setShowErrorModal(true);
         } finally {
             setLoading(false);
         }
@@ -29,19 +35,33 @@ export default function ListarLTCAT() {
         fetchLtcats(currentPage);
     }, [currentPage]);
 
-    const handleDelete = async (id) => {
-        if (window.confirm("Tem certeza que deseja excluir este LTCAT?")) {
+    const handleDelete = (id) => {
+        setSelectedLtcatId(id);
+        setIsDeleteModalOpen(true);
+    };
+
+    const cancelDelete = () => {
+        setIsDeleteModalOpen(false);
+        setSelectedLtcatId(null);
+    };
+
+    const confirmDelete = async () => {
+        if (selectedLtcatId) {
             try {
-                await ltcatService.deleteLtcat(id);
-                toast.success("LTCAT excluído com sucesso!");
-                // Se for o último item de uma página, volte para a página anterior
-                if (ltcats.length === 1 && currentPage > 0) {
-                    setCurrentPage(currentPage - 1);
-                } else {
-                    fetchLtcats(currentPage);
-                }
+                // Assumindo que existe um método deleteLtcat no serviço
+                await ltcatService.deleteLtcat(selectedLtcatId);
+                setIsDeleteModalOpen(false);
+                setShowSuccessModal(true);
+                setTimeout(() => {
+                    setShowSuccessModal(false);
+                    setSelectedLtcatId(null);
+                    fetchLtcats(currentPage); // Refresh the list
+                }, 1500);
             } catch (error) {
-                toast.error("Erro ao excluir o LTCAT.");
+                const msg = error.response?.data?.message || "Ocorreu um erro inesperado ao excluir o LTCAT.";
+                setErrorMessage(msg);
+                setIsDeleteModalOpen(false);
+                setShowErrorModal(true);
             }
         }
     };
@@ -64,10 +84,9 @@ export default function ListarLTCAT() {
         date.setDate(date.getDate() + 1);
         return date.toLocaleDateString('pt-BR');
     };
-
+    
     return (
         <div className="bg-gray-50 min-h-screen p-4 sm:p-6 lg:p-8 font-sans">
-            <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} />
             <div className="container mx-auto">
                 <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
                     <h1 className="text-3xl font-bold text-gray-900 mb-4 sm:mb-0">Gestão de LTCAT</h1>
@@ -130,6 +149,72 @@ export default function ListarLTCAT() {
                         </button>
                     </div>
                 </div>
+
+                {/* Modal de Confirmação de Exclusão */}
+                {isDeleteModalOpen && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+                            <h3 className="text-lg font-semibold text-gray-900 mb-4">Confirmar Exclusão</h3>
+                            <div className="mb-6">
+                                <p className="text-gray-700">
+                                    Tem certeza de que deseja excluir o LTCAT de ID: <strong className="text-red-600 font-bold text-lg">{selectedLtcatId}</strong>?
+                                </p>
+                                <p className="mt-2 text-sm text-red-600">Esta ação não pode ser desfeita.</p>
+                            </div>
+                            <div className="flex justify-end space-x-3">
+                                <button
+                                    type="button"
+                                    onClick={cancelDelete}
+                                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={confirmDelete}
+                                    className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700"
+                                >
+                                    Excluir
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Modal de Sucesso */}
+                {showSuccessModal && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div className="bg-white p-6 rounded-lg shadow-lg">
+                            <div className="text-center">
+                                <div className="text-green-600 text-6xl mb-4">✓</div>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-2">LTCAT excluído com sucesso!</h3>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Modal de Erro */}
+                {showErrorModal && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+                            <div className="flex flex-col items-center text-center">
+                                <AlertTriangle className="text-red-500 w-12 h-12 mb-4" />
+                                <h3 className="text-lg font-semibold text-gray-900 mb-2">Erro ao Processar Solicitação</h3>
+                                <p className="text-gray-700 mb-6">{errorMessage}</p>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowErrorModal(false);
+                                        setErrorMessage('');
+                                    }}
+                                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700"
+                                >
+                                    Fechar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

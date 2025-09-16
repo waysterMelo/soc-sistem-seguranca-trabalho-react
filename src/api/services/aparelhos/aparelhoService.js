@@ -22,6 +22,22 @@ class AparelhoService {
         }
     }
 
+    async getAparelhosModal (search = "", page =0, size = 10){
+        try {
+            const params = {
+                page,
+                size,
+                sorte: 'descricao,asc',
+                search
+            };
+         const response = await this.api.get(this.endpoint, { params });   
+         return response.data;
+        }catch (error) {
+        console.error("Erro ao buscar aparelhos:", error);
+        throw error;
+        }
+    }
+
     async getById(id) {
         try {
             const response = await this.api.get(`${this.endpoint}/${id}`);

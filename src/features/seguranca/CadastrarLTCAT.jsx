@@ -7,12 +7,12 @@ import EmpresaSearchModal from '../../components/modal/empresaSearchModal.jsx';
 import UnidadesOperacionaisModal from '../../components/modal/unidadesOperacionaisModal.jsx';
 import PrestadorServicoSearchModal from '../../components/modal/PrestadorServico.jsx';
 import SetorSearchModal from '../../components/modal/SetorSearchModal.jsx';
+import AparelhagemLtcatModal from '../../components/modal/AparelhagemLtcatModal.jsx';
 
 import {
     Search, Trash2, Plus, Bold, Italic, Underline, List, Image as ImageIcon, X
 } from 'lucide-react';
 
-// --- COMPONENTES REUTILIZÁVEIS ---
 const FormSection = ({title, children, className}) => (
     <div className={`bg-white p-6 rounded-lg shadow-md ${className}`}>
         {title && <h3 className="text-xl font-semibold text-gray-800 border-b border-gray-200 pb-4 mb-6">{title}</h3>}
@@ -95,70 +95,77 @@ const RichTextEditor = ({ content, onChange, heightClass = 'h-64', readOnly = fa
     );
 };
 
-const TabCapa = ({ onFileChange }) => { 
-        const fileInputRef = React.useRef(null);
-        const [previewUrl, setPreviewUrl] = useState(null);
-    
-        const handleImageChange = (event) => {
-            const file = event.target.files[0];
-            if (file && file.type.startsWith('image/')) {
-                setPreviewUrl(URL.createObjectURL(file)); 
-                onFileChange(file);
-            }
-        };
-    
-        const handleRemoveImage = () => {
-            setPreviewUrl(null);
-            onFileChange(null);
-            if (fileInputRef.current) {
-                fileInputRef.current.value = "";
-            }
-        };
-    
-        const triggerFileSelect = () => fileInputRef.current.click();
-    
-        return (
-            <div className="space-y-6">
-                <p className="text-sm text-gray-600">Selecione uma imagem para a capa do documento.</p>
-                <div
-                    className="w-full h-64 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-center cursor-pointer hover:border-blue-500 hover:bg-gray-50 transition-colors"
-                    onClick={triggerFileSelect}
-                >
-                    {previewUrl ? (
-                        <img src={previewUrl} alt="Pré-visualização da Capa" className="max-h-full max-w-full object-contain" />
-                    ) : (
-                        <div className="text-gray-500">
-                            <ImageIcon size={48} className="mx-auto mb-2" />
-                            <span>Clique para selecionar uma imagem</span>
-                        </div>
-                    )}
-                </div>
-                <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleImageChange}
-                    accept="image/*"
-                    style={{ display: 'none' }}
-                />
-    
-                {previewUrl && (
-                    <button
-                        type="button"
-                        onClick={handleRemoveImage}
-                        className="flex items-center justify-center gap-2 mx-auto px-4 py-2 text-sm font-medium text-red-600 bg-red-100 rounded-md hover:bg-red-200"
-                    >
-                        <Trash2 size={16} />
-                        Remover Imagem
-                    </button>
+const TabCapa = ({ onFileChange, initialImageUrl }) => {
+    const fileInputRef = React.useRef(null);
+    const [previewUrl, setPreviewUrl] = useState(null);
+
+    useEffect(() => {
+        // Este efeito será executado apenas quando a URL inicial for recebida.
+        if (initialImageUrl) {
+            const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+            setPreviewUrl(apiBaseUrl + initialImageUrl);
+        }
+    }, [initialImageUrl]); // Dependa apenas da URL inicial
+
+    const handleImageChange = (event) => {
+        const file = event.target.files[0];
+        if (file && file.type.startsWith('image/')) {
+            // Ao selecionar uma nova imagem, o preview é atualizado com a URL local.
+            setPreviewUrl(URL.createObjectURL(file));
+            onFileChange(file);
+        }
+    };
+
+    const handleRemoveImage = () => {
+        setPreviewUrl(null);
+        onFileChange(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+        }
+    };
+
+    const triggerFileSelect = () => fileInputRef.current.click();
+
+    return (
+        <div className="space-y-6">
+            <p className="text-sm text-gray-600">Selecione uma imagem para a capa do documento.</p>
+            <div
+                className="w-full h-64 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-center cursor-pointer hover:border-blue-500 hover:bg-gray-50 transition-colors"
+                onClick={triggerFileSelect}
+            >
+                {previewUrl ? (
+                    <img src={previewUrl} alt="Pré-visualização da Capa" className="max-h-full max-w-full object-contain" />
+                ) : (
+                    <div className="text-gray-500">
+                        <ImageIcon size={48} className="mx-auto mb-2" />
+                        <span>Clique para selecionar uma imagem</span>
+                    </div>
                 )}
             </div>
-        );
+            <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleImageChange}
+                accept="image/*"
+                style={{ display: 'none' }}
+            />
+            {previewUrl && (
+                <button
+                    type="button"
+                    onClick={handleRemoveImage}
+                    className="flex items-center justify-center gap-2 mx-auto px-4 py-2 text-sm font-medium text-red-600 bg-red-100 rounded-md hover:bg-red-200"
+                >
+                    <Trash2 size={16} />
+                    Remover Imagem
+                </button>
+            )}
+        </div>
+    );
 };
 
 const TabButton = ({label, isActive, onClick}) => (<button type="button" onClick={onClick}
     className={`px-4 py-3 -mb-px text-sm font-semibold whitespace-nowrap transition-colors border-b-2 ${isActive ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'}`}>{label}</button>);
 
-// --- COMPONENTE PRINCIPAL ---
 export default function CadastrarLTCAT() {
     const {id} = useParams();
     const navigate = useNavigate();
@@ -167,10 +174,13 @@ export default function CadastrarLTCAT() {
     const [isUnidadeModalOpen, setIsUnidadeModalOpen] = useState(false);
     const [isPrestadorModalOpen, setIsPrestadorModalOpen] = useState(false);
     const [isSetorModalOpen, setIsSetorModalOpen] = useState(false);
+    const [isAparelhagemModalOpen, setIsAparelhagemModalOpen] = useState(false);
     const [selectedEmpresa, setSelectedEmpresa] = useState(null);
     const [selectedUnidade, setSelectedUnidade] = useState(null);
     const [selectedProfissionais, setSelectedProfissionais] = useState([]);
     const [selectedSetores, setSelectedSetores] = useState([]);
+    const [selectedAparelhos, setSelectedAparelhos] = useState([]);
+    const [initialImageUrl, setInitialImageUrl] = useState(null);
     const [paginaAtual, setPaginaAtual] = useState(1);
     const ITENS_POR_PAGINA = 5;
     const [laudoSubTab, setLaudoSubTab] = useState('responsabilidade');
@@ -260,9 +270,59 @@ export default function CadastrarLTCAT() {
         `,
     });
     const [capaImagemFile, setCapaImagemFile] = useState(null);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
 
     useEffect(() => {
-        // Usar apenas o primeiro profissional selecionado
+    if (id) {
+        const carregarLTCAT = async () => {
+            try {
+                const data = await ltcatService.getLtcatById(id);
+
+                // 1. Popula o formulário com todos os dados do LTCAT
+                setLtcatData({
+                    ...data,
+                    dataDocumento: data.dataDocumento?.split('T')[0] || '',
+                    dataVencimento: data.dataVencimento?.split('T')[0] || '',
+                    // Garante que cidade e estado sejam preenchidos a partir da unidade
+                    cidade: data.unidadeOperacional?.cidade || '',
+                    estado: data.unidadeOperacional?.estado || ''
+                });
+
+                // 2. Define a unidade e a empresa selecionadas
+                if (data.unidadeOperacional) {
+                    setSelectedUnidade(data.unidadeOperacional);
+                    if (data.unidadeOperacional.empresa) {
+                        setSelectedEmpresa(data.unidadeOperacional.empresa);
+                    }
+                }
+
+                // 3. Popula as listas de entidades relacionadas
+                setInitialImageUrl(data.imagemCapa);
+                setSelectedProfissionais(data.prestadoresServico || []);
+                setSelectedAparelhos(data.aparelhos || []);
+
+                // 4. Extrai e define os setores a partir das funções retornadas
+                if (data.funcoes && data.funcoes.length > 0) {
+                    const setoresUnicos = data.funcoes.reduce((acc, funcao) => {
+                        if (funcao.setor && !acc.some(s => s.id === funcao.setor.id)) {
+                            acc.push(funcao.setor);
+                        }
+                        return acc;
+                    }, []);
+                    setSelectedSetores(setoresUnicos);
+                }
+
+            } catch (error) {
+                console.error("Erro ao carregar LTCAT:", error);
+                toast.error("Erro ao carregar os dados para edição.");
+                navigate('/seguranca/ltcat');
+            }
+        };
+        carregarLTCAT();
+    }
+    }, [id, navigate]);
+
+    useEffect(() => {
         if (selectedProfissionais.length > 0) {
             const profissional = selectedProfissionais[0];
             const nomeCompleto = `${profissional.nome} ${profissional.sobrenome}`;
@@ -276,34 +336,6 @@ export default function CadastrarLTCAT() {
             }));
         }
     }, [selectedProfissionais]);
-
-    useEffect(() => {
-    if (!id) return;
-
-    const carregarLTCAT = async () => {
-        try {
-            const data = await ltcatService.getLtcatById(id);
-
-            setLtcatData({
-                ...data,
-                dataDocumento: data.dataDocumento?.split('T')[0] || '',
-                dataVencimento: data.dataVencimento?.split('T')[0] || '',
-            });
-
-            setSelectedEmpresa(data.empresa);
-            setSelectedUnidade(data.unidadeOperacional);
-            setSelectedProfissionais(data.prestadoresServico || []);
-            setSelectedSetores(data.setores || []);
-
-        } catch (error) {
-            console.error("Erro ao carregar LTCAT:", error);
-            toast.error("Erro ao carregar os dados do LTCAT.");
-            navigate('/ltcat'); // ou para onde quiser
-        }
-    };
-
-    carregarLTCAT();
-}, [id, navigate]);
 
     const handleInputChange = (e) => {
         const {name, value} = e.target;
@@ -349,8 +381,6 @@ export default function CadastrarLTCAT() {
 
         ];
 
-
-
         const agentesNocivos = selectedSetores.flatMap(setor =>
 
         (setor.funcoes || []).flatMap(funcao =>
@@ -367,10 +397,6 @@ export default function CadastrarLTCAT() {
 
         );
 
-
-
-
-
         const payload = {
 
         ...ltcatData,
@@ -385,7 +411,7 @@ export default function CadastrarLTCAT() {
 
         profissionaisAmbientaisIds: [],
 
-        aparelhosIds: [],
+        aparelhosIds: selectedAparelhos.map(a => a.id),
 
         bibliografiasIds: [],
 
@@ -393,32 +419,22 @@ export default function CadastrarLTCAT() {
 
         };
 
-
-
         delete payload.imagemCapa;
-
-
-
-
 
         if (id) {
 
         await ltcatService.updateLtcat(id, payload, capaImagemFile);
 
-        toast.success("LTCAT atualizado com sucesso!");
+            setShowSuccessModal(true);
+            setTimeout(() => navigate('/seguranca/ltcat'), 1500);
 
         } else {
 
         await ltcatService.createLtcat(payload, capaImagemFile);
 
-        toast.success("LTCAT criado com sucesso!");
-
+            setShowSuccessModal(true);
+            setTimeout(() => navigate('/seguranca/ltcat'), 2000);
         }
-
-
-
-        navigate('/seguranca/ltcat');
-
         } catch (error) {
 
         console.error("Erro ao salvar LTCAT:", error);
@@ -429,6 +445,17 @@ export default function CadastrarLTCAT() {
 
     };
 
+    const handleSelectAparelho = (aparelho) => {
+        
+        if(!selectedAparelhos.some(a => a.id === aparelho.id)) {
+            setSelectedAparelhos(prev => [...prev, aparelho]);
+        }
+        setIsAparelhagemModalOpen(false);
+    };
+
+    const handleRemoveAparelho = (aparelhoId) => {
+        setSelectedAparelhos(prev => prev.filter(a => a.id !== aparelhoId));
+    }
 
     const handleSelectEmpresa = (empresa) => {
         setSelectedEmpresa(empresa);
@@ -579,10 +606,32 @@ export default function CadastrarLTCAT() {
         </div>
     );
 
+    const TabAparelhagem = () => (
+        <div className="space-y-4">
+        <div className="flex justify-end">
+        <button type="button" onClick={() => setIsAparelhagemModalOpen(true)}
+            className="flex items-center gap-2 text-sm bg-blue-600 text-white px-3 py-2 rounded-md hover:bg-blue-700">
+            <Plus size={16}/> Adicionar Aparelho
+        </button>
+        </div>
+        <div className="mt-2 border rounded-md p-2 space-y-2 min-h-[50px]">
+            {selectedAparelhos.length === 0 &&
+            <p className="text-center text-gray-500 py-4">Nenhum aparelho selecionado.</p>}
+            {selectedAparelhos.map((aparelho) => (
+            <div key={aparelho.id} className="flex justify-between items-center bg-gray-100 p-2 rounded">
+            <span>{aparelho.descricao}</span>
+            <button type="button" onClick={() => handleRemoveAparelho(aparelho.id)}
+            className="text-red-500 hover:text-red-700"><Trash2 size={16}/></button>
+            </div>))}
+        </div>
+        </div>
+);
+
     const mainTabs = [
-        {id: 'capa', label: 'Capa', component: <TabCapa onFileChange={setCapaImagemFile} initialImageUrl={ltcatData.imagemCapa} />},
+        {id: 'capa', label: 'Capa', component: <TabCapa onFileChange={setCapaImagemFile} initialImageUrl={initialImageUrl} />}, 
         {id: 'profissionais', label: 'Profissionais', component: <TabProfissionais/>},
         {id: 'setores', label: 'Setores', component: <TabSetores/>},
+        {id: 'aparelhagem', label: 'Aparelhagem', component: <TabAparelhagem />},
         {
             id: 'laudo',
             label: 'Laudo Técnico',
@@ -783,6 +832,18 @@ export default function CadastrarLTCAT() {
                         </button>
                     </div>
                 </form>
+                {showSuccessModal && (
+                    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+                        <div className="bg-white p-6 rounded-lg shadow-lg">
+                            <div className="text-center">
+                                <div className="text-green-600 text-6xl mb-4">✓</div>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-2">LTCAT salva com sucesso!</h3>
+                                <p className="text-gray-600">Redirecionando...</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
             </div>
 
             {/* Renderização dos Modais */}
@@ -795,6 +856,9 @@ export default function CadastrarLTCAT() {
                                          onSelect={handleSelectPrestador}/>
             {selectedEmpresa && <SetorSearchModal isOpen={isSetorModalOpen} onClose={() => setIsSetorModalOpen(false)}
                                                   onSelect={handleSelectSetor} empresaId={selectedEmpresa.id}/>}
+            <AparelhagemLtcatModal isOpen={isAparelhagemModalOpen} 
+            onClose={() => setIsAparelhagemModalOpen(false)}
+                                onSelect={handleSelectAparelho}/>
         </div>
     );
 }

@@ -14,9 +14,8 @@ import ModalCBO from '../../../components/modal/CboModal.jsx';
 import ModalRiscosPGR from '../../../components/modal/RiscoPgrModalSearch.jsx';
 import ModalAgentesNocivos from '../../../components/modal/ModalAgentesNocivos.jsx';
 import ModalExamesPCMSO from '../../../components/modal/ModalExamesPCMSO.jsx';
-import MedicoSearchModal from '../../../components/modal/MedicoSearchModal.jsx'; // CORRIGIDO
+import MedicoSearchModal from '../../../components/modal/MedicoSearchModal.jsx';
 
-// --- Componentes de UI Reutilizáveis ---
 const FormSection = ({title, children}) => (
     <div className="bg-white p-6 rounded-lg shadow-md mb-6">
         {title && <h3 className="text-lg font-semibold text-gray-700 border-b border-gray-200 pb-3 mb-6">{title}</h3>}
@@ -58,7 +57,6 @@ const TabButton = ({label, isActive, onClick}) => (
     </button>
 );
 
-// --- Componente Principal de Edição ---
 
 export default function EditarFuncao() {
     const navigate = useNavigate();

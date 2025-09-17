@@ -95,37 +95,18 @@ const RichTextEditor = ({ content, onChange, heightClass = 'h-64', readOnly = fa
     );
 };
 
-const TabCapa = ({ onFileChange, initialImageUrl }) => {
+const TabCapa = ({ onFileChange, onRemove, previewUrl }) => {
     const fileInputRef = React.useRef(null);
-    const [previewUrl, setPreviewUrl] = useState(null);
-
-     useEffect(() => {
-        if (initialImageUrl) {
-            const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
-            
-        
-            try {
-                 const fullUrl = new URL(apiBaseUrl + initialImageUrl);
-                 setPreviewUrl(fullUrl.href);
-            } catch (error) {
-                 console.error("URL da imagem inválida:", error);
-                 setPreviewUrl(apiBaseUrl + initialImageUrl);
-            }
-        }
-    }, [initialImageUrl]);
 
     const handleImageChange = (event) => {
         const file = event.target.files[0];
         if (file && file.type.startsWith('image/')) {
-            // Ao selecionar uma nova imagem, o preview é atualizado com a URL local.
-            setPreviewUrl(URL.createObjectURL(file));
             onFileChange(file);
         }
     };
 
     const handleRemoveImage = () => {
-        setPreviewUrl(null);
-        onFileChange(null);
+        onRemove();
         if (fileInputRef.current) {
             fileInputRef.current.value = "";
         }
@@ -169,6 +150,7 @@ const TabCapa = ({ onFileChange, initialImageUrl }) => {
         </div>
     );
 };
+
 
 const TabButton = ({label, isActive, onClick}) => (<button type="button" onClick={onClick}
     className={`px-4 py-3 -mb-px text-sm font-semibold whitespace-nowrap transition-colors border-b-2 ${isActive ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'}`}>{label}</button>);
@@ -279,6 +261,7 @@ export default function CadastrarLTCAT() {
     const [capaImagemFile, setCapaImagemFile] = useState(null);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [funcoesDoLTCAT, setFuncoesDoLTCAT] = useState([]);
+    const [capaPreviewUrl, setCapaPreviewUrl] = useState(null);
 
     useEffect(() => {
     if (id) {
@@ -304,8 +287,12 @@ export default function CadastrarLTCAT() {
                     }
                 }
 
+                if (data.imagemCapa) {
+                        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+                        setCapaPreviewUrl(apiBaseUrl + data.imagemCapa);
+                }
+
                 // 3. Popula as listas de entidades relacionadas
-                setInitialImageUrl(data.imagemCapa);
                 setSelectedProfissionais(data.prestadoresServico || []);
                 setSelectedAparelhos(data.aparelhos || []);
                 setFuncoesDoLTCAT(data.funcoes || []);
@@ -345,6 +332,23 @@ export default function CadastrarLTCAT() {
             }));
         }
     }, [selectedProfissionais]);
+
+    
+    const handleCapaFileChange = (file) => {
+        setCapaImagemFile(file); // Guarda o arquivo para o upload
+        if (file) {
+            // Cria a URL de preview para o novo arquivo
+            setCapaPreviewUrl(URL.createObjectURL(file));
+        } else {
+            // Limpa o preview se o arquivo for nulo
+            setCapaPreviewUrl(null);
+        }
+    };
+
+    const handleRemoveCapaFile = () => {
+        setCapaImagemFile(null);
+        setCapaPreviewUrl(null);
+    };
 
     const handleInputChange = (e) => {
         const {name, value} = e.target;
@@ -599,7 +603,8 @@ export default function CadastrarLTCAT() {
 );
 
     const mainTabs = [
-        {id: 'capa', label: 'Capa', component: <TabCapa onFileChange={setCapaImagemFile} initialImageUrl={initialImageUrl} />}, 
+        {id: 'capa', label: 'Capa', component: <TabCapa onFileChange={handleCapaFileChange} initialImageUrl={initialImageUrl} onRemove={handleRemoveCapaFile} 
+        previewUrl={capaPreviewUrl} />}, 
         {id: 'profissionais', label: 'Profissionais', component: <TabProfissionais/>},
         {id: 'setores', label: 'Setores', component: <TabSetores/>},
         {id: 'aparelhagem', label: 'Aparelhagem', component: <TabAparelhagem />},
@@ -700,7 +705,33 @@ export default function CadastrarLTCAT() {
                                                                                                           onChange={handleInputChange}
                                                                                                           className="w-full mt-1 py-2 px-3 border border-gray-300 rounded-md bg-white">
                             <option value="">Selecione...</option>
-                            <option value="MG">Minas Gerais</option>
+                                        <option value="AC">Acre</option>
+                                        <option value="AL">Alagoas</option>
+                                        <option value="AP">Amapá</option>
+                                        <option value="AM">Amazonas</option>
+                                        <option value="BA">Bahia</option>
+                                        <option value="CE">Ceará</option>
+                                        <option value="DF">Distrito Federal</option>
+                                        <option value="ES">Espírito Santo</option>
+                                        <option value="GO">Goiás</option>
+                                        <option value="MA">Maranhão</option>
+                                        <option value="MT">Mato Grosso</option>
+                                        <option value="MS">Mato Grosso do Sul</option>
+                                        <option value="MG">Minas Gerais</option>
+                                        <option value="PA">Pará</option>
+                                        <option value="PB">Paraíba</option>
+                                        <option value="PR">Paraná</option>
+                                        <option value="PE">Pernambuco</option>
+                                        <option value="PI">Piauí</option>
+                                        <option value="RJ">Rio de Janeiro</option>
+                                        <option value="RN">Rio Grande do Norte</option>
+                                        <option value="RS">Rio Grande do Sul</option>
+                                        <option value="RO">Rondônia</option>
+                                        <option value="RR">Roraima</option>
+                                        <option value="SC">Santa Catarina</option>
+                                        <option value="SP">São Paulo</option>
+                                        <option value="SE">Sergipe</option>
+                                        <option value="TO">Tocantins</option>
                         </select></div>
                         <div className="col-span-full"><label className="text-sm font-medium text-gray-600">Comentários
                             (não será impresso no LTCAT)</label><input type="text" name="comentariosInternos"
@@ -797,12 +828,6 @@ export default function CadastrarLTCAT() {
                         <button type="button" onClick={() => navigate(-1)}
                                 className="bg-gray-500 text-white px-8 py-2.5 rounded-md font-semibold hover:bg-gray-600 transition-colors">Cancelar
                         </button>
-                         {id && (
-                            <button type="button" onClick={handleSubmit}
-                                    className="bg-red-600 text-white px-8 py-2.5 rounded-md font-semibold hover:bg-red-700 transition-colors">
-                                Inativar
-                            </button>   
-                        )}
                         <button type="submit"
                                 className="bg-green-600 text-white px-8 py-2.5 rounded-md font-semibold hover:bg-green-700 transition-colors">
                             {id ? 'Salvar Alterações' : 'Salvar'}

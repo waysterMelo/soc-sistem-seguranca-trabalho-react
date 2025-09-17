@@ -32,11 +32,11 @@ export default function ListarPGR() {
     const [isInactivateModalOpen, setIsInactivateModalOpen] = useState(false);
     const [selectedPgrId, setSelectedPgrId] = useState(null);
 
-    const fetchPGRs = useCallback(async (empresaId, page = 0, size = 5, name = '', status = 'ATIVO') => {
+    const fetchPGRs = useCallback(async (empresaId, page = 0, size = 5, name = '', status = 'ATIVO', sort = 'id,desc') => {
         setLoading(true);
         setError(null);
         try {
-            const data = await pgrService.getPgrsByEmpresaId(empresaId, page, size, name, status);
+            const data = await pgrService.getPgrsByEmpresaId(empresaId, page, size, name, status, sort);
             setPgrPage(data);
         } catch (err) {
             setError('Erro ao buscar PGRs.', err);
@@ -48,7 +48,7 @@ export default function ListarPGR() {
 
     useEffect(() => {
         if (selectedEmpresa) {
-            fetchPGRs(selectedEmpresa.id, 0, entriesPerPage, debouncedSearchTerm, statusFilter);
+            fetchPGRs(selectedEmpresa.id, 0, entriesPerPage, debouncedSearchTerm, statusFilter, 'id,desc');
             setCurrentPage(0);
         }
     }, [debouncedSearchTerm, selectedEmpresa, entriesPerPage, statusFilter, fetchPGRs]);
@@ -68,7 +68,7 @@ export default function ListarPGR() {
     const handlePageChange = (newPage) => {
         if (newPage >= 0 && newPage < pgrPage.totalPages) {
             setCurrentPage(newPage);
-            fetchPGRs(selectedEmpresa.id, newPage, entriesPerPage, debouncedSearchTerm, statusFilter);
+            fetchPGRs(selectedEmpresa.id, newPage, entriesPerPage, debouncedSearchTerm, statusFilter, 'id,desc');
         }
     };
 
@@ -91,11 +91,12 @@ export default function ListarPGR() {
         if (selectedPgrId) {
             try {
                 await pgrService.inactivatePgr(selectedPgrId);
-                toast.success('PGR Inativada com sucesso!');                fetchPGRs(selectedEmpresa.id, currentPage, entriesPerPage, debouncedSearchTerm, statusFilter);
+                toast.success('PGR Inativada com sucesso!');               
+                 fetchPGRs(selectedEmpresa.id, currentPage, entriesPerPage, debouncedSearchTerm, statusFilter, 'id,desc');
                 setIsInactivateModalOpen(false);
                 setSelectedPgrId(null);
             } catch (err) {
-                setError('Erro ao inativar PGR.');
+                setError('Erro ao inativar PGR.', err);
                 setIsInactivateModalOpen(false);
                 setSelectedPgrId(null);
             }
@@ -197,6 +198,7 @@ export default function ListarPGR() {
                             <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-gray-50">
                                 <tr>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Empresa</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unidade Operacional</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data Documento</th>
@@ -208,6 +210,7 @@ export default function ListarPGR() {
                                 <tbody className="bg-white divide-y divide-gray-200">
                                 {pgrPage?.content?.map((pgr) => (
                                     <tr key={pgr.id} className="hover:bg-gray-50">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{pgr.id}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{pgr.unidadeOperacional.empresa.razaoSocial}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{pgr.unidadeOperacional?.nome || 'N/A'}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{pgr.dataDocumento ? new Date(pgr.dataDocumento).toLocaleDateString() : 'N/A'}</td>

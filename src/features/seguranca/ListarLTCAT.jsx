@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Edit, Trash2, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react';
+import { Plus, Edit, Trash2, ChevronLeft, ChevronRight, AlertTriangle, Printer } from 'lucide-react';
 import ltcatService from '../../api/services/ltcat/ltcatService';
 import 'react-toastify/dist/ReactToastify.css';
+import api from '../../api/apiService';
 
 export default function ListarLTCAT() {
     const navigate = useNavigate();
@@ -84,6 +85,11 @@ export default function ListarLTCAT() {
         date.setDate(date.getDate() + 1);
         return date.toLocaleDateString('pt-BR');
     };
+
+    const handlePrintLtcat = (ltcatId) => {
+        const url = `${api.defaults.baseURL}/ltcat/${ltcatId}/report`;
+        window.open(url, '_blank');
+    };
     
     return (
         <div className="bg-gray-50 min-h-screen p-4 sm:p-6 lg:p-8 font-sans">
@@ -119,7 +125,7 @@ export default function ListarLTCAT() {
                                     ltcats.map((ltcat) => (
                                         <tr key={ltcat.id} className="hover:bg-gray-50 transition-colors">
                                             <td className="px-4 py-3 whitespace-nowrap font-medium text-gray-800">#{ltcat.id}</td>
-                                            <td className="px-4 py-3 whitespace-nowrap text-gray-600">{ltcat.nomeEmpresa} - {ltcat.nomeUnidadeOperacional}</td>
+                                            <td className="px-4 py-3 whitespace-nowrap text-gray-600">{ltcat.unidadeOperacional.empresa.razaoSocial} / {ltcat.unidadeOperacional.descricao}</td>
                                             <td className="px-4 py-3 whitespace-nowrap text-gray-600">{formatDate(ltcat.dataDocumento)}</td>
                                             <td className="px-4 py-3 whitespace-nowrap text-gray-600">{formatDate(ltcat.dataVencimento)}</td>
                                             <td className="px-4 py-3 text-center">
@@ -128,6 +134,11 @@ export default function ListarLTCAT() {
                                                 </span>
                                             </td>
                                             <td className="px-4 py-3 whitespace-nowrap text-center">
+                                                 <button className="text-blue-600 hover:text-blue-800"
+                                                    onClick={() => handlePrintLtcat(ltcat.id)}
+                                                 >
+                                                    <Printer size={18} /> 
+                                                    </button>
                                                 <button onClick={() => navigate(`/seguranca/ltcat/editar/${ltcat.id}`)} className="text-blue-600 hover:text-blue-800 p-2 transition-colors" title="Editar"><Edit size={16} /></button>
                                                 <button onClick={() => handleDelete(ltcat.id)} className="text-red-600 hover:text-red-800 p-2 transition-colors" title="Excluir"><Trash2 size={16} /></button>
                                             </td>
@@ -139,6 +150,8 @@ export default function ListarLTCAT() {
                             </tbody>
                         </table>
                     </div>
+
+                      {/* paginação */}
                      <div className="flex justify-between items-center mt-4">
                         <button onClick={handlePrevPage} disabled={currentPage === 0 || loading} className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
                             <ChevronLeft size={16} /> Anterior

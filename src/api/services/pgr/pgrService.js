@@ -25,14 +25,14 @@ class PgrService {
         }
     }
 
-    async getPgrsByEmpresaId(empresaId, page = 0, size = 5, nome = '', status = 'ATIVO') { 
+    async getPgrsByEmpresaId(empresaId, page = 0, size = 5, nome = '', status = 'ATIVO', sort) { 
         try {
             const params = { 
                 page,
                 size,
-                sort: 'dataDocumento,desc',
+                sort: sort || 'id,desc',
                 nome,
-                status: status || undefined // Se status for vazio, não envia o parâmetro
+                status: status || undefined ,
             };
             const response = await this.api.get(`${this.endpoint}/empresa/${empresaId}/status-filter`, { params });
             return response.data;

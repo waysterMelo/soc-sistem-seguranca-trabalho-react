@@ -11,6 +11,7 @@ export default function AnexoNr16SearchModal({ isOpen, onClose, onSelect }) {
         if (isOpen) {
             setLoading(true);
             nr16Service.getAnexos()
+            
                 .then(data => {
                     setAnexos(data || []);
                 })

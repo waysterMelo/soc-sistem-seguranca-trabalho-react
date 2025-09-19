@@ -1,29 +1,48 @@
 import apiService from '../../apiService';
 
 const ltipService = {
-
   getLtipById: async (id) => {
     const response = await apiService.get(`/ltip/${id}`);
     return response.data;
   },
 
-  createLtip: async (ltipData) => {
+  createLtip: async (ltipData, imagemCapaFile) => {
     const formData = new FormData();
+
+    // Adiciona os dados do formulário como um JSON Blob
     formData.append('ltip', new Blob([JSON.stringify(ltipData)], {
         type: 'application/json'
     }));
 
-    const response = await apiService.post('/ltip', formData);
+    // Adiciona a imagem se ela existir
+    if (imagemCapaFile) {
+        formData.append('imagemCapa', imagemCapaFile);
+    }
+
+    const response = await apiService.post('/ltip', formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data'
+        }
+    });
     return response.data;
   },
 
-  updateLtip: async (id, ltipData) => {
+  updateLtip: async (id, ltipData, imagemCapaFile) => {
     const formData = new FormData();
+
     formData.append('ltip', new Blob([JSON.stringify(ltipData)], {
       type: 'application/json'
     }));
 
-    const response = await apiService.put(`/ltip/${id}`, formData);
+    if (imagemCapaFile) {
+      formData.append('imagemCapa', imagemCapaFile);
+    }
+
+    const response = await apiService.put(`/ltip/${id}`, formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data'
+        }
+    });
     return response.data;
   },
 
@@ -34,11 +53,7 @@ const ltipService = {
 
   async getLtps(page = 0, size = 5) {
         try {
-            const params = {
-                page,
-                size,
-                sort: 'id,desc',
-            };
+            const params = { page, size, sort: 'id,desc' };
             const response = await apiService.get('/ltip', { params });
             return response.data;
         } catch (error) {

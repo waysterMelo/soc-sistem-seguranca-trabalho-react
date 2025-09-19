@@ -169,7 +169,6 @@ export default function CadastrarLTCAT() {
     const [selectedProfissionais, setSelectedProfissionais] = useState([]);
     const [selectedSetores, setSelectedSetores] = useState([]);
     const [selectedAparelhos, setSelectedAparelhos] = useState([]);
-    const [initialImageUrl, setInitialImageUrl] = useState(null);
     const [paginaAtual, setPaginaAtual] = useState(1);
     const ITENS_POR_PAGINA = 5;
     const [laudoSubTab, setLaudoSubTab] = useState('responsabilidade');
@@ -258,9 +257,13 @@ export default function CadastrarLTCAT() {
 <p>Ressalta-se a <strong>necessidade de atualização periódica do laudo</strong>, especialmente em situações de alteração de processos, ambientes ou organização do trabalho, garantindo assim a efetividade do gerenciamento de riscos e a preservação da saúde dos trabalhadores.</p>
         `,
     });
+
+    //armazena o arquivo bruto
     const [capaImagemFile, setCapaImagemFile] = useState(null);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [funcoesDoLTCAT, setFuncoesDoLTCAT] = useState([]);
+
+    //armazena a URL temporária (blob:) que o componente <img> usa para mostrar a imagem na tela antes de salvá-la.
     const [capaPreviewUrl, setCapaPreviewUrl] = useState(null);
 
     useEffect(() => {
@@ -427,11 +430,9 @@ export default function CadastrarLTCAT() {
         }
         setIsAparelhagemModalOpen(false);
     };
-
     const handleRemoveAparelho = (aparelhoId) => {
         setSelectedAparelhos(prev => prev.filter(a => a.id !== aparelhoId));
     }
-
     const handleSelectEmpresa = (empresa) => {
         setSelectedEmpresa(empresa);
         setIsEmpresaModalOpen(false);
@@ -603,7 +604,7 @@ export default function CadastrarLTCAT() {
 );
 
     const mainTabs = [
-        {id: 'capa', label: 'Capa', component: <TabCapa onFileChange={handleCapaFileChange} initialImageUrl={initialImageUrl} onRemove={handleRemoveCapaFile} 
+        {id: 'capa', label: 'Capa', component: <TabCapa onFileChange={handleCapaFileChange} onRemove={handleRemoveCapaFile} 
         previewUrl={capaPreviewUrl} />}, 
         {id: 'profissionais', label: 'Profissionais', component: <TabProfissionais/>},
         {id: 'setores', label: 'Setores', component: <TabSetores/>},

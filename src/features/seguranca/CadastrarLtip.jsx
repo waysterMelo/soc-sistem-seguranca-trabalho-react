@@ -51,8 +51,62 @@ const TabButton = ({ label, isActive, onClick, hasDot = false }) => (
         {label} {hasDot && <span className="absolute top-2 right-2 block h-2 w-2 rounded-full bg-red-500"></span>}
     </button>
 );
+const TabCapa = ({ onFileChange, onRemove, previewUrl }) =>{
+    const fileInputRef = React.useRef(null);
 
+    const handleImageCapaChange = (e) => {
+        const file = e.target.files[0];
+        if(file && file.type.startsWith('image/')) {
+            onFileChange(file);
+        }
+    };
 
+    const handleRemoveImageCapa = () => {
+        onRemove();
+        if(fileInputRef.current) { fileInputRef.current.value = ""; }
+    };
+
+    const triggerFileSelect = () => fileInputRef.current.click();
+
+    return (
+        <div className="space-y-6">
+            <p className="text-sm text-gray-600">
+            Selecione uma imagem para a capa do documento.
+            </p> 
+              <div
+                className="w-full h-64 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-center cursor-pointer hover:border-blue-500 hover:bg-gray-50 transition-colors"
+                onClick={triggerFileSelect}
+            >
+                {previewUrl ? (
+     <img src={previewUrl} alt="Pré-visualização da Capa" className="max-h-full max-w-full object-contain" />
+                ): (
+                    <div className="text-gray-500">
+                        <ImageIcon size={48} className="mx-auto mb-2" />
+                        <span>Clique para selecionar uma imagem</span>
+                    </div>
+                ) }
+            </div>
+            <input type="file" ref={fileInputRef}
+                onChange={handleImageCapaChange} accept="image/*" 
+                    style={{ display: 'none' }}
+                />
+            {previewUrl && (
+                <button
+                type='button'
+                onClick={handleRemoveImageCapa}
+                className="flex items-center justify-center gap-2 mx-auto 
+                px-4 py-2 text-sm font-medium text-red-600 bg-red-100 rounded-md
+                 hover:bg-red-200">
+                <Trash2 size={16} /> Remover Imagem        
+                </button>
+            )}
+             <input type="file" ref={fileInputRef} onChange={handleImageCapaChange}
+			accept="image/*" style={{ display: 'none' }} />
+          
+		
+        </div>
+    )
+}; 
 const TabAgentesNocivos = ({ onCheckboxChange, isChecked, onRecuperar, agentesNocivos, riscos }) => {
     const [subTab, setSubTab] = useState('agentes');
     return (
@@ -93,8 +147,7 @@ const TabAgentesNocivos = ({ onCheckboxChange, isChecked, onRecuperar, agentesNo
 )}
         </div>
     );
-}
-
+};
 const AnexoItem = ({ title, content, onContentChange, onRemove, isReadOnly }) => {
     const [isOpen, setIsOpen] = useState(true);
     return (
@@ -106,8 +159,7 @@ const AnexoItem = ({ title, content, onContentChange, onRemove, isReadOnly }) =>
             {isOpen && (<div className="p-4 border-t"><label className="text-sm font-medium text-gray-600">Avaliação</label><RichTextEditor content={content} onChange={onContentChange} readOnly={isReadOnly} heightClass="h-48" /></div>)}
         </div>
     )
-}
-
+};
 const TabAtividadesPericulosas = ({ onCheckboxChange, isChecked, onSearchAnexos, anexos, onAnexoChange, onRemoveAnexo }) => (
     <div className="space-y-6">
         <p className="text-sm text-gray-600">Atividades e Operações Periculosas no qual a função está exposta.</p>
@@ -116,8 +168,6 @@ const TabAtividadesPericulosas = ({ onCheckboxChange, isChecked, onSearchAnexos,
         <div className={`space-y-4 ${isChecked ? 'opacity-50' : ''}`}>{anexos.map(anexo => (<AnexoItem key={anexo.id} title={anexo.titulo} content={anexo.avaliacao} onContentChange={(content) => onAnexoChange(anexo.id, content)} onRemove={() => onRemoveAnexo(anexo.id)} isReadOnly={isChecked} />))}</div>
     </div>
 );
-
-
 const TabAparelhos = ({ vinculados, onSearch, onAdd, onRemove }) => (
     <div className="space-y-6">
         <div><label className="text-sm font-medium text-gray-600">Pesquisar Aparelho</label><InputWithActions placeholder="Digite para pesquisar um aparelho..." onClick={onSearch} actions={<><button type="button" onClick={onSearch} className="p-2.5 text-white bg-green-500 hover:bg-green-600"><Search size={18}/></button><button type="button" onClick={onAdd} className="p-2.5 text-white bg-blue-600 hover:bg-blue-700 rounded-r-md"><Plus size={18}/></button></>} /></div>
@@ -149,6 +199,21 @@ export default function CadastrarLTIP() {
     const [anexosPericulosidade, setAnexosPericulosidade] = useState([]);
     const [agentesNocivos, setAgentesNocivos] = useState([]); // Estado para agentes
     const [riscos, setRiscos] = useState([]); // Estado para riscos
+    const [capaPreviewUrl, setCapaPreviewUrl] = useState(null);
+    const [imagemCapaFile, setImagemCapaFile] = useState(null);
+
+    const handleImageCapaChange = (file) => {
+        setImagemCapaFile(file);
+        if(file){
+            setCapaPreviewUrl(URL.createObjectURL(file));
+        }else{
+            setCapaPreviewUrl(null);
+        }
+    }
+    const handleRemoveImageCapa = () => {
+        setImagemCapaFile(null);
+        setCapaPreviewUrl(null);
+    }
 
     const [ltipData, setLtipData] = useState({
         dataLevantamento: '', horaInicial: '', horaFinal: '',
@@ -206,20 +271,148 @@ export default function CadastrarLTIP() {
         setIsAnexoNR16ModalOpen(false);
     };
 
-    const handleSubmit = async (e) => { e.preventDefault(); /* ... lógica de envio ... */ toast.success("Enviando formulário..."); };
-    
+    const handleSubmit = async (e) => { e.preventDefault(); 
+        
+        e.preventDefault();
+
+        if(!selectedFuncao || !selectedResponsavelTecnico){
+           toast.warn("Função e Responsável Técnico são obrigatórios.");
+            return;  
+        } 
+
+        const ltipPayload = {
+            ...ltipData,
+            funcaoId: selectedFuncao.id,
+            responsavelTecnicoId: selectedResponsavelTecnico.id,
+            demaisElaboradoresIds: selectedDemaisElaboradores.map(p => p.id),
+            aparelhosIds: selectedAparelhos.map(a => a.id),
+            atividadesPericulosasAnexosIds: anexosPericulosidade.map(anexo => anexo.id),
+            bibliografiasIds: []
+        };
+
+        delete ltipPayload.naoInsalubre;
+        delete ltipPayload.naoPericuloso;
+
+        try{
+            if(id){
+                await ltipService.updateLtip(id, ltipPayload, imagemCapaFile);
+                toast.success("LTIP atualizado com sucesso.");
+            }else{
+                await ltipService.createLtip(ltipPayload, imagemCapaFile);
+                toast.success("LTIP criado com sucesso.");
+            }
+            setTimeout(() => navigate('/seguranca/ltips'), 1500);
+        }catch(error){
+            toast.error("Erro ao salvar o LTIP.");
+            console.error("Erro ao salvar LTIP:", error);
+        }
+    };
+
     const tabContents = {
-        capa: <RichTextEditor content={ltipData.capa} onChange={(c) => handleRichTextChange('capa', c)} />,
-        introducao: <RichTextEditor content={ltipData.introducao} onChange={(c) => handleRichTextChange('introducao', c)} />,
-        objetivo: <RichTextEditor content={ltipData.objetivo} onChange={(c) => handleRichTextChange('objetivo', c)} />,
-        definicoes: <RichTextEditor content={ltipData.definicoes} onChange={(c) => handleRichTextChange('definicoes', c)} />,
-        metodologia: <RichTextEditor content={ltipData.metodologia} onChange={(c) => handleRichTextChange('metodologia', c)} />,
-        bibliografia: <RichTextEditor content={ltipData.bibliografia} onChange={(c) => handleRichTextChange('bibliografia', c)} />,
-        aparelhos: <TabAparelhos vinculados={selectedAparelhos} onSearch={() => setIsAparelhagemModalOpen(true)} onAdd={() => alert("Função para adicionar novo aparelho não implementada.")} onRemove={(aparelhoId) => setSelectedAparelhos(prev => prev.filter(a => a.id !== aparelhoId))} />,
-        identificacao_local: <RichTextEditor content={ltipData.identificacao_local} onChange={(c) => handleRichTextChange('identificacao_local', c)} />,
-        agentes: <TabAgentesNocivos isChecked={ltipData.naoInsalubre} onCheckboxChange={(e) => handleInputChange({ target: { name: 'naoInsalubre', type: 'checkbox', checked: e.target.checked }})} onRecuperar={() => toast.info('A busca de agentes já é automática ao selecionar a função.')} agentesNocivos={agentesNocivos} riscos={riscos} />,
-        atividades_periculosas: <TabAtividadesPericulosas isChecked={ltipData.naoPericuloso} onCheckboxChange={(e) => handleInputChange({ target: { name: 'naoPericuloso', type: 'checkbox', checked: e.target.checked }})} anexos={anexosPericulosidade} onAnexoChange={handleAnexoAvaliacaoChange} onSearchAnexos={() => setIsAnexoNR16ModalOpen(true)} onRemoveAnexo={(anexoId) => setAnexosPericulosidade(prev => prev.filter(a => a.id !== anexoId))} />,
-        conclusao: <RichTextEditor content={ltipData.conclusao} onChange={(c) => handleRichTextChange('conclusao', c)} />,
+      capa: (
+        <TabCapa onFileChange={handleImageCapaChange} 
+        onRemove={handleRemoveImageCapa} 
+        previewUrl={capaPreviewUrl} />
+      ),
+      introducao: (
+        <RichTextEditor
+          content={ltipData.introducao}
+          onChange={(c) => handleRichTextChange("introducao", c)}
+        />
+      ),
+      objetivo: (
+        <RichTextEditor
+          content={ltipData.objetivo}
+          onChange={(c) => handleRichTextChange("objetivo", c)}
+        />
+      ),
+      definicoes: (
+        <RichTextEditor
+          content={ltipData.definicoes}
+          onChange={(c) => handleRichTextChange("definicoes", c)}
+        />
+      ),
+      metodologia: (
+        <RichTextEditor
+          content={ltipData.metodologia}
+          onChange={(c) => handleRichTextChange("metodologia", c)}
+        />
+      ),
+      bibliografia: (
+        <RichTextEditor
+          content={ltipData.bibliografia}
+          onChange={(c) => handleRichTextChange("bibliografia", c)}
+        />
+      ),
+      aparelhos: (
+        <TabAparelhos
+          vinculados={selectedAparelhos}
+          onSearch={() => setIsAparelhagemModalOpen(true)}
+          onAdd={() =>
+            alert("Função para adicionar novo aparelho não implementada.")
+          }
+          onRemove={(aparelhoId) =>
+            setSelectedAparelhos((prev) =>
+              prev.filter((a) => a.id !== aparelhoId)
+            )
+          }
+        />
+      ),
+      identificacao_local: (
+        <RichTextEditor
+          content={ltipData.identificacao_local}
+          onChange={(c) => handleRichTextChange("identificacao_local", c)}
+        />
+      ),
+      agentes: (
+        <TabAgentesNocivos
+          isChecked={ltipData.naoInsalubre}
+          onCheckboxChange={(e) =>
+            handleInputChange({
+              target: {
+                name: "naoInsalubre",
+                type: "checkbox",
+                checked: e.target.checked,
+              },
+            })
+          }
+          onRecuperar={() =>
+            toast.info(
+              "A busca de agentes já é automática ao selecionar a função."
+            )
+          }
+          agentesNocivos={agentesNocivos}
+          riscos={riscos}
+        />
+      ),
+      atividades_periculosas: (
+        <TabAtividadesPericulosas
+          isChecked={ltipData.naoPericuloso}
+          onCheckboxChange={(e) =>
+            handleInputChange({
+              target: {
+                name: "naoPericuloso",
+                type: "checkbox",
+                checked: e.target.checked,
+              },
+            })
+          }
+          anexos={anexosPericulosidade}
+          onAnexoChange={handleAnexoAvaliacaoChange}
+          onSearchAnexos={() => setIsAnexoNR16ModalOpen(true)}
+          onRemoveAnexo={(anexoId) =>
+            setAnexosPericulosidade((prev) =>
+              prev.filter((a) => a.id !== anexoId)
+            )
+          }
+        />
+      ),
+      conclusao: (
+        <RichTextEditor
+          content={ltipData.conclusao}
+          onChange={(c) => handleRichTextChange("conclusao", c)}
+        />
+      ),
     };
 
     const tabLabels = [
@@ -232,58 +425,388 @@ export default function CadastrarLTIP() {
     ];
 
     return (
-        <div className="bg-gray-50 min-h-screen p-4 sm:p-6 lg:p-8 font-sans">
-            <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
-            <div className="container mx-auto">
-                <header className="mb-6"><h1 className="text-3xl font-bold text-gray-900">{id ? `Editar LTIP #${id}` : 'Cadastrar LTIP'}</h1></header>
-                <form onSubmit={handleSubmit}>
-                    <FormSection title="Dados Empresa">
-                        <div className="col-span-full grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div><label className="text-sm font-medium text-gray-600">Empresa *</label><InputWithActions value={selectedEmpresa?.razaoSocial || ''} onClick={() => setIsEmpresaModalOpen(true)} actions={<><button type="button" onClick={() => setIsEmpresaModalOpen(true)} className="p-2.5 text-white bg-green-500 hover:bg-green-600"><Search size={18}/></button><button type="button" onClick={() => { setSelectedEmpresa(null); setSelectedSetor(null); setSelectedFuncao(null); }} className="p-2.5 text-white bg-red-500 hover:bg-red-600 rounded-r-md"><Trash2 size={18}/></button></>} /></div>
-                            <div></div>
-                            <div><label className="text-sm font-medium text-gray-600">Setores</label><InputWithActions value={selectedSetor?.nome || ''} onClick={() => selectedEmpresa && setIsSetorModalOpen(true)} actions={<><button type="button" disabled={!selectedEmpresa} onClick={() => setIsSetorModalOpen(true)} className="p-2.5 text-white bg-green-500 hover:bg-green-600 disabled:bg-gray-400"><Search size={18}/></button><button type="button" onClick={() => { setSelectedSetor(null); setSelectedFuncao(null); }} className="p-2.5 text-white bg-red-500 hover:bg-red-600 rounded-r-md"><Trash2 size={18}/></button></>} /></div>
-                            <div><label className="text-sm font-medium text-gray-600">Funções</label><InputWithActions value={selectedFuncao?.nome || ''} onClick={() => selectedSetor && setIsFuncaoModalOpen(true)} actions={<><button type="button" disabled={!selectedSetor} onClick={() => setIsFuncaoModalOpen(true)} className="p-2.5 text-white bg-green-500 hover:bg-green-600 disabled:bg-gray-400"><Search size={18}/></button><button type="button" onClick={() => setSelectedFuncao(null)} className="p-2.5 text-white bg-red-500 hover:bg-red-600 rounded-r-md"><Trash2 size={18}/></button></>} /></div>
-                        </div>
-                    </FormSection>
+      <div className="bg-gray-50 min-h-screen p-4 sm:p-6 lg:p-8 font-sans">
+        <ToastContainer
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+        />
+        <div className="container mx-auto">
+          <header className="mb-6">
+            <h1 className="text-3xl font-bold text-gray-900">
+              {id ? `Editar LTIP #${id}` : "Cadastrar LTIP"}
+            </h1>
+          </header>
+          <form onSubmit={handleSubmit}>
+            <FormSection title="Dados Empresa">
+              <div className="col-span-full grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="text-sm font-medium text-gray-600">
+                    Empresa *
+                  </label>
+                  <InputWithActions
+                    value={selectedEmpresa?.razaoSocial || ""}
+                    onClick={() => setIsEmpresaModalOpen(true)}
+                    actions={
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setIsEmpresaModalOpen(true)}
+                          className="p-2.5 text-white bg-green-500 hover:bg-green-600"
+                        >
+                          <Search size={18} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedEmpresa(null);
+                            setSelectedSetor(null);
+                            setSelectedFuncao(null);
+                          }}
+                          className="p-2.5 text-white bg-red-500 hover:bg-red-600 rounded-r-md"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </>
+                    }
+                  />
+                </div>
+                <div></div>
+                <div>
+                  <label className="text-sm font-medium text-gray-600">
+                    Setores
+                  </label>
+                  <InputWithActions
+                    value={selectedSetor?.nome || ""}
+                    onClick={() => selectedEmpresa && setIsSetorModalOpen(true)}
+                    actions={
+                      <>
+                        <button
+                          type="button"
+                          disabled={!selectedEmpresa}
+                          onClick={() => setIsSetorModalOpen(true)}
+                          className="p-2.5 text-white bg-green-500 hover:bg-green-600 disabled:bg-gray-400"
+                        >
+                          <Search size={18} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedSetor(null);
+                            setSelectedFuncao(null);
+                          }}
+                          className="p-2.5 text-white bg-red-500 hover:bg-red-600 rounded-r-md"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </>
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-600">
+                    Funções
+                  </label>
+                  <InputWithActions
+                    value={selectedFuncao?.nome || ""}
+                    onClick={() => selectedSetor && setIsFuncaoModalOpen(true)}
+                    actions={
+                      <>
+                        <button
+                          type="button"
+                          disabled={!selectedSetor}
+                          onClick={() => setIsFuncaoModalOpen(true)}
+                          className="p-2.5 text-white bg-green-500 hover:bg-green-600 disabled:bg-gray-400"
+                        >
+                          <Search size={18} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedFuncao(null)}
+                          className="p-2.5 text-white bg-red-500 hover:bg-red-600 rounded-r-md"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </>
+                    }
+                  />
+                </div>
+              </div>
+            </FormSection>
 
-                    <FormSection title="Data/Horário do Levantamento de Dados">
-                        <div className="col-span-full grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div><label className="text-sm font-medium text-gray-600">Data do Levantamento *</label><input type="date" name="dataLevantamento" value={ltipData.dataLevantamento} onChange={handleInputChange} className="mt-1 w-full py-2 px-3 border border-gray-300 rounded-md"/></div>
-                            <div><label className="text-sm font-medium text-gray-600">Hora Inicial *</label><div className="relative"><input type="time" name="horaInicial" value={ltipData.horaInicial} onChange={handleInputChange} className="mt-1 w-full py-2 px-3 border border-gray-300 rounded-md"/><Clock size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"/></div></div>
-                            <div><label className="text-sm font-medium text-gray-600">Hora Final *</label><div className="relative"><input type="time" name="horaFinal" value={ltipData.horaFinal} onChange={handleInputChange} className="mt-1 w-full py-2 px-3 border border-gray-300 rounded-md"/><Clock size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"/></div></div>
-                        </div>
-                    </FormSection>
+            <FormSection title="Data/Horário do Levantamento de Dados">
+              <div className="col-span-full grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <label className="text-sm font-medium text-gray-600">
+                    Data do Levantamento *
+                  </label>
+                  <input
+                    type="date"
+                    name="dataLevantamento"
+                    value={ltipData.dataLevantamento}
+                    onChange={handleInputChange}
+                    className="mt-1 w-full py-2 px-3 border border-gray-300 rounded-md"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-600">
+                    Hora Inicial *
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="time"
+                      name="horaInicial"
+                      value={ltipData.horaInicial}
+                      onChange={handleInputChange}
+                      className="mt-1 w-full py-2 px-3 border border-gray-300 rounded-md"
+                    />
+                    <Clock
+                      size={16}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-600">
+                    Hora Final *
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="time"
+                      name="horaFinal"
+                      value={ltipData.horaFinal}
+                      onChange={handleInputChange}
+                      className="mt-1 w-full py-2 px-3 border border-gray-300 rounded-md"
+                    />
+                    <Clock
+                      size={16}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                    />
+                  </div>
+                </div>
+              </div>
+            </FormSection>
 
-                    <FormSection title="Sobre o documento">
-                        <div className="col-span-full grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div><label className="text-sm font-medium text-gray-600">Responsável Técnico/Elaborador *</label><InputWithActions value={selectedResponsavelTecnico?.nome || ''} onClick={() => setIsResponsavelTecnicoModalOpen(true)} actions={<><button type="button" onClick={() => setIsResponsavelTecnicoModalOpen(true)} className="p-2.5 text-white bg-green-500 hover:bg-green-600"><Search size={18}/></button><button type="button" onClick={() => alert("Adicionar novo elaborador")} className="p-2.5 text-white bg-blue-600 hover:bg-blue-700 rounded-r-md"><Plus size={18}/></button></>} /></div>
-                            <div><label className="text-sm font-medium text-gray-600">Demais Elaboradores</label><InputWithActions placeholder="Selecione outros elaboradores" onClick={() => setIsDemaisElaboradoresModalOpen(true)} actions={<><button type="button" onClick={() => setIsDemaisElaboradoresModalOpen(true)} className="p-2.5 text-white bg-green-500 hover:bg-green-600"><Search size={18}/></button><button type="button" onClick={() => alert("Adicionar novo elaborador")} className="p-2.5 text-white bg-blue-600 hover:bg-blue-700 rounded-r-md"><Plus size={18}/></button></>} /></div>
-                        </div>
-                        <div className="col-span-full grid grid-cols-1 md:grid-cols-4 gap-6 mt-6">
-                            <div className="md:col-span-2"><label className="text-sm font-medium text-gray-600">Responsável pela empresa *</label><div className="relative"><input type="text" name="responsavelEmpresa" value={ltipData.responsavelEmpresa} onChange={handleInputChange} className="mt-1 w-full py-2 px-3 border border-gray-300 rounded-md"/><Check size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500"/></div></div>
-                            <div><label className="text-sm font-medium text-gray-600">Início da validade *</label><input type="date" name="inicioValidade" value={ltipData.inicioValidade} onChange={handleInputChange} className="mt-1 w-full py-2 px-3 border border-gray-300 rounded-md"/></div>
-                            <div><label className="text-sm font-medium text-gray-600">Próxima revisão *</label><input type="date" name="proximaRevisao" value={ltipData.proximaRevisao} onChange={handleInputChange} className="mt-1 w-full py-2 px-3 border border-gray-300 rounded-md"/></div>
-                            <div className="md:col-span-2"><label className="text-sm font-medium text-gray-600">Alerta de validade do laudo *</label><select name="alertaValidadeDias" value={ltipData.alertaValidadeDias} onChange={handleInputChange} className="w-full mt-1 py-2 px-3 border border-gray-300 rounded-md bg-white"><option value="60">60 dias antes do vencimento</option><option value="30">30 dias antes do vencimento</option><option value="15">15 dias antes do vencimento</option></select></div>
-                        </div>
-                    </FormSection>
+            <FormSection title="Sobre o documento">
+              <div className="col-span-full grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="text-sm font-medium text-gray-600">
+                    Responsável Técnico/Elaborador *
+                  </label>
+                  <InputWithActions
+                    value={selectedResponsavelTecnico?.nome || ""}
+                    onClick={() => setIsResponsavelTecnicoModalOpen(true)}
+                    actions={
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setIsResponsavelTecnicoModalOpen(true)}
+                          className="p-2.5 text-white bg-green-500 hover:bg-green-600"
+                        >
+                          <Search size={18} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => alert("Adicionar novo elaborador")}
+                          className="p-2.5 text-white bg-blue-600 hover:bg-blue-700 rounded-r-md"
+                        >
+                          <Plus size={18} />
+                        </button>
+                      </>
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-600">
+                    Demais Elaboradores
+                  </label>
+                  <InputWithActions
+                    placeholder="Selecione outros elaboradores"
+                    onClick={() => setIsDemaisElaboradoresModalOpen(true)}
+                    actions={
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setIsDemaisElaboradoresModalOpen(true)}
+                          className="p-2.5 text-white bg-green-500 hover:bg-green-600"
+                        >
+                          <Search size={18} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => alert("Adicionar novo elaborador")}
+                          className="p-2.5 text-white bg-blue-600 hover:bg-blue-700 rounded-r-md"
+                        >
+                          <Plus size={18} />
+                        </button>
+                      </>
+                    }
+                  />
+                </div>
+              </div>
+              <div className="col-span-full grid grid-cols-1 md:grid-cols-4 gap-6 mt-6">
+                <div className="md:col-span-2">
+                  <label className="text-sm font-medium text-gray-600">
+                    Responsável pela empresa *
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      name="responsavelEmpresa"
+                      value={ltipData.responsavelEmpresa}
+                      onChange={handleInputChange}
+                      className="mt-1 w-full py-2 px-3 border border-gray-300 rounded-md"
+                    />
+                    <Check
+                      size={16}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-600">
+                    Início da validade *
+                  </label>
+                  <input
+                    type="date"
+                    name="inicioValidade"
+                    value={ltipData.inicioValidade}
+                    onChange={handleInputChange}
+                    className="mt-1 w-full py-2 px-3 border border-gray-300 rounded-md"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-600">
+                    Próxima revisão *
+                  </label>
+                  <input
+                    type="date"
+                    name="proximaRevisao"
+                    value={ltipData.proximaRevisao}
+                    onChange={handleInputChange}
+                    className="mt-1 w-full py-2 px-3 border border-gray-300 rounded-md"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="text-sm font-medium text-gray-600">
+                    Alerta de validade do laudo *
+                  </label>
+                  <select
+                    name="alertaValidadeDias"
+                    value={ltipData.alertaValidadeDias}
+                    onChange={handleInputChange}
+                    className="w-full mt-1 py-2 px-3 border border-gray-300 rounded-md bg-white"
+                  >
+                    <option value="60">60 dias antes do vencimento</option>
+                    <option value="30">30 dias antes do vencimento</option>
+                    <option value="15">15 dias antes do vencimento</option>
+                  </select>
+                </div>
+              </div>
+            </FormSection>
 
-                    <div className="bg-white rounded-lg shadow-md mt-6">
-                        <h3 className="text-xl font-semibold text-gray-800 p-6">Dados do LTIP</h3>
-                        <div className="border-y border-gray-200 overflow-x-auto"><nav className="flex space-x-2 px-4">{tabLabels.map(tab => (<TabButton key={tab.id} label={tab.label} isActive={activeTab === tab.id} onClick={() => setActiveTab(tab.id)} hasDot={tab.hasDot} />))}</nav></div>
-                        <div className="p-6" key={activeTab}>{tabContents[activeTab]}</div>
-                    </div>
-
-                    <div className="flex flex-wrap justify-end gap-4 mt-8"><button type="button" onClick={() => navigate(-1)} className="bg-red-600 text-white px-8 py-2.5 rounded-md font-semibold hover:bg-red-700 transition-colors">Cancelar</button><button type="submit" className="bg-green-600 text-white px-8 py-2.5 rounded-md font-semibold hover:bg-green-700 transition-colors">Salvar</button></div>
-                </form>
+            <div className="bg-white rounded-lg shadow-md mt-6">
+              <h3 className="text-xl font-semibold text-gray-800 p-6">
+                Dados do LTIP
+              </h3>
+              <div className="border-y border-gray-200 overflow-x-auto">
+                <nav className="flex space-x-2 px-4">
+                  {tabLabels.map((tab) => (
+                    <TabButton
+                      key={tab.id}
+                      label={tab.label}
+                      isActive={activeTab === tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      hasDot={tab.hasDot}
+                    />
+                  ))}
+                </nav>
+              </div>
+              <div className="p-6" key={activeTab}>
+                {tabContents[activeTab]}
+              </div>
             </div>
-            
-            <EmpresaSearchModal isOpen={isEmpresaModalOpen} onClose={() => setIsEmpresaModalOpen(false)} onSelect={(empresa) => { setSelectedEmpresa(empresa); setIsEmpresaModalOpen(false); }} />
-            {selectedEmpresa && <SetorSearchModal isOpen={isSetorModalOpen} onClose={() => setIsSetorModalOpen(false)} onSelect={(setor) => { setSelectedSetor(setor); setIsSetorModalOpen(false); }} empresaId={selectedEmpresa.id} />}
-            {selectedSetor && <FuncaoSearchModal isOpen={isFuncaoModalOpen} onClose={() => setIsFuncaoModalOpen(false)} onSelect={(funcao) => { setSelectedFuncao(funcao); setIsFuncaoModalOpen(false); }} empresaId={selectedEmpresa.id} setorId={selectedSetor.id} />}
-            <PrestadorServicoSearchModal isOpen={isResponsavelTecnicoModalOpen} onClose={() => setIsResponsavelTecnicoModalOpen(false)} onSelect={(p) => { setSelectedResponsavelTecnico(p); setIsResponsavelTecnicoModalOpen(false); }} />
-            <PrestadorServicoSearchModal isOpen={isDemaisElaboradoresModalOpen} onClose={() => setIsDemaisElaboradoresModalOpen(false)} onSelect={(p) => { if (!selectedDemaisElaboradores.some(el => el.id === p.id)) setSelectedDemaisElaboradores(prev => [...prev, p]); setIsDemaisElaboradoresModalOpen(false); }} />
-            <AparelhagemLtcatModal isOpen={isAparelhagemModalOpen} onClose={() => setIsAparelhagemModalOpen(false)} onSelect={(aparelho) => { if (!selectedAparelhos.some(a => a.id === aparelho.id)) setSelectedAparelhos(prev => [...prev, aparelho]); setIsAparelhagemModalOpen(false); }} />
-            <AnexoNr16SearchModal isOpen={isAnexoNR16ModalOpen} onClose={() => setIsAnexoNR16ModalOpen(false)} onSelect={handleSelectAnexoNr16} />
+
+            <div className="flex flex-wrap justify-end gap-4 mt-8">
+              <button
+                type="button"
+                onClick={() => navigate(-1)}
+                className="bg-red-600 text-white px-8 py-2.5 rounded-md font-semibold hover:bg-red-700 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                className="bg-green-600 text-white px-8 py-2.5 rounded-md font-semibold hover:bg-green-700 transition-colors"
+              >
+                Salvar
+              </button>
+            </div>
+          </form>
         </div>
+
+        <EmpresaSearchModal
+          isOpen={isEmpresaModalOpen}
+          onClose={() => setIsEmpresaModalOpen(false)}
+          onSelect={(empresa) => {
+            setSelectedEmpresa(empresa);
+            setIsEmpresaModalOpen(false);
+          }}
+        />
+        {selectedEmpresa && (
+          <SetorSearchModal
+            isOpen={isSetorModalOpen}
+            onClose={() => setIsSetorModalOpen(false)}
+            onSelect={(setor) => {
+              setSelectedSetor(setor);
+              setIsSetorModalOpen(false);
+            }}
+            empresaId={selectedEmpresa.id}
+          />
+        )}
+        {selectedSetor && (
+          <FuncaoSearchModal
+            isOpen={isFuncaoModalOpen}
+            onClose={() => setIsFuncaoModalOpen(false)}
+            onSelect={(funcao) => {
+              setSelectedFuncao(funcao);
+              setIsFuncaoModalOpen(false);
+            }}
+            empresaId={selectedEmpresa.id}
+            setorId={selectedSetor.id}
+          />
+        )}
+        <PrestadorServicoSearchModal
+          isOpen={isResponsavelTecnicoModalOpen}
+          onClose={() => setIsResponsavelTecnicoModalOpen(false)}
+          onSelect={(p) => {
+            setSelectedResponsavelTecnico(p);
+            setIsResponsavelTecnicoModalOpen(false);
+          }}
+        />
+        <PrestadorServicoSearchModal
+          isOpen={isDemaisElaboradoresModalOpen}
+          onClose={() => setIsDemaisElaboradoresModalOpen(false)}
+          onSelect={(p) => {
+            if (!selectedDemaisElaboradores.some((el) => el.id === p.id))
+              setSelectedDemaisElaboradores((prev) => [...prev, p]);
+            setIsDemaisElaboradoresModalOpen(false);
+          }}
+        />
+        <AparelhagemLtcatModal
+          isOpen={isAparelhagemModalOpen}
+          onClose={() => setIsAparelhagemModalOpen(false)}
+          onSelect={(aparelho) => {
+            if (!selectedAparelhos.some((a) => a.id === aparelho.id))
+              setSelectedAparelhos((prev) => [...prev, aparelho]);
+            setIsAparelhagemModalOpen(false);
+          }}
+        />
+        <AnexoNr16SearchModal
+          isOpen={isAnexoNR16ModalOpen}
+          onClose={() => setIsAnexoNR16ModalOpen(false)}
+          onSelect={handleSelectAnexoNr16}
+        />
+      </div>
     );
 }

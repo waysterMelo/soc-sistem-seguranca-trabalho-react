@@ -222,10 +222,88 @@ export default function CadastrarLTIP() {
         capa: "Crie uma capa personalizada para seu laudo.",
         introducao: `<p>O presente documento representa o <strong>Laudo Técnico de Insalubridade e Periculosidade</strong> da empresa, elaborado com o objetivo de avaliar as condições laborais a que os colaboradores estão expostos no exercício de suas atividades.</p><p>A análise minuciosa das áreas de trabalho, processos produtivos, agentes físicos, químicos e biológicos presentes no ambiente laboral visa identificar possíveis situações de risco que possam comprometer a saúde, a integridade física e a qualidade de vida dos trabalhadores.</p><p>Este laudo foi elaborado em conformidade com as Normas Regulamentadoras (NRs) estabelecidas pelo Ministério do Trabalho e Emprego, bem como com as diretrizes e princípios técnicos da segurança e saúde ocupacional. A sua realização contou com a participação de profissionais especializados e qualificados, visando garantir a precisão das avaliações realizadas e a imparcialidade das conclusões apresentadas.</p>`,
         objetivo: `<p>Este laudo objetiva avaliar as atividades exercidas pelos trabalhadores cuja função denominada é, para fins de constatação de exposição a agentes insalubres contidos na <strong>NR-15</strong> e seus anexos e / ou periculosos enquadrados na <strong>NR-16</strong>.</p><p>Os enquadramentos terão como norteadores normativos portanto, as Normas Regulamentadoras 15 e 16 do Ministério do Trabalho e Emprego da Portaria 1103214, de 08 de junho de 1978.</p><p>O presente trabalho servirá como ponto principal para que o setor de Recursos Humanos possa enfim deliberar ou não sobre os pagamentos desses adicionais.</p>`,
-        definicoes: `<p>Para o bom entendimento do laudo é necessário que as definições, símbolos e abreviaturas abaixo sejam devidamente compreendidas.</p><ul><li><strong>Nível de Ação:</strong> Situação em que o valor obtido por meio de avaliação quantitativa está próximo do limite de tolerância, porém ainda está abaixo deste.</li><li><strong>VCI:</strong> Abreviação para Vibração de Corpo Inteiro.</li><li><strong>VMB ou VMS:</strong> Siglas para Vibração de Mãos e Braços ou Vibração de Membros Superiores.</li></ul>`,
-        metodologia: `<p>A metodologia adotada para a elaboração do presente laudo teve como base o levantamento das atividades e operações executadas pelos trabalhadores da empresa. Foram conduzidas inspeções nos ambientes de trabalho, observação das atividades desempenhadas, entrevistas informais com os trabalhadores e seus superiores hierárquicos, além do levantamento de documentos, identificação de máquinas, equipamentos, matérias-primas e insumos utilizados.</p><p>As metodologias de avaliações, seja qualitativa ou quantitativa, estão alinhadas com as Normas Regulamentadoras do Ministério do Trabalho, Normas de Higiene Ocupacional (NHO) da Fundacentro e, quando aplicável, as diretrizes da Conferência Norte-Americana de Higienistas Industriais Governamentais (ACGIH).</p>`,
-        bibliografia: "<p>Liste aqui as referências bibliográficas utilizadas na elaboração deste laudo, como normas técnicas, livros e artigos científicos.</p>",
-        identificacao_local: "<p>Descreva aqui as características do local de trabalho avaliado, incluindo layout, iluminação, ventilação e outros aspectos relevantes.</p>",
+        definicoes: `<h2>Definições, Símbolos e Abreviaturas</h2>
+<p>Para o bom entendimento do laudo é necessário que as definições, símbolos e abreviaturas abaixo sejam devidamente compreendidas.</p>
+
+<dl>
+    <dt><strong>Nível de Ação:</strong></dt>
+    <dd>Situação em que o valor obtido por meio de avaliação quantitativa está próximo do limite de tolerância, porém ainda está abaixo deste.</dd>
+
+    <dt><strong>VCI:</strong></dt>
+    <dd>Abreviação para Vibração de Corpo Inteiro.</dd>
+
+    <dt><strong>VMB ou VMS:</strong></dt>
+    <dd>Siglas para Vibração de Mãos e Braços ou Vibração de Membros Superiores.</dd>
+
+    <dt><strong>Avaliação:</strong></dt>
+    <dd>Conjunto de procedimentos essenciais para realizar uma caracterização abrangente de um determinado ambiente ou da exposição ocupacional dos trabalhadores.</dd>
+
+    <dt><strong>AREN:</strong></dt>
+    <dd>Valor resultante da aceleração de exposição normalizada.</dd>
+
+    <dt><strong>VDVR:</strong></dt>
+    <dd>Valor da dose de vibração resultante.</dd>
+
+    <dt><strong>Limite de Tolerância:</strong></dt>
+    <dd>Concentração ou intensidade máxima ou mínima, associada à natureza e duração da exposição ao agente, que não causará danos à saúde do trabalhador durante sua vida laboral.</dd>
+
+    <dt><strong>CA:</strong></dt>
+    <dd>Certificado de Aprovação.</dd>
+
+    <dt><strong>dB(A):</strong></dt>
+    <dd>Decibel - é a Unidade Dimensional para "medir" o ruído. A escala "A" é indicada para avaliar a exposição a ruído ocupacional, pois é a que mais se aproxima da resposta do ouvido humano.</dd>
+
+    <dt><strong>dB(C):</strong></dt>
+    <dd>A escala "C" é indicada para avaliar a exposição a ruído de impacto ocupacional.</dd>
+
+    <dt><strong>DOSE:</strong></dt>
+    <dd>Quantidade % (percentual) indicando se a exposição ao ruído ultrapassa o limite de tolerância. Dose superior a 1(um) significa superação do limite de tolerância.</dd>
+
+    <dt><strong>LAVG:</strong></dt>
+    <dd>Nível equivalente - Traduz a "média" da exposição a ruído durante jornada de trabalho.</dd>
+
+    <dt><strong>LT:</strong></dt>
+    <dd>Limite de Tolerância.</dd>
+
+    <dt><strong>NR:</strong></dt>
+    <dd>Norma Regulamentadora do Ministério do Trabalho.</dd>
+</dl>
+ 
+        `,
+        descritivoAtividades: `<h2>Metodologia</h2>
+          <p>A metodologia adotada para a elaboração do presente laudo teve como base o levantamento das atividades e operações executadas pelos trabalhadores da empresa. Foram conduzidas inspeções nos ambientes de trabalho, observação das atividades desempenhadas, entrevistas informais com os trabalhadores e seus superiores hierárquicos, além do levantamento de documentos, identificação de máquinas, equipamentos, matérias primas e insumos utilizados.</p>
+
+          <h3>Normas e Diretrizes</h3>
+          <p>As metodologias de avaliações, seja qualitativa ou quantitativa, estão alinhadas com as <strong>Normas Regulamentadoras do Ministério do Trabalho</strong>, <strong>Normas de Higiene Ocupacional (NHO) da Fundacentro</strong> e, quando aplicável, as diretrizes da <strong>Conferência Norte-Americana de Higienistas Industriais Governamentais (ACGIH)</strong>.</p>
+
+          <h3>Caracterização por Setor</h3>
+          <p>Em cada setor, realizou-se a caracterização detalhada de todos os trabalhadores, determinando cargos, funções e descrição das atividades desempenhadas. Em seguida, procedeu-se à caracterização do ambiente de trabalho, identificando principais máquinas/equipamentos, produtos químicos utilizados e avaliando os perigos e riscos. Essas informações foram consolidadas em tabelas de resultados, fornecendo subsídios para a eliminação, neutralização ou minimização dos principais riscos. O reconhecimento pelos menos um ocupante de cada cargo, abrangendo pelo menos um ocupante de cada cargo.</p>
+
+          <h3>Identificação de Riscos e Agentes Nocivos</h3>
+          <p>A identificação e caracterização dos <em>Riscos/Agentes Nocivos</em> basearam-se em avaliações qualitativas, sendo avaliados quantitativamente quando identificados, segundo previsões legais e metodológicas. Todos os procedimentos, equipamentos, resultados e julgamentos foram registrados em planilhas e relatórios anexos a este documento.</p>
+
+          <h3>Análise de Grupos de Trabalhadores</h3>
+          <p>Após o levantamento, foram identificados os grupos de trabalhadores que desempenham atividades similares na empresa. Posteriormente, realizou-se a análise dos dados levantados e a caracterização da insalubridade, utilizando como referência os critérios estabelecidos no <strong>Art. 189 da CLT</strong> e a <strong>NR-15</strong> e seus anexos. Além dos resultados das avaliações qualitativas e/ou quantitativas, foram consideradas as medidas de controle adotadas pela empresa e sua eficácia na eliminação ou neutralização da insalubridade.</p>
+
+          <h3>Equipamento de Proteção Individual (EPI)</h3>
+          <p>No contexto da eficácia do <strong>Equipamento de Proteção Individual (EPI)</strong>, foram levadas em consideração várias dimensões, incluindo:</p>
+          <ul>
+              <li>O uso adequado e efetivo pelos trabalhadores</li>
+              <li>A observância das normas de segurança</li>
+              <li>A adequação do equipamento ao risco</li>
+              <li>Conformidade com o <strong>Certificado de Aprovação (CA)</strong></li>
+              <li>Registro periódico da entrega dos equipamentos, contendo informações essenciais como:
+                  <ul>
+                      <li>Data</li>
+                      <li>Número do CA</li>
+                      <li>Especificação do EPI</li>
+                      <li>Assinatura do trabalhador</li>
+                  </ul>
+              </li>
+              <li>Realização de treinamentos sobre o uso correto dos equipamentos</li>
+            </ul>
+        `,
+        identificacaoLocal: "<p>Descreva aqui as características do local de trabalho avaliado, incluindo layout, iluminação, ventilação e outros aspectos relevantes.</p>",
         conclusao: "<p>Apresente aqui a conclusão final do laudo, resumindo os principais achados e se há ou não caracterização de insalubridade ou periculosidade.</p>",
     });
     
@@ -280,6 +358,11 @@ export default function CadastrarLTIP() {
             return;  
         } 
 
+        // Consolidar todas as avaliações dos anexos de periculosidade em uma string
+        const avaliacaoAtividadesPericulosas = anexosPericulosidade
+            .map(anexo => `<h3>${anexo.titulo}</h3>${anexo.avaliacao || ''}`)
+            .join('\n\n');
+
         const ltipPayload = {
             ...ltipData,
             funcaoId: selectedFuncao.id,
@@ -287,7 +370,7 @@ export default function CadastrarLTIP() {
             demaisElaboradoresIds: selectedDemaisElaboradores.map(p => p.id),
             aparelhosIds: selectedAparelhos.map(a => a.id),
             atividadesPericulosasAnexosIds: anexosPericulosidade.map(anexo => anexo.id),
-            bibliografiasIds: []
+            avaliacaoAtividadesPericulosas: avaliacaoAtividadesPericulosas
         };
 
         delete ltipPayload.naoInsalubre;
@@ -301,7 +384,7 @@ export default function CadastrarLTIP() {
                 await ltipService.createLtip(ltipPayload, imagemCapaFile);
                 toast.success("LTIP criado com sucesso.");
             }
-            setTimeout(() => navigate('/seguranca/ltips'), 1500);
+            setTimeout(() => navigate('/seguranca/ltip'), 1500);
         }catch(error){
             toast.error("Erro ao salvar o LTIP.");
             console.error("Erro ao salvar LTIP:", error);
@@ -334,15 +417,10 @@ export default function CadastrarLTIP() {
       ),
       metodologia: (
         <RichTextEditor
-          content={ltipData.metodologia}
-          onChange={(c) => handleRichTextChange("metodologia", c)}
+          content={ltipData.descritivoAtividades}
+          onChange={(c) => handleRichTextChange("descritivoAtividades", c)}
         />
-      ),
-      bibliografia: (
-        <RichTextEditor
-          content={ltipData.bibliografia}
-          onChange={(c) => handleRichTextChange("bibliografia", c)}
-        />
+
       ),
       aparelhos: (
         <TabAparelhos
@@ -360,8 +438,8 @@ export default function CadastrarLTIP() {
       ),
       identificacao_local: (
         <RichTextEditor
-          content={ltipData.identificacao_local}
-          onChange={(c) => handleRichTextChange("identificacao_local", c)}
+          content={ltipData.identificacaoLocal}
+          onChange={(c) => handleRichTextChange("identificacaoLocal", c)}
         />
       ),
       agentes: (
@@ -385,7 +463,7 @@ export default function CadastrarLTIP() {
           riscos={riscos}
         />
       ),
-      atividades_periculosas: (
+      avaliacao_atividades_periculosas: (
         <TabAtividadesPericulosas
           isChecked={ltipData.naoPericuloso}
           onCheckboxChange={(e) =>
@@ -416,11 +494,15 @@ export default function CadastrarLTIP() {
     };
 
     const tabLabels = [
-        { id: 'capa', label: 'Capa' }, { id: 'introducao', label: 'Introdução' }, { id: 'objetivo', label: 'Objetivo' },
-        { id: 'definicoes', label: 'Definições' }, { id: 'metodologia', label: 'Metodologia e Descritivos das Atividades' },
-        { id: 'bibliografia', label: 'Bibliografia' }, { id: 'aparelhos', label: 'Aparelhos' },
-        { id: 'identificacao_local', label: 'Identificação do Local' }, { id: 'agentes', label: 'Agentes Nocivos/Riscos' },
-        { id: 'atividades_periculosas', label: 'Atividades e Operações Periculosas', hasDot: anexosPericulosidade.length > 0 },
+        { id: 'capa', label: 'Capa' },
+        { id: 'introducao', label: 'Introdução' }, 
+        { id: 'objetivo', label: 'Objetivo' },
+        { id: 'definicoes', label: 'Definições' }, 
+        { id: 'metodologia', label: 'Metodologia e Descritivos das Atividades' },
+        { id: 'aparelhos', label: 'Aparelhos' },
+        { id: 'identificacao_local', label: 'Identificação do Local' }, 
+        { id: 'agentes', label: 'Agentes Nocivos/Riscos' },
+        { id: 'avaliacao_atividades_periculosas', label: 'Atividades e Operações Periculosas', hasDot: anexosPericulosidade.length > 0 },
         { id: 'conclusao', label: 'Conclusão' },
     ];
 
@@ -552,37 +634,25 @@ export default function CadastrarLTIP() {
                   <label className="text-sm font-medium text-gray-600">
                     Hora Inicial *
                   </label>
-                  <div className="relative">
-                    <input
-                      type="time"
-                      name="horaInicial"
-                      value={ltipData.horaInicial}
-                      onChange={handleInputChange}
-                      className="mt-1 w-full py-2 px-3 border border-gray-300 rounded-md"
-                    />
-                    <Clock
-                      size={16}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
-                    />
-                  </div>
+                  <input
+                    type="time"
+                    name="horaInicial"
+                    value={ltipData.horaInicial}
+                    onChange={handleInputChange}
+                    className="mt-1 w-full py-2 px-3 border border-gray-300 rounded-md"
+                  />
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-600">
                     Hora Final *
                   </label>
-                  <div className="relative">
-                    <input
-                      type="time"
-                      name="horaFinal"
-                      value={ltipData.horaFinal}
-                      onChange={handleInputChange}
-                      className="mt-1 w-full py-2 px-3 border border-gray-300 rounded-md"
-                    />
-                    <Clock
-                      size={16}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
-                    />
-                  </div>
+                  <input
+                    type="time"
+                    name="horaFinal"
+                    value={ltipData.horaFinal}
+                    onChange={handleInputChange}
+                    className="mt-1 w-full py-2 px-3 border border-gray-300 rounded-md"
+                  />
                 </div>
               </div>
             </FormSection>
@@ -621,6 +691,7 @@ export default function CadastrarLTIP() {
                     Demais Elaboradores
                   </label>
                   <InputWithActions
+                    value={selectedDemaisElaboradores.map(elaborador => elaborador.nome).join(', ') || ''}
                     placeholder="Selecione outros elaboradores"
                     onClick={() => setIsDemaisElaboradoresModalOpen(true)}
                     actions={

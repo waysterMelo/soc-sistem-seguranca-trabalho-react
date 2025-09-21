@@ -69,6 +69,28 @@ const ltipService = {
             console.error(`Erro ao deletar LTIP com ID ${id}:`, error);
             throw error;
         }
+  },
+
+  async getLtipsByFilters(empresaId, funcaoId, setorId = null, page = 0, size = 10) {
+        try {
+            const params = {
+                empresaId,
+                funcaoId,
+                page,
+                size,
+                sort: 'id,desc'
+            };
+
+            if (setorId) {
+                params.setorId = setorId;
+            }
+
+            const response = await apiService.get('/ltip', { params });
+            return response.data;
+        } catch (error) {
+            console.error("Erro ao buscar LTIPs por filtros:", error);
+            throw error;
+        }
   }
 };
 

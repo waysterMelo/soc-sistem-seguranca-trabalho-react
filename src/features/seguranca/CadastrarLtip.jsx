@@ -51,19 +51,26 @@ const TabButton = ({ label, isActive, onClick, hasDot = false }) => (
         {label} {hasDot && <span className="absolute top-2 right-2 block h-2 w-2 rounded-full bg-red-500"></span>}
     </button>
 );
-const TabCapa = ({ onFileChange, onRemove, previewUrl }) =>{
+const TabCapa = ({ onFileChange, onRemove, previewUrl }) => {
     const fileInputRef = React.useRef(null);
+    const [imageError, setImageError] = React.useState(false);
 
     const handleImageCapaChange = (e) => {
         const file = e.target.files[0];
-        if(file && file.type.startsWith('image/')) {
+        if (file && file.type.startsWith('image/')) {
+            setImageError(false);
             onFileChange(file);
+        } else {
+            toast.error("Por favor, selecione um arquivo de imagem válido.");
         }
     };
 
     const handleRemoveImageCapa = () => {
         onRemove();
-        if(fileInputRef.current) { fileInputRef.current.value = ""; }
+        setImageError(false);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+        }
     };
 
     const triggerFileSelect = () => fileInputRef.current.click();
@@ -71,42 +78,47 @@ const TabCapa = ({ onFileChange, onRemove, previewUrl }) =>{
     return (
         <div className="space-y-6">
             <p className="text-sm text-gray-600">
-            Selecione uma imagem para a capa do documento.
-            </p> 
-              <div
+                Selecione uma imagem para a capa do documento.
+            </p>
+            <div
                 className="w-full h-64 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-center cursor-pointer hover:border-blue-500 hover:bg-gray-50 transition-colors"
                 onClick={triggerFileSelect}
             >
-                {previewUrl ? (
-     <img src={previewUrl} alt="Pré-visualização da Capa" className="max-h-full max-w-full object-contain" />
-                ): (
+                {previewUrl && !imageError ? (
+                    <img 
+                        src={previewUrl} 
+                        alt="Pré-visualização da Capa" 
+                        className="max-h-full max-w-full object-contain"
+                        onError={() => setImageError(true)}
+                    />
+                ) : (
                     <div className="text-gray-500">
                         <ImageIcon size={48} className="mx-auto mb-2" />
-                        <span>Clique para selecionar uma imagem</span>
+                        <span>
+                            {imageError ? 'Erro ao carregar imagem. Clique para selecionar outra.' : 'Clique para selecionar uma imagem'}
+                        </span>
                     </div>
-                ) }
+                )}
             </div>
-            <input type="file" ref={fileInputRef}
-                onChange={handleImageCapaChange} accept="image/*" 
-                    style={{ display: 'none' }}
-                />
-            {previewUrl && (
+            <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleImageCapaChange}
+                accept="image/*"
+                className="hidden"
+            />
+            {previewUrl && !imageError && (
                 <button
-                type='button'
-                onClick={handleRemoveImageCapa}
-                className="flex items-center justify-center gap-2 mx-auto 
-                px-4 py-2 text-sm font-medium text-red-600 bg-red-100 rounded-md
-                 hover:bg-red-200">
-                <Trash2 size={16} /> Remover Imagem        
+                    type='button'
+                    onClick={handleRemoveImageCapa}
+                    className="flex items-center justify-center gap-2 mx-auto px-4 py-2 text-sm font-medium text-red-600 bg-red-100 rounded-md hover:bg-red-200"
+                >
+                    <Trash2 size={16} /> Remover Imagem
                 </button>
             )}
-             <input type="file" ref={fileInputRef} onChange={handleImageCapaChange}
-			accept="image/*" style={{ display: 'none' }} />
-          
-		
         </div>
-    )
-}; 
+    );
+};
 const TabAgentesNocivos = ({ onCheckboxChange, isChecked, onRecuperar, agentesNocivos, riscos }) => {
     const [subTab, setSubTab] = useState('agentes');
     return (
@@ -164,8 +176,8 @@ const TabAtividadesPericulosas = ({ onCheckboxChange, isChecked, onSearchAnexos,
     <div className="space-y-6">
         <p className="text-sm text-gray-600">Atividades e Operações Periculosas no qual a função está exposta.</p>
         <div className="flex items-center gap-2"><input type="checkbox" id="no-periculosas" className="h-4 w-4 rounded text-blue-600" checked={isChecked} onChange={onCheckboxChange} /><label htmlFor="no-periculosas" className="text-sm">Confirmo que as atividades... não são consideradas periculosas.</label></div>
-        <div className={isChecked ? 'opacity-50' : ''}><label className="text-sm font-medium text-gray-600">Anexos pertencentes a NR-16...</label><InputWithActions placeholder="Selecione um ou mais anexos da NR-16..." onClick={!isChecked ? onSearchAnexos : undefined} className={isChecked ? 'cursor-not-allowed' : ''} actions={<button type="button" onClick={!isChecked ? onSearchAnexos : undefined} disabled={isChecked} className="p-2.5 text-white bg-green-500 hover:bg-green-600 rounded-r-md disabled:bg-gray-400"><Search size={18}/></button>} /></div>
-        <div className={`space-y-4 ${isChecked ? 'opacity-50' : ''}`}>{anexos.map(anexo => (<AnexoItem key={anexo.id} title={anexo.titulo} content={anexo.avaliacao} onContentChange={(content) => onAnexoChange(anexo.id, content)} onRemove={() => onRemoveAnexo(anexo.id)} isReadOnly={isChecked} />))}</div>
+        <div className={isChecked ? 'opacity-50' : ''}><label className="text-sm font-medium text-gray-600">Anexos pertencentes a NR-16...</label><InputWithActions placeholder="Selecione um ou mais anexos da NR-16..." value="" onClick={!isChecked ? onSearchAnexos : undefined} className={isChecked ? 'cursor-not-allowed' : ''} actions={<button type="button" onClick={!isChecked ? onSearchAnexos : undefined} disabled={isChecked} className="p-2.5 text-white bg-green-500 hover:bg-green-600 rounded-r-md disabled:bg-gray-400"><Search size={18}/></button>} /></div>
+        <div className={`space-y-4 ${isChecked ? 'opacity-50' : ''}`}>{anexos.map(anexo => (<AnexoItem key={anexo.id} title={anexo.titulo || anexo.nome || anexo.descricao} content={anexo.avaliacao} onContentChange={(content) => onAnexoChange(anexo.id, content)} onRemove={() => onRemoveAnexo(anexo.id)} isReadOnly={isChecked} />))}</div>
     </div>
 );
 const TabAparelhos = ({ vinculados, onSearch, onAdd, onRemove }) => (
@@ -201,6 +213,12 @@ export default function CadastrarLTIP() {
     const [riscos, setRiscos] = useState([]); // Estado para riscos
     const [capaPreviewUrl, setCapaPreviewUrl] = useState(null);
     const [imagemCapaFile, setImagemCapaFile] = useState(null);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [showDeleteSuccessModal, setShowDeleteSuccessModal] = useState(false);
+    const [showErrorModal, setShowErrorModal] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
+    const [errorType, setErrorType] = useState('save'); // 'save' ou 'delete'
 
     const handleImageCapaChange = (file) => {
         setImagemCapaFile(file);
@@ -307,6 +325,118 @@ export default function CadastrarLTIP() {
         conclusao: "<p>Apresente aqui a conclusão final do laudo, resumindo os principais achados e se há ou não caracterização de insalubridade ou periculosidade.</p>",
     });
     
+    useEffect(() => {
+    if (id) {
+        const fetchLtipData = async () => {
+            try {
+                const response = await ltipService.getLtipById(id);
+                const ltip = response.data || response;
+
+                if (!ltip) {
+                    throw new Error("Dados do LTIP não encontrados");
+                }
+
+                // Carregar dados básicos
+                setLtipData(prevData => ({
+                    ...prevData,
+                    dataLevantamento: ltip.dataLevantamento || '',
+                    horaInicial: ltip.horaInicial || '',
+                    horaFinal: ltip.horaFinal || '',
+                    responsavelEmpresa: ltip.responsavelEmpresa || '',
+                    inicioValidade: ltip.inicioValidade || '',
+                    proximaRevisao: ltip.proximaRevisao || '',
+                    alertaValidadeDias: ltip.alertaValidadeDias || 60,
+                    atividadesNaoInsalubres: ltip.atividadesNaoInsalubres || false,
+                    // Remover naoInsalubre e naoPericuloso, usar atividadesNaoInsalubres
+                    naoInsalubre: ltip.atividadesNaoInsalubres || false,
+                    naoPericuloso: !ltip.atividadesPericulosasAnexos || ltip.atividadesPericulosasAnexos.length === 0,
+                    capa: ltip.capa || prevData.capa,
+                    introducao: ltip.introducao || prevData.introducao,
+                    objetivo: ltip.objetivo || prevData.objetivo,
+                    definicoes: ltip.definicoes || prevData.definicoes,
+                    descritivoAtividades: ltip.descritivoAtividades || prevData.descritivoAtividades,
+                    identificacaoLocal: ltip.identificacaoLocal || prevData.identificacaoLocal,
+                    conclusao: ltip.conclusao || prevData.conclusao,
+                    metodologia: ltip.metodologia || ltip.descritivoAtividades || prevData.descritivoAtividades,
+                    planejamentoAnual: ltip.planejamentoAnual || '',
+                    avaliacaoAtividadesPericulosas: ltip.avaliacaoAtividadesPericulosas || ''
+                }));
+
+                // Carregar seleções
+                if (ltip.funcao) {
+                    setSelectedFuncao(ltip.funcao);
+                    if (ltip.funcao.setor) {
+                        setSelectedSetor(ltip.funcao.setor);
+                        if (ltip.funcao.setor.empresa) {
+                            setSelectedEmpresa(ltip.funcao.setor.empresa);
+                        }
+                    }
+                }
+
+                if (ltip.responsavelTecnico) {
+                    setSelectedResponsavelTecnico(ltip.responsavelTecnico);
+                }
+
+                if (ltip.demaisElaboradores && Array.isArray(ltip.demaisElaboradores)) {
+                    setSelectedDemaisElaboradores(ltip.demaisElaboradores);
+                }
+
+                if (ltip.aparelhos && Array.isArray(ltip.aparelhos)) {
+                    setSelectedAparelhos(ltip.aparelhos);
+                }
+
+                // Carregar anexos de periculosidade com a estrutura correta
+                if (ltip.atividadesPericulosasAnexos && Array.isArray(ltip.atividadesPericulosasAnexos)) {
+
+                    // Mapear anexos do formato da API para o formato do componente
+                    const anexosFormatados = ltip.atividadesPericulosasAnexos.map((item, index) => {
+                        // item.id = ID do relacionamento na tabela ltip_nr16_anexos
+                        // item.anexoId ou item.anexo?.id = ID do anexo NR-16
+                        const anexoId = item.anexoId || item.anexo?.id;
+                        const titulo = item.anexos || item.anexo?.titulo || item.anexo?.anexos || `Anexo ${item.normaRegulamentadora || 'NR-16'}`;
+                        const uniqueId = `${item.id}-${anexoId || index}`; // ID único para o componente
+
+                        return {
+                            id: uniqueId,
+                            anexoId: anexoId,
+                            titulo: `Anexo ${item.normaRegulamentadora || 'NR-16'} - ${titulo}`,
+                            nome: titulo,
+                            descricao: titulo,
+                            avaliacao: item.avaliacao || '',
+                            normaRegulamentadora: item.normaRegulamentadora || 'NR-16',
+                            anexos: item.anexos || '',
+                            ltipAnexoId: item.id // ID do relacionamento na tabela ltip_nr16_anexos
+                        };
+                    });
+
+                    setAnexosPericulosidade(anexosFormatados);
+
+                    setLtipData(prev => ({
+                        ...prev,
+                        naoPericuloso: anexosFormatados.length === 0
+                    }));
+                }
+
+                 if (ltip.imagemCapa) {
+                    console.log("Caminho da imagem recebido:", ltip.imagemCapa);
+                    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+                    console.log("URL base da API:", apiBaseUrl);
+                    const imageUrl = ltip.imagemCapa.startsWith('http')
+                        ? ltip.imagemCapa
+                        : `${apiBaseUrl}${ltip.imagemCapa}`;
+                    console.log("URL final da imagem:", imageUrl);
+                    setCapaPreviewUrl(imageUrl);
+                }
+            } catch (error) {
+                console.error("Erro detalhado:", error);
+                console.error("Stack trace:", error.stack);
+                toast.error("Erro ao carregar dados do LTIP.");
+            }
+        };
+        fetchLtipData();
+    }
+}, [id]);
+
     // Efeito para buscar agentes e riscos quando a função é selecionada
     useEffect(() => {
         if (selectedFuncao?.id) {
@@ -315,7 +445,9 @@ export default function CadastrarLTIP() {
                     const funcaoCompleta = await funcoesService.getById(selectedFuncao.id);
                     setAgentesNocivos(funcaoCompleta.data.agentesNocivosEsocial || []);
                     setRiscos(funcaoCompleta.data.riscosPGR || []);
-                    toast.success("Agentes e Riscos da função foram carregados.");
+                    if (!id) { // Só mostra toast se não estiver editando
+                        toast.success("Agentes e Riscos da função foram carregados.");
+                    }
                 } catch (error) {
                     toast.error("Não foi possível buscar os detalhes da função.");
                     console.error("Erro ao buscar detalhes da função:", error);
@@ -342,54 +474,108 @@ export default function CadastrarLTIP() {
         setAnexosPericulosidade(prev => prev.map(anexo => anexo.id === anexoId ? { ...anexo, avaliacao: newContent } : anexo));
     };
 
-    const handleSelectAnexoNr16 = (anexo) => {
-        if (!anexosPericulosidade.some(a => a.id === anexo.id)) {
-            setAnexosPericulosidade(prev => [...prev, anexo]);
+      const handleSelectAnexoNr16 = (anexo) => {
+    if (!anexosPericulosidade.some(a => a.id === anexo.id)) {
+        // Adicionar o anexo com a estrutura esperada
+        const novoAnexo = {
+            ...anexo,
+            anexoId: anexo.id, // Garantir que temos o anexoId
+            avaliacao: anexo.avaliacao || '' // Garantir que temos o campo avaliacao
+        };
+        setAnexosPericulosidade(prev => [...prev, novoAnexo]);
+    }
+    setIsAnexoNR16ModalOpen(false);
+};
+
+    const handleDelete = async () => {
+        try {
+            await ltipService.deleteLtip(id);
+            setShowDeleteModal(false);
+            setShowDeleteSuccessModal(true);
+            setTimeout(() => navigate('/seguranca/ltip'), 1500);
+        } catch (error) {
+            console.error("Erro ao excluir LTIP:", error);
+            setShowDeleteModal(false);
+            setErrorType('delete');
+            setErrorMessage("Erro ao excluir o LTIP. Tente novamente.");
+            setShowErrorModal(true);
         }
-        setIsAnexoNR16ModalOpen(false);
     };
 
-    const handleSubmit = async (e) => { e.preventDefault(); 
-        
-        e.preventDefault();
+    const handleSubmit = async (e) => {
+    e.preventDefault();
 
-        if(!selectedFuncao || !selectedResponsavelTecnico){
-           toast.warn("Função e Responsável Técnico são obrigatórios.");
-            return;  
-        } 
+    if (!selectedFuncao || !selectedResponsavelTecnico) {
+        setErrorMessage("Função e Responsável Técnico são obrigatórios.");
+        setShowErrorModal(true);
+        return;
+    }
 
-        // Consolidar todas as avaliações dos anexos de periculosidade em uma string
-        const avaliacaoAtividadesPericulosas = anexosPericulosidade
-            .map(anexo => `<h3>${anexo.titulo}</h3>${anexo.avaliacao || ''}`)
-            .join('\n\n');
-
-        const ltipPayload = {
-            ...ltipData,
-            funcaoId: selectedFuncao.id,
-            responsavelTecnicoId: selectedResponsavelTecnico.id,
-            demaisElaboradoresIds: selectedDemaisElaboradores.map(p => p.id),
-            aparelhosIds: selectedAparelhos.map(a => a.id),
-            atividadesPericulosasAnexosIds: anexosPericulosidade.map(anexo => anexo.id),
-            avaliacaoAtividadesPericulosas: avaliacaoAtividadesPericulosas
+    // Preparar o array de anexos de periculosidade no formato esperado pela API
+    const atividadesPericulosasAnexosFormatado = anexosPericulosidade.map(anexo => {
+        const anexoPayload = {
+            anexoId: anexo.anexoId || anexo.id, // ID do anexo NR-16
+            avaliacao: anexo.avaliacao || ''
         };
 
-        delete ltipPayload.naoInsalubre;
-        delete ltipPayload.naoPericuloso;
-
-        try{
-            if(id){
-                await ltipService.updateLtip(id, ltipPayload, imagemCapaFile);
-                toast.success("LTIP atualizado com sucesso.");
-            }else{
-                await ltipService.createLtip(ltipPayload, imagemCapaFile);
-                toast.success("LTIP criado com sucesso.");
-            }
-            setTimeout(() => navigate('/seguranca/ltip'), 1500);
-        }catch(error){
-            toast.error("Erro ao salvar o LTIP.");
-            console.error("Erro ao salvar LTIP:", error);
+        // Se estamos editando um LTIP existente e este anexo já existia, incluir o ID do relacionamento
+        if (id && anexo.ltipAnexoId) {
+            anexoPayload.id = anexo.ltipAnexoId; // ID do relacionamento na tabela ltip_nr16_anexos
         }
+
+        return anexoPayload;
+    });
+
+    // Preparar avaliação consolidada (opcional, se a API aceitar)
+    const avaliacaoAtividadesPericulosas = anexosPericulosidade
+        .map(anexo => `<h3>${anexo.titulo}</h3>${anexo.avaliacao || ''}`)
+        .join('\n\n');
+
+    const ltipPayload = {
+        funcaoId: selectedFuncao.id,
+        dataLevantamento: ltipData.dataLevantamento,
+        horaInicial: ltipData.horaInicial,
+        horaFinal: ltipData.horaFinal,
+        responsavelTecnicoId: selectedResponsavelTecnico.id,
+        demaisElaboradoresIds: selectedDemaisElaboradores.map(p => p.id),
+        responsavelEmpresa: ltipData.responsavelEmpresa,
+        inicioValidade: ltipData.inicioValidade,
+        proximaRevisao: ltipData.proximaRevisao,
+        alertaValidadeDias: ltipData.alertaValidadeDias,
+        introducao: ltipData.introducao,
+        objetivo: ltipData.objetivo,
+        definicoes: ltipData.definicoes,
+        metodologia: ltipData.metodologia || ltipData.descritivoAtividades,
+        descritivoAtividades: ltipData.descritivoAtividades,
+        identificacaoLocal: ltipData.identificacaoLocal,
+        conclusao: ltipData.conclusao,
+        planejamentoAnual: ltipData.planejamentoAnual || '',
+        atividadesNaoInsalubres: ltipData.naoInsalubre,
+        atividadesPericulosasAnexos: atividadesPericulosasAnexosFormatado, // Array no formato correto
+        avaliacaoAtividadesPericulosas: avaliacaoAtividadesPericulosas,
+        bibliografiasIds: [], // Adicionar se tiver bibliografia
+        aparelhosIds: selectedAparelhos.map(a => a.id)
     };
+
+
+
+    try {
+        if (id) {
+            await ltipService.updateLtip(id, ltipPayload, imagemCapaFile);
+            setShowSuccessModal(true);
+            setTimeout(() => navigate('/seguranca/ltip'), 1500)
+        } else {
+            await ltipService.createLtip(ltipPayload, imagemCapaFile);
+              setShowSuccessModal(true);
+            setTimeout(() => navigate('/seguranca/ltip'), 1500)
+        }
+        setTimeout(() => navigate('/seguranca/ltip'), 1500);
+    } catch (error) {
+        setErrorType('save');
+        setErrorMessage("Erro ao salvar o LTIP. Tente novamente.");
+        setShowErrorModal(true);
+    }
+};
 
     const tabContents = {
       capa: (
@@ -677,10 +863,10 @@ export default function CadastrarLTIP() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => alert("Adicionar novo elaborador")}
-                          className="p-2.5 text-white bg-blue-600 hover:bg-blue-700 rounded-r-md"
+                          onClick={() => setSelectedResponsavelTecnico(null)}
+                          className="p-2.5 text-white bg-red-500 hover:bg-red-600 rounded-r-md"
                         >
-                          <Plus size={18} />
+                          <Trash2 size={18} />
                         </button>
                       </>
                     }
@@ -705,10 +891,10 @@ export default function CadastrarLTIP() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => alert("Adicionar novo elaborador")}
-                          className="p-2.5 text-white bg-blue-600 hover:bg-blue-700 rounded-r-md"
+                          onClick={() => setSelectedDemaisElaboradores([])}
+                          className="p-2.5 text-white bg-red-500 hover:bg-red-600 rounded-r-md"
                         >
-                          <Plus size={18} />
+                          <Trash2 size={18} />
                         </button>
                       </>
                     }
@@ -798,20 +984,31 @@ export default function CadastrarLTIP() {
               </div>
             </div>
 
-            <div className="flex flex-wrap justify-end gap-4 mt-8">
-              <button
-                type="button"
-                onClick={() => navigate(-1)}
-                className="bg-red-600 text-white px-8 py-2.5 rounded-md font-semibold hover:bg-red-700 transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                className="bg-green-600 text-white px-8 py-2.5 rounded-md font-semibold hover:bg-green-700 transition-colors"
-              >
-                Salvar
-              </button>
+            <div className="flex flex-wrap justify-between gap-4 mt-8">
+              {id && (
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteModal(true)}
+                  className="bg-red-600 text-white px-8 py-2.5 rounded-md font-semibold hover:bg-red-700 transition-colors"
+                >
+                  Excluir LTIP
+                </button>
+              )}
+              <div className="flex gap-4">
+                <button
+                  type="button"
+                  onClick={() => navigate(-1)}
+                  className="bg-gray-500 text-white px-8 py-2.5 rounded-md font-semibold hover:bg-gray-600 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="bg-green-600 text-white px-8 py-2.5 rounded-md font-semibold hover:bg-green-700 transition-colors"
+                >
+                  Salvar
+                </button>
+              </div>
             </div>
           </form>
         </div>
@@ -878,6 +1075,81 @@ export default function CadastrarLTIP() {
           onClose={() => setIsAnexoNR16ModalOpen(false)}
           onSelect={handleSelectAnexoNr16}
         />
+      
+             {showSuccessModal && (
+                    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+                        <div className="bg-white p-6 rounded-lg shadow-lg">
+                            <div className="text-center">
+                                <div className="text-green-600 text-6xl mb-4">✓</div>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-2">LTIP salva com sucesso</h3>
+                                <p className="text-gray-600">Redirecionando...</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+             {showDeleteModal && (
+                    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+                        <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+                            <div className="text-center">
+                                <div className="text-red-600 text-6xl mb-4">⚠️</div>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-2">Confirmar Exclusão</h3>
+                                <p className="text-gray-600 mb-6">
+                                    Tem certeza que deseja excluir este LTIP? Esta ação não pode ser desfeita.
+                                </p>
+                                <div className="flex gap-4 justify-center">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowDeleteModal(false)}
+                                        className="bg-gray-500 text-white px-6 py-2 rounded-md font-semibold hover:bg-gray-600 transition-colors"
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleDelete}
+                                        className="bg-red-600 text-white px-6 py-2 rounded-md font-semibold hover:bg-red-700 transition-colors"
+                                    >
+                                        Excluir
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+             {showDeleteSuccessModal && (
+                    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+                        <div className="bg-white p-6 rounded-lg shadow-lg">
+                            <div className="text-center">
+                                <div className="text-green-600 text-6xl mb-4">✓</div>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-2">LTIP excluído com sucesso</h3>
+                                <p className="text-gray-600">Redirecionando...</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+             {showErrorModal && (
+                    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+                        <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+                            <div className="text-center">
+                                <div className="text-red-600 text-6xl mb-4">❌</div>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                                    {errorType === 'delete' ? 'Erro na Exclusão' : 'Erro ao Salvar'}
+                                </h3>
+                                <p className="text-gray-600 mb-6">{errorMessage}</p>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowErrorModal(false)}
+                                    className="bg-blue-600 text-white px-6 py-2 rounded-md font-semibold hover:bg-blue-700 transition-colors"
+                                >
+                                    OK
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
       </div>
     );
 }

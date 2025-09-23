@@ -13,7 +13,6 @@ import {
     Search
 } from 'lucide-react';
 import {Link} from "react-router-dom";
-import { toast, ToastContainer } from 'react-toastify';
 
 // Importar serviços e modais
 import ltipService from '../../api/services/Ltip/ltipService.js';
@@ -102,6 +101,14 @@ export default function ListarLTIP() {
     const [ltipData, setLtipData] = useState([]);
     const [loading, setLoading] = useState(false);
 
+    // Estados dos modais
+    const [showErrorModal, setShowErrorModal] = useState(false);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
+    const [successMessage, setSuccessMessage] = useState('');
+    const [ltipToDelete, setLtipToDelete] = useState(null);
+
     const filteredData = ltipData.filter(ltip =>
         ltip.empresa?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         ltip.funcao?.nome?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -109,45 +116,69 @@ export default function ListarLTIP() {
 
     // Função para buscar LTIPs quando critérios forem atendidos
     const fetchLtips = async () => {
-        if (!selectedEmpresa || !selectedFuncao) return;
+        if (!selectedEmpresa) return;
 
         setLoading(true);
         try {
             const response = await ltipService.getLtipsByFilters(
                 selectedEmpresa.id,
-                selectedFuncao.id,
-                selectedSetor?.id,
+                selectedFuncao?.id || null,
+                selectedSetor?.id || null,
                 0,
                 100
             );
             setLtipData(response.content || []);
         } catch (error) {
-            toast.error('Erro ao buscar LTIPs');
+            setErrorMessage('Erro ao buscar LTIPs. Tente novamente.');
+            setShowErrorModal(true);
             console.error('Erro ao buscar LTIPs:', error);
         } finally {
             setLoading(false);
         }
     };
 
-    // Effect para buscar LTIPs quando seleções mudarem
+    // Effect para buscar LTIPs quando empresa for selecionada ou filtros mudarem
     useEffect(() => {
         fetchLtips();
     }, [selectedEmpresa, selectedSetor, selectedFuncao]);
 
-    // Verificar se pode mostrar botão Novo LTIP
-    const canShowNewButton = selectedEmpresa && selectedSetor && selectedFuncao;
 
-    // Função para deletar LTIP
-    const handleDeleteLtip = async (id) => {
-        if (window.confirm('Tem certeza que deseja excluir este LTIP?')) {
-            try {
-                await ltipService.deleteLtip(id);
-                toast.success('LTIP excluído com sucesso');
-                fetchLtips(); // Recarregar lista
-            } catch (error) {
-                toast.error('Erro ao excluir LTIP');
-                console.error('Erro ao excluir LTIP:', error);
-            }
+    // Função para iniciar exclusão (abre modal de confirmação)
+    const handleDeleteLtip = (id) => {
+        setLtipToDelete(id);
+        setShowDeleteModal(true);
+    };
+
+    // Função para confirmar exclusão
+    const confirmDeleteLtip = async () => {
+        try {
+            await ltipService.deleteLtip(ltipToDelete);
+            setShowDeleteModal(false);
+            setSuccessMessage('LTIP excluído com sucesso!');
+            setShowSuccessModal(true);
+            fetchLtips(); // Recarregar lista
+            setLtipToDelete(null);
+        } catch (error) {
+            setShowDeleteModal(false);
+            setErrorMessage('Erro ao excluir LTIP. Tente novamente.');
+            setShowErrorModal(true);
+            console.error('Erro ao excluir LTIP:', error);
+            setLtipToDelete(null);
+        }
+    };
+
+    // Função para imprimir LTIP
+    const handlePrintLtip = async (ltipId) => {
+        try {
+            const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+            const reportUrl = `${apiBaseUrl}/ltip/${ltipId}/report`;
+
+            // Abrir o relatório em uma nova aba
+            window.open(reportUrl, '_blank');
+        } catch (error) {
+            setErrorMessage('Erro ao gerar relatório. Tente novamente.');
+            setShowErrorModal(true);
+            console.error('Erro ao gerar relatório LTIP:', error);
         }
     };
 
@@ -176,10 +207,10 @@ export default function ListarLTIP() {
     const totalPages = Math.ceil(filteredData.length / entriesPerPage);
 
     const renderContent = () => {
-        if (!selectedEmpresa || !selectedSetor || !selectedFuncao) {
+        if (!selectedEmpresa) {
             return (
                 <div className="text-center py-12 px-6 bg-blue-50 text-blue-700 rounded-lg">
-                    <p>Selecione uma empresa, unidade, setor e função para visualizar os LTIPs.</p>
+                    <p>Selecione uma empresa para visualizar os LTIPs.</p>
                 </div>
             );
         }
@@ -290,12 +321,18 @@ const getStatusDescription = (situacao, proximaRevisao) => {
                                         <Trash2 size={18} />
                                     </button>
                                     <Link
-                                        to={`/seguranca/novo-ltip/${item.id}`}
+                                        to={`/seguranca/ltip/editar/${item.id}`}
                                         className="text-blue-600 hover:text-blue-800"
                                     >
                                         <Pencil size={18} />
                                     </Link>
-                                    <button className="text-blue-600 hover:text-blue-800"><Printer size={18} /></button>
+                                    <button
+                                        onClick={() => handlePrintLtip(item.id)}
+                                        className="text-blue-600 hover:text-blue-800"
+                                        title="Imprimir LTIP"
+                                    >
+                                        <Printer size={18} />
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -321,13 +358,11 @@ const getStatusDescription = (situacao, proximaRevisao) => {
                 <div className="bg-white p-4 rounded-lg shadow-md">
                     <div className="flex flex-wrap justify-between items-center mb-4 gap-4">
                         <div className="flex flex-wrap gap-2">
-                            {canShowNewButton && (
-                                <Link to={'/seguranca/novo-ltip'}
-                                    className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm">
-                                    <Plus size={16} />
-                                    <span>Novo LTIP</span>
-                                </Link>
-                            )}
+                            <Link to={'/seguranca/novo-ltip'}
+                                className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm">
+                                <Plus size={16} />
+                                <span>Novo LTIP</span>
+                            </Link>
                         </div>
                     </div>
 
@@ -476,11 +511,77 @@ const getStatusDescription = (situacao, proximaRevisao) => {
                 </div>
             </div>
 
-            <ToastContainer
-                position="top-right"
-                autoClose={3000}
-                hideProgressBar={false}
-            />
+            {/* Modais de Feedback */}
+            {showErrorModal && (
+                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+                    <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+                        <div className="text-center">
+                            <div className="text-red-600 text-6xl mb-4">❌</div>
+                            <h3 className="text-lg font-semibold text-gray-900 mb-2">Erro</h3>
+                            <p className="text-gray-600 mb-6">{errorMessage}</p>
+                            <button
+                                type="button"
+                                onClick={() => setShowErrorModal(false)}
+                                className="bg-blue-600 text-white px-6 py-2 rounded-md font-semibold hover:bg-blue-700 transition-colors"
+                            >
+                                OK
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showSuccessModal && (
+                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+                    <div className="bg-white p-6 rounded-lg shadow-lg">
+                        <div className="text-center">
+                            <div className="text-green-600 text-6xl mb-4">✓</div>
+                            <h3 className="text-lg font-semibold text-gray-900 mb-2">Sucesso</h3>
+                            <p className="text-gray-600 mb-6">{successMessage}</p>
+                            <button
+                                type="button"
+                                onClick={() => setShowSuccessModal(false)}
+                                className="bg-green-600 text-white px-6 py-2 rounded-md font-semibold hover:bg-green-700 transition-colors"
+                            >
+                                OK
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showDeleteModal && (
+                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+                    <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+                        <div className="text-center">
+                            <div className="text-red-600 text-6xl mb-4">⚠️</div>
+                            <h3 className="text-lg font-semibold text-gray-900 mb-2">Confirmar Exclusão</h3>
+                            <p className="text-gray-600 mb-6">
+                                Tem certeza que deseja excluir este LTIP? Esta ação não pode ser desfeita.
+                            </p>
+                            <div className="flex gap-4 justify-center">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowDeleteModal(false);
+                                        setLtipToDelete(null);
+                                    }}
+                                    className="bg-gray-500 text-white px-6 py-2 rounded-md font-semibold hover:bg-gray-600 transition-colors"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={confirmDeleteLtip}
+                                    className="bg-red-600 text-white px-6 py-2 rounded-md font-semibold hover:bg-red-700 transition-colors"
+                                >
+                                    Excluir
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Modais */}
             <EmpresaSearchModal

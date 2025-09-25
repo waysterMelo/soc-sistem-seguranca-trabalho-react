@@ -39,6 +39,18 @@ const buscarFuncionariosPeloSetor = (setorId) => {
     return api.get(`/funcionarios/setor/${setorId}`);
 };
 
+const buscarFuncionariosPorSetor = (setorId, params) => {
+    return api.get(`/funcionarios/setor/${setorId}`, { params });
+};
+
+const getEmpresas = () => {
+    return api.get('/empresas');
+};
+
+const getSetoresByEmpresa = (empresaId) => {
+    return api.get(`/empresas/${empresaId}/setores`);
+};
+
 
 export const funcionariosService = {
     getAll: getAllFuncionarios,
@@ -48,8 +60,10 @@ export const funcionariosService = {
     delete: deleteFuncionario,
     buscarFuncionarios: buscarFuncionarios,
     buscarComFiltros: buscarFuncionariosComFiltros,
-    buscarPorSetor: buscarFuncionariosPeloSetor
-
+    buscarPorSetor: buscarFuncionariosPeloSetor,
+    buscarFuncionariosPorSetor: buscarFuncionariosPorSetor,
+    getEmpresas: getEmpresas,
+    getSetoresByEmpresa: getSetoresByEmpresa
 };
 
 export default funcionariosService;

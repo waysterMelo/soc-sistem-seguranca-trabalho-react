@@ -84,11 +84,11 @@ const RichTextEditor = ({ content, onChange }) => {
     ];
 
     return (
-        <div className="border border-gray-300 rounded-lg">
-            <div className="flex flex-wrap items-center p-2 border-b border-gray-200 bg-gray-50 rounded-t-lg">
-                <div className="flex items-center space-x-1">
+        <div class="border border-gray-300 rounded-lg">
+            <div class="flex flex-wrap items-center p-2 border-b border-gray-200 bg-gray-50 rounded-t-lg">
+                <div class="flex items-center space-x-1">
                     {editorButtons.map(({ icon: Icon, action }, index) => (
-                        <button key={index} type="button" onClick={action} className="p-2 text-gray-600 rounded-md hover:bg-gray-200">
+                        <button key={index} type="button" onClick={action} class="p-2 text-gray-600 rounded-md hover:bg-gray-200">
                             <Icon size={16} />
                         </button>
                     ))}
@@ -99,7 +99,7 @@ const RichTextEditor = ({ content, onChange }) => {
                 contentEditable
                 onInput={handleContentChange}
                 dangerouslySetInnerHTML={{ __html: content }}
-                className="w-full p-4 h-64 overflow-y-auto focus:outline-none rounded-b-lg"
+                class="w-full p-4 h-64 overflow-y-auto focus:outline-none rounded-b-lg"
             ></div>
         </div>
     );
@@ -109,7 +109,8 @@ const TabButton = ({ label, isActive, onClick }) => (
     <button
         type="button"
         onClick={onClick}
-        className={`px-4 py-3 -mb-px text-sm font-semibold whitespace-nowrap transition-colors border-b-2\n            ${isActive
+        className={`px-4 py-3 -mb-px text-sm font-semibold whitespace-nowrap transition-colors border-b-2
+            ${isActive
                     ? 'border-blue-600 text-blue-600'
                     : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
                 }`
@@ -120,40 +121,34 @@ const TabButton = ({ label, isActive, onClick }) => (
 );
 
 const InputWithActions = ({ placeholder, value, actions, onClick, disabled }) => (
-    <div className="relative flex items-center" onClick={!disabled ? onClick : undefined}>
+    <div class="relative flex items-center" onClick={!disabled ? onClick : undefined}>
         <input
             type="text"
             placeholder={placeholder}
             value={value}
             readOnly
             disabled={disabled}
-            className={`w-full py-2 pl-4 pr-20 border border-gray-300 rounded-md focus:outline-none transition-colors \n                ${disabled ? 'bg-gray-100 cursor-not-allowed' : 'bg-white focus:ring-2 focus:ring-blue-500 cursor-pointer'}`
+            className={`w-full py-2 pl-4 pr-20 border border-gray-300 rounded-md focus:outline-none transition-colors 
+                ${disabled ? 'bg-gray-100 cursor-not-allowed' : 'bg-white focus:ring-2 focus:ring-blue-500 cursor-pointer'}`
             }
         />
-        <div className="absolute right-0 flex">
+        <div class="absolute right-0 flex">
             {actions}
         </div>
     </div>
 );
 
-const TabCapa = ({ onFileChange, initialPreviewUrl }) => { 
+const TabCapa = ({ onFileChange, previewUrl }) => {
     const fileInputRef = React.useRef(null);
-    const [previewUrl, setPreviewUrl] = useState(initialPreviewUrl);
-
-    useEffect(() => {
-        setPreviewUrl(initialPreviewUrl);
-    }, [initialPreviewUrl]);
 
     const handleImageChange = (event) => {
         const file = event.target.files[0];
         if (file && file.type.startsWith('image/')) {
-            setPreviewUrl(URL.createObjectURL(file)); 
             onFileChange(file);
         }
     };
 
     const handleRemoveImage = () => {
-        setPreviewUrl(null);
         onFileChange(null);
         if (fileInputRef.current) {
             fileInputRef.current.value = "";
@@ -163,17 +158,17 @@ const TabCapa = ({ onFileChange, initialPreviewUrl }) => {
     const triggerFileSelect = () => fileInputRef.current.click();
 
     return (
-        <div className="space-y-6">
-            <p className="text-sm text-gray-600">Selecione uma imagem para a capa do documento.</p>
+        <div class="space-y-6">
+            <p class="text-sm text-gray-600">Selecione uma imagem para a capa do documento.</p>
             <div
-                className="w-full h-64 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-center cursor-pointer hover:border-blue-500 hover:bg-gray-50 transition-colors"
+                class="w-full h-64 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-center cursor-pointer hover:border-blue-500 hover:bg-gray-50 transition-colors"
                 onClick={triggerFileSelect}
             >
                 {previewUrl ? (
-                    <img src={previewUrl} alt="Pré-visualização da Capa" className="max-h-full max-w-full object-contain" />
+                    <img src={previewUrl} alt="Pré-visualização da Capa" class="max-h-full max-w-full object-contain" />
                 ) : (
-                    <div className="text-gray-500">
-                        <ImageIcon size={48} className="mx-auto mb-2" />
+                    <div class="text-gray-500">
+                        <ImageIcon size={48} class="mx-auto mb-2" />
                         <span>Clique para selecionar uma imagem</span>
                     </div>
                 )}
@@ -190,7 +185,7 @@ const TabCapa = ({ onFileChange, initialPreviewUrl }) => {
                 <button
                     type="button"
                     onClick={handleRemoveImage}
-                    className="flex items-center justify-center gap-2 mx-auto px-4 py-2 text-sm font-medium text-red-600 bg-red-100 rounded-md hover:bg-red-200"
+                    class="flex items-center justify-center gap-2 mx-auto px-4 py-2 text-sm font-medium text-red-600 bg-red-100 rounded-md hover:bg-red-200"
                 >
                     <Trash2 size={16} />
                     Remover Imagem
@@ -206,26 +201,26 @@ const SimpleTextarea = ({ value, onChange, placeholder }) => (
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         rows="10"
-        className="w-full p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        class="w-full p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
     ></textarea>
 );
 
 const TabTermoValidacao = ({ content, onContentChange, selectedEngenheiro, onEngenheiroSelect, onEngenheiroClear }) => (
-    <div className="space-y-6">
-        <p className="text-sm text-gray-600">Personalize o termo de validação do seu documento preenchendo o campo abaixo</p>
+    <div class="space-y-6">
+        <p class="text-sm text-gray-600">Personalize o termo de validação do seu documento preenchendo o campo abaixo</p>
         <SimpleTextarea 
             value={content}
             onChange={onContentChange}
             placeholder="Os profissionais abaixo assinados reconhecem o teor de todas as páginas contidas neste documento..."
         />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-                <label className="text-sm font-medium text-gray-600">Responsável PGR</label>
+                <label class="text-sm font-medium text-gray-600">Responsável PGR</label>
                 <InputWithActions
                     placeholder="Nenhum engenheiro selecionado"
                     value={selectedEngenheiro?.nome || ''}
                     onClick={onEngenheiroSelect}
-                    actions={<><button type="button" onClick={(e) => { e.stopPropagation(); onEngenheiroSelect(); }} className="p-2.5 text-white bg-green-500 hover:bg-green-600"><Search size={18}/></button><button type="button" onClick={(e) => { e.stopPropagation(); onEngenheiroClear(); }} className="p-2.5 text-white bg-red-500 hover:bg-red-600 rounded-r-md"><Trash2 size={18}/></button></>}
+                    actions={<><button type="button" onClick={(e) => { e.stopPropagation(); onEngenheiroSelect(); }} class="p-2.5 text-white bg-green-500 hover:bg-green-600"><Search size={18}/></button><button type="button" onClick={(e) => { e.stopPropagation(); onEngenheiroClear(); }} class="p-2.5 text-white bg-red-500 hover:bg-red-600 rounded-r-md"><Trash2 size={18}/></button></>}
                 />
             </div>
         </div>
@@ -234,8 +229,8 @@ const TabTermoValidacao = ({ content, onContentChange, selectedEngenheiro, onEng
 
 const TabDocumentoBase = ({ content, onContentChange }) => {
   return (
-    <div className="space-y-6">
-      <p className="text-sm text-gray-600">Personalize o documento base preenchendo o campo abaixo</p>
+    <div class="space-y-6">
+      <p class="text-sm text-gray-600">Personalize o documento base preenchendo o campo abaixo</p>
       <RichTextEditor
         content={content}
         onChange={onContentChange}
@@ -244,31 +239,31 @@ const TabDocumentoBase = ({ content, onContentChange }) => {
   );
 };
 const TabDadosEmpresa = ({ dataDocumento, onDataDocumentoChange, responsavel, onResponsavelChange, termo, onTermoChange, dataRevisao, onDataRevisaoChange }) => (
-    <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
-                <label className="text-sm font-medium text-gray-600">Nome do Responsável da Empresa</label>
+                <label class="text-sm font-medium text-gray-600">Nome do Responsável da Empresa</label>
                 <input 
                     type="text" 
                     value={responsavel}
                     onChange={(e) => onResponsavelChange(e.target.value)}
-                    className="mt-1 w-full py-2 px-3 border border-gray-300 rounded-md"/>
+                    class="mt-1 w-full py-2 px-3 border border-gray-300 rounded-md"/>
             </div>
             <div>
-                <label className="text-sm font-medium text-gray-600">Data do Documento *</label>
+                <label class="text-sm font-medium text-gray-600">Data do Documento *</label>
                 <input
                     type="date"
                     value={dataDocumento}
                     onChange={(e) => onDataDocumentoChange(e.target.value)}
-                    className="mt-1 w-full py-2 px-3 border border-gray-300 rounded-md"
+                    class="mt-1 w-full py-2 px-3 border border-gray-300 rounded-md"
                 />
             </div>
             <div>
-                <label className="text-sm font-medium text-gray-600">Data de Revisão</label>
-                <input type="date" value={dataRevisao} onChange={(e) => onDataRevisaoChange(e.target.value)} className="mt-1 w-full py-2 px-3 border border-gray-300 rounded-md"/>
+                <label class="text-sm font-medium text-gray-600">Data de Revisão</label>
+                <input type="date" value={dataRevisao} onChange={(e) => onDataRevisaoChange(e.target.value)} class="mt-1 w-full py-2 px-3 border border-gray-300 rounded-md"/>
             </div>
         </div>
-        <p className="text-sm text-gray-600">Personalize o termo de ciência do responsável preenchendo o campo abaixo</p>
+        <p class="text-sm text-gray-600">Personalize o termo de ciência do responsável preenchendo o campo abaixo</p>
         <SimpleTextarea 
             value={termo}
             onChange={onTermoChange}
@@ -278,8 +273,8 @@ const TabDadosEmpresa = ({ dataDocumento, onDataDocumentoChange, responsavel, on
 );
 
 const TabConsideracoesFinais = ({ content, onContentChange }) => (
-    <div className="space-y-6">
-        <p className="text-sm text-gray-600">Personalize a conclusão preenchendo o campo abaixo</p>
+    <div class="space-y-6">
+        <p class="text-sm text-gray-600">Personalize a conclusão preenchendo o campo abaixo</p>
         <RichTextEditor 
             content={content}
             onChange={onContentChange}
@@ -293,17 +288,17 @@ const TabPlanoDeAcao = ({
     riscos, onRemoverRisco, onPlanoAcaoChange, hasSetorSelecionado,
 }) => {
     return (
-        <div className="space-y-8">
-            <div className="space-y-6">
+        <div class="space-y-8">
+            <div class="space-y-6">
                 <div>
-                    <label htmlFor="metodologia-select" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="metodologia-select" class="block text-sm font-medium text-gray-700 mb-2">
                         Metodologia
                     </label>
                     <select
                         id="metodologia-select"
                         value={metodologia}
                         onChange={onMetodologiaChange}
-                        className="w-full max-w-md py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        class="w-full max-w-md py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                         <option value="5W2H_PDCA">5W2H + PDCA</option>
                         <option value="5W2H">5W2H</option>
@@ -312,7 +307,7 @@ const TabPlanoDeAcao = ({
                     </select>
                 </div>
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
                         Orientações da Metodologia
                     </label>
                     <RichTextEditor
@@ -322,60 +317,60 @@ const TabPlanoDeAcao = ({
                 </div>
             </div>
 
-            <div className="space-y-4">
-                <div className="flex justify-between items-center pb-2 border-b">
-                    <h3 className="text-lg font-semibold text-gray-800">Ações de Controle de Risco</h3>
+            <div class="space-y-4">
+                <div class="flex justify-between items-center pb-2 border-b">
+                    <h3 class="text-lg font-semibold text-gray-800">Ações de Controle de Risco</h3>
                     
                 </div>
 
                 {!hasSetorSelecionado && (
-                    <div className="p-4 text-center text-gray-500 bg-gray-50 rounded-lg">
+                    <div class="p-4 text-center text-gray-500 bg-gray-50 rounded-lg">
                         <p>Selecione um setor na aba 'Mapa de Risco' para visualizar e gerenciar as ações de controle.</p>
                     </div>
                 )}
 
                 {hasSetorSelecionado && (
-                    <div className="overflow-x-auto bg-white rounded-lg shadow">
-                        <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
+                    <div class="overflow-x-auto bg-white rounded-lg shadow">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
                                 <tr>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Risco</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">O que será feito?</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Responsável</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Prazo</th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Risco</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">O que será feito?</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Responsável</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Prazo</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-200">
+                            <tbody class="divide-y divide-gray-200">
                                 {riscos.length > 0 ? riscos.map((item, index) => (
                                     <tr key={item.id}>
-                                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{item.risco.descricao}</td>
-                                        <td className="px-4 py-4">
-                                            <input type="text" value={item.acao} onChange={(e) => onPlanoAcaoChange(index, 'acao', e.target.value)} className="w-full border-gray-300 rounded-md shadow-sm"/>
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{item.risco.descricao}</td>
+                                        <td class="px-4 py-4">
+                                            <input type="text" value={item.acao} onChange={(e) => onPlanoAcaoChange(index, 'acao', e.target.value)} class="w-full border-gray-300 rounded-md shadow-sm"/>
                                         </td>
-                                        <td className="px-4 py-4">
-                                            <input type="text" value={item.responsavel} onChange={(e) => onPlanoAcaoChange(index, 'responsavel', e.target.value)} className="w-full border-gray-300 rounded-md shadow-sm"/>
+                                        <td class="px-4 py-4">
+                                            <input type="text" value={item.responsavel} onChange={(e) => onPlanoAcaoChange(index, 'responsavel', e.target.value)} class="w-full border-gray-300 rounded-md shadow-sm"/>
                                         </td>
-                                        <td className="px-4 py-4">
-                                            <input type="date" value={item.prazo} onChange={(e) => onPlanoAcaoChange(index, 'prazo', e.target.value)} className="w-full border-gray-300 rounded-md shadow-sm"/>
+                                        <td class="px-4 py-4">
+                                            <input type="date" value={item.prazo} onChange={(e) => onPlanoAcaoChange(index, 'prazo', e.target.value)} class="w-full border-gray-300 rounded-md shadow-sm"/>
                                         </td>
-                                        <td className="px-4 py-4">
-                                            <select value={item.status} onChange={(e) => onPlanoAcaoChange(index, 'status', e.target.value)} className="w-full border-gray-300 rounded-md shadow-sm">
+                                        <td class="px-4 py-4">
+                                            <select value={item.status} onChange={(e) => onPlanoAcaoChange(index, 'status', e.target.value)} class="w-full border-gray-300 rounded-md shadow-sm">
                                                 <option value="A Fazer">A Fazer</option>
                                                 <option value="Em Andamento">Em Andamento</option>
                                                 <option value="Concluído">Concluído</option>
                                             </select>
                                         </td>
-                                        <td className="px-4 py-4 text-right">
-                                            <button type="button" onClick={() => onRemoverRisco(index)} className="p-2 text-red-600 hover:text-red-800">
+                                        <td class="px-4 py-4 text-right">
+                                            <button type="button" onClick={() => onRemoverRisco(index)} class="p-2 text-red-600 hover:text-red-800">
                                                 <Trash2 size={18} />
                                             </button>
                                         </td>
                                     </tr>
                                 )) : (
                                     <tr>
-                                        <td colSpan="6" className="px-6 py-8 text-center text-gray-500">Nenhum risco identificado para este setor.</td>
+                                        <td colSpan="6" class="px-6 py-8 text-center text-gray-500">Nenhum risco identificado para este setor.</td>
                                     </tr>
                                 )}
                             </tbody>
@@ -423,8 +418,8 @@ export default function EditarPGR() {
     useEffect(() => {
         const fetchPgr = async () => {
             try {
-                
-                const data = await pgrService.getPgrById(id); 
+
+                const data = await pgrService.getPgrById(id);
                 setSelectedEmpresa(data.unidadeOperacional.empresa);
                 setSelectedUnidade(data.unidadeOperacional);
                 const setor = data.unidadeOperacional?.setores?.[0] || null;
@@ -448,10 +443,25 @@ export default function EditarPGR() {
                 setTermoCienciaResponsavel(data.termoCiencia);
                 setConsideracoesFinaisContent(data.consideracoesFinais);
                 setStatus(data.status || 'ATIVO');
-                if (data.capaUrl) {
-                    const fullUrl = data.capaUrl.startsWith('http') 
-                        ? data.capaUrl 
-                        : `${apiService.defaults.baseURL.replace('/api', '')}${data.capaUrl.startsWith('/') ? '' : '/'}${data.capaUrl}`;
+                // Verificar diferentes propriedades possíveis para a capa
+                const capaProperty = data.conteudoCapa || data.capaUrl || data.imagemCapa || data.capa || data.capaPath;
+
+                if (capaProperty) {
+                    // Construir URL base
+                    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+
+                    // Se conteudoCapa é apenas o nome do arquivo, construir o caminho completo
+                    let fullUrl;
+                    if (capaProperty.startsWith('http')) {
+                        // URL já completa
+                        fullUrl = capaProperty;
+                    } else if (capaProperty.startsWith('/')) {
+                        // Caminho relativo completo
+                        fullUrl = apiBaseUrl + capaProperty;
+                    } else {
+                        // Apenas nome do arquivo - assumir que está em /uploads/pgr-capas/
+                        fullUrl = `${apiBaseUrl}/uploads/pgr-capas/${capaProperty}`;
+                    }
                     setCapaPreview(fullUrl);
                 }
             } catch (err) {
@@ -609,6 +619,15 @@ export default function EditarPGR() {
         }
     };
 
+    const handleCapaFileChange = (file) => {
+        setCapaFile(file);
+        if (file) {
+            setCapaPreview(URL.createObjectURL(file));
+        } else {
+            setCapaPreview(null);
+        }
+    };
+
 
     const tabs = [
         { id: 'capa', label: 'Capa' },
@@ -622,8 +641,8 @@ export default function EditarPGR() {
 
     const renderTabContent = () => {
         switch (activeTab) {
-            case 'capa': 
-                return <TabCapa onFileChange={setCapaFile} initialPreviewUrl={capaPreview} />; 
+            case 'capa':
+                return <TabCapa onFileChange={handleCapaFileChange} previewUrl={capaPreview} />; 
             case 'termo': 
                 return (
                     <TabTermoValidacao
@@ -651,43 +670,43 @@ export default function EditarPGR() {
                 );
             case 'mapa':
                 return (
-                    <div className="space-y-6">
-                        <div className="p-4 border border-blue-500 rounded-lg bg-blue-50">
-                            <h4 className="font-semibold text-blue-800 mb-4">Mapa de Riscos por Setor</h4>
-                            <p className="text-sm text-gray-600 mb-4">Para visualizar os riscos, escolha o setor desejado.</p>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="space-y-6">
+                        <div class="p-4 border border-blue-500 rounded-lg bg-blue-50">
+                            <h4 class="font-semibold text-blue-800 mb-4">Mapa de Riscos por Setor</h4>
+                            <p class="text-sm text-gray-600 mb-4">Para visualizar os riscos, escolha o setor desejado.</p>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <InputWithActions
                                     placeholder="Selecione um setor..."
                                     value={selectedSetor ? selectedSetor.nome : ''}
                                     onClick={() => setIsSetorModalOpen(true)}
-                                    actions={<button type="button" className="p-2.5 text-white bg-green-500 hover:bg-green-600 rounded-r-md">
+                                    actions={<button type="button" class="p-2.5 text-white bg-green-500 hover:bg-green-600 rounded-r-md">
                                         <Search size={18} /></button>}
                                 />
                             </div>
                         </div>
                         {selectedSetor && (
-                            <div className="mt-6">
-                                <h5 className="font-semibold text-gray-800 mb-4">Riscos Identificados para o Setor: <span className="text-blue-600">{selectedSetor.nome}</span></h5>
+                            <div class="mt-6">
+                                <h5 class="font-semibold text-gray-800 mb-4">Riscos Identificados para o Setor: <span class="text-blue-600">{selectedSetor.nome}</span></h5>
                                 {loadingRiscos ? (
-                                    <p className="text-gray-500">Carregando riscos...</p>
+                                    <p class="text-gray-500">Carregando riscos...</p>
                                 ) : (
-                                    <div className="overflow-x-auto bg-white rounded-lg shadow">
-                                        <table className="min-w-full divide-y divide-gray-200">
-                                            <thead className="bg-gray-50">
+                                    <div class="overflow-x-auto bg-white rounded-lg shadow">
+                                        <table class="min-w-full divide-y divide-gray-200">
+                                            <thead class="bg-gray-50">
                                                 <tr>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grupo de Risco</th>
-                                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descrição do Risco</th>
+                                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grupo de Risco</th>
+                                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descrição do Risco</th>
                                                 </tr>
                                             </thead>
-                                            <tbody className="divide-y divide-gray-200">
+                                            <tbody class="divide-y divide-gray-200">
                                                 {riscosDoSetor.length > 0 ? riscosDoSetor.map(risco => (
                                                     <tr key={risco.id}>
-                                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{risco.grupo}</td>
-                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{risco.descricao}</td>
+                                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{risco.grupo}</td>
+                                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{risco.descricao}</td>
                                                     </tr>
                                                 )) : (
                                                     <tr>
-                                                        <td colSpan="2" className="px-6 py-4 text-center text-sm text-gray-500">Nenhum risco encontrado para este setor.</td>
+                                                        <td colSpan="2" class="px-6 py-4 text-center text-sm text-gray-500">Nenhum risco encontrado para este setor.</td>
                                                     </tr>
                                                 )}
                                             </tbody>
@@ -713,36 +732,36 @@ export default function EditarPGR() {
             case 'finais': 
                 return <TabConsideracoesFinais content={consideracoesFinaisContent} onContentChange={setConsideracoesFinaisContent} />;
 
-            default: return <div className="p-6 text-center text-gray-500">Conteúdo para {activeTab}</div>;
+            default: return <div class="p-6 text-center text-gray-500">Conteúdo para {activeTab}</div>;
         }
     }
 
     return (
         <>
-            <div className="bg-gray-50 min-h-screen p-4 sm:p-6 lg:p-8 font-sans">
-                <div className="container mx-auto">
-                    <header className="mb-6">
-                        <h1 className="text-3xl font-bold text-gray-900">Editar/Revisar PGR</h1>
+            <div class="bg-gray-50 min-h-screen p-4 sm:p-6 lg:p-8 font-sans">
+                <div class="container mx-auto">
+                    <header class="mb-6">
+                        <h1 class="text-3xl font-bold text-gray-900">Editar/Revisar PGR</h1>
                     </header>
                     <form>
-                        <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <label className="text-sm font-medium text-gray-600">Empresa *</label>
+                                    <label class="text-sm font-medium text-gray-600">Empresa *</label>
                                     <InputWithActions
                                         value={selectedEmpresa?.razaoSocial || ""}
                                         onClick={() => setIsEmpresaModalOpen(true)}
                                         disabled={true}
                                         actions={
                                             <>
-                                                <button type="button" onClick={(e) => { e.stopPropagation(); setIsEmpresaModalOpen(true); }} className="p-2.5 text-white bg-green-500 hover:bg-green-600"><Search size={18} /></button>
-                                                <button type="button" onClick={(e) => { e.stopPropagation(); setSelectedEmpresa(null); setSelectedUnidade(null); }} className="p-2.5 text-white bg-red-500 hover:bg-red-600 rounded-r-md"><Trash2 size={18} /></button>
+                                                <button type="button" onClick={(e) => { e.stopPropagation(); setIsEmpresaModalOpen(true); }} class="p-2.5 text-white bg-green-500 hover:bg-green-600"><Search size={18} /></button>
+                                                <button type="button" onClick={(e) => { e.stopPropagation(); setSelectedEmpresa(null); setSelectedUnidade(null); }} class="p-2.5 text-white bg-red-500 hover:bg-red-600 rounded-r-md"><Trash2 size={18} /></button>
                                             </>
                                         }
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-sm font-medium text-gray-600">Unidade Operacional *</label>
+                                    <label class="text-sm font-medium text-gray-600">Unidade Operacional *</label>
                                     <InputWithActions
                                         placeholder="Selecione uma empresa primeiro"
                                         value={selectedUnidade?.nome || ""}
@@ -750,18 +769,18 @@ export default function EditarPGR() {
                                         disabled={!selectedEmpresa || true}
                                         actions={
                                             <>
-                                                <button type="button" disabled={!selectedEmpresa} onClick={(e) => { e.stopPropagation(); setIsUnidadeModalOpen(true); }} className="p-2.5 text-white bg-green-500 hover:bg-green-600 disabled:bg-gray-400"><Search size={18} /></button>
-                                                <button type="button" disabled={!selectedEmpresa} onClick={(e) => { e.stopPropagation(); setSelectedUnidade(null); }} className="p-2.5 text-white bg-red-500 hover:bg-red-600 rounded-r-md disabled:bg-gray-400"><Trash2 size={18} /></button>
+                                                <button type="button" disabled={!selectedEmpresa} onClick={(e) => { e.stopPropagation(); setIsUnidadeModalOpen(true); }} class="p-2.5 text-white bg-green-500 hover:bg-green-600 disabled:bg-gray-400"><Search size={18} /></button>
+                                                <button type="button" disabled={!selectedEmpresa} onClick={(e) => { e.stopPropagation(); setSelectedUnidade(null); }} class="p-2.5 text-white bg-red-500 hover:bg-red-600 rounded-r-md disabled:bg-gray-400"><Trash2 size={18} /></button>
                                             </>
                                         }
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-sm font-medium text-gray-600">Status</label>
+                                    <label class="text-sm font-medium text-gray-600">Status</label>
                                     <select
                                         value={status}
                                         onChange={(e) => setStatus(e.target.value)}
-                                        className="mt-1 w-full py-2 px-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        class="mt-1 w-full py-2 px-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     >
                                         <option value="ATIVO">ATIVO</option>
                                         <option value="INATIVO">INATIVO</option>
@@ -770,15 +789,15 @@ export default function EditarPGR() {
                             </div>
                         </div>
 
-                        <div className="bg-white rounded-lg shadow-md">
-                            <div className="border-b border-gray-200 overflow-x-auto">
-                                <nav className="flex space-x-2 px-4">
+                        <div class="bg-white rounded-lg shadow-md">
+                            <div class="border-b border-gray-200 overflow-x-auto">
+                                <nav class="flex space-x-2 px-4">
                                     {tabs.map(tab => (
                                         <TabButton key={tab.id} label={tab.label} isActive={activeTab === tab.id} onClick={() => setActiveTab(tab.id)} />
                                     ))}
                                 </nav>
                             </div>
-                            <div className="p-6">
+                            <div class="p-6">
                                 {renderTabContent()}
                             </div>
                         </div>
@@ -786,25 +805,25 @@ export default function EditarPGR() {
 
                     {/* Feedback de Salvamento */}
                     {saveError && (
-                        <div className="mt-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg flex items-center gap-2">
+                        <div class="mt-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg flex items-center gap-2">
                             <AlertCircle size={20} />
                             <span>{saveError}</span>
                         </div>
                     )}
                     {saveSuccess && (
-                        <div className="mt-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg flex items-center gap-2">
+                        <div class="mt-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg flex items-center gap-2">
                             <CheckCircle size={20} />
                             <span>PGR atualizado com sucesso! Redirecionando...</span>
                         </div>
                     )}
 
                     {/* Botões Salvar e Cancelar */}
-                    <div className="mt-8 flex justify-end space-x-4">
+                    <div class="mt-8 flex justify-end space-x-4">
                         <button
                             type="button"
                             onClick={handleCancel}
                             disabled={isSaving}
-                            className="flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                            class="flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <X size={16} />
                             Cancelar
@@ -813,20 +832,20 @@ export default function EditarPGR() {
                             type="button"
                             onClick={handleUpdate}
                             disabled={isSaving || saveSuccess}
-                            className="flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                            class="flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            {isSaving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
+                            {isSaving ? <Loader2 class="animate-spin" size={16} /> : <Save size={16} />}
                             {isSaving ? 'Salvando...' : 'Salvar Alterações'}
                         </button>
                     </div>
                 </div>
                  {showSuccessModal && (
-                    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-                        <div className="bg-white p-6 rounded-lg shadow-lg">
-                            <div className="text-center">
-                                <div className="text-green-600 text-6xl mb-4">✓</div>
-                                <h3 className="text-lg font-semibold text-gray-900 mb-2">PGR atualizado com sucesso!</h3>
-                                <p className="text-gray-600">Redirecionando...</p>
+                    <div class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+                        <div class="bg-white p-6 rounded-lg shadow-lg">
+                            <div class="text-center">
+                                <div class="text-green-600 text-6xl mb-4">✓</div>
+                                <h3 class="text-lg font-semibold text-gray-900 mb-2">PGR atualizado com sucesso!</h3>
+                                <p class="text-gray-600">Redirecionando...</p>
                             </div>
                         </div>
                     </div>

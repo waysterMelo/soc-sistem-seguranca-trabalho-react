@@ -256,6 +256,12 @@ export default function ListarCAT() {
     // Estados de modais
     const [isEmpresaModalOpen, setIsEmpresaModalOpen] = useState(false);
     const [isSetorModalOpen, setIsSetorModalOpen] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [showErrorModal, setShowErrorModal] = useState(false);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [selectedCatToDelete, setSelectedCatToDelete] = useState(null);
+    const [errorMessage, setErrorMessage] = useState('');
+    const [successMessage, setSuccessMessage] = useState('');
 
     // Função para buscar CATs
     const fetchCats = async (page = 0, size = 10, filters = {}) => {
@@ -557,6 +563,110 @@ export default function ListarCAT() {
         return tipos[tipo] || tipo;
     };
 
+    // Função para iniciar processo de exclusão
+    const handleDeleteCat = (cat) => {
+        setSelectedCatToDelete(cat);
+        setShowDeleteModal(true);
+    };
+
+    // Função para confirmar exclusão
+    const confirmDelete = async () => {
+        if (!selectedCatToDelete) return;
+
+        try {
+            await catService.deleteCat(selectedCatToDelete.id);
+            setShowDeleteModal(false);
+            setSelectedCatToDelete(null);
+            setSuccessMessage('CAT excluída com sucesso!');
+            setShowSuccessModal(true);
+
+            // Recarregar a lista
+            if (selectedFuncionarios.length > 0) {
+                // Trigger do useEffect para recarregar automaticamente
+                setSelectedFuncionarios([...selectedFuncionarios]);
+            }
+
+            // Fechar modal de sucesso após 2 segundos
+            setTimeout(() => {
+                setShowSuccessModal(false);
+            }, 2000);
+        } catch (error) {
+            console.error('Erro ao excluir CAT:', error);
+            setShowDeleteModal(false);
+            setSelectedCatToDelete(null);
+
+            // Verificar se é erro de referência/integridade
+            const errorMessage = error.response?.data?.message || error.message || 'Erro desconhecido';
+            const isIntegrityError = errorMessage.toLowerCase().includes('referenc') ||
+                                   errorMessage.toLowerCase().includes('constraint') ||
+                                   errorMessage.toLowerCase().includes('foreign') ||
+                                   errorMessage.toLowerCase().includes('vinculad') ||
+                                   errorMessage.toLowerCase().includes('depend');
+
+            if (isIntegrityError) {
+                setErrorMessage(
+                    'Esta CAT não pode ser excluída pois possui vinculações no sistema. ' +
+                    'Como alternativa, você pode inativá-la para mantê-la no histórico sem impactar relatórios.'
+                );
+            } else {
+                setErrorMessage(`Erro ao excluir CAT: ${errorMessage}`);
+            }
+
+            setShowErrorModal(true);
+        }
+    };
+
+    // Função para inativar CAT (alternativa à exclusão)
+    const handleInactivateCat = async () => {
+        if (!selectedCatToDelete) return;
+
+        try {
+            await catService.inactivateCat(selectedCatToDelete.id);
+            setShowErrorModal(false);
+            setSelectedCatToDelete(null);
+            setSuccessMessage('CAT inativada com sucesso!');
+            setShowSuccessModal(true);
+
+            // Recarregar a lista
+            if (selectedFuncionarios.length > 0) {
+                setSelectedFuncionarios([...selectedFuncionarios]);
+            }
+
+            setTimeout(() => {
+                setShowSuccessModal(false);
+            }, 2000);
+        } catch (error) {
+            console.error('Erro ao inativar CAT:', error);
+            setErrorMessage(`Erro ao inativar CAT: ${error.message}`);
+        }
+    };
+
+    // Função para gerar relatório da CAT
+    const handleGenerateReport = async (catId) => {
+        try {
+            setLoading(true);
+
+            // Chamar o endpoint para gerar o relatório
+            const blob = await catService.gerarRelatorioPdf(catId);
+
+            // Criar URL do blob e abrir em nova aba
+            const url = window.URL.createObjectURL(blob);
+            window.open(url, '_blank');
+
+            // Limpar URL após um tempo para liberar memória
+            setTimeout(() => {
+                window.URL.revokeObjectURL(url);
+            }, 1000);
+
+        } catch (error) {
+            console.error('Erro ao gerar relatório:', error);
+            setErrorMessage(`Erro ao gerar relatório: ${error.response?.data?.message || error.message || 'Erro desconhecido'}`);
+            setShowErrorModal(true);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="bg-gray-50 min-h-screen p-4 sm:p-6 lg:p-8 font-sans">
             <div className="container mx-auto">
@@ -852,14 +962,19 @@ export default function ListarCAT() {
                                                         <Pencil size={18} />
                                                     </button>
                                                     <button
-                                                        onClick={() => {
-                                                            // TODO: Implementar impressão de relatório
-                                                            console.log('Imprimir CAT', cat.id);
-                                                        }}
+                                                        onClick={() => handleGenerateReport(cat.id)}
                                                         className="text-gray-600 hover:text-gray-800 transition-colors"
-                                                        title="Imprimir CAT"
+                                                        title="Gerar Relatório da CAT"
+                                                        disabled={loading}
                                                     >
                                                         <Printer size={18} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteCat(cat)}
+                                                        className="text-red-600 hover:text-red-800 transition-colors"
+                                                        title="Excluir CAT"
+                                                    >
+                                                        <Trash2 size={18} />
                                                     </button>
                                                 </div>
                                             </td>
@@ -939,6 +1054,98 @@ export default function ListarCAT() {
                     }}
                     empresaId={selectedEmpresa?.id}
                 />
+
+                {/* Modal de Confirmação de Exclusão */}
+                {showDeleteModal && (
+                    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+                        <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+                            <div className="text-center">
+                                <div className="text-red-600 text-6xl mb-4">⚠️</div>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-2">Confirmar Exclusão</h3>
+                                <p className="text-gray-600 mb-2">
+                                    Tem certeza que deseja excluir a CAT #{selectedCatToDelete?.id}?
+                                </p>
+                                <p className="text-sm text-gray-500 mb-6">
+                                    Esta ação não pode ser desfeita.
+                                </p>
+                                <div className="flex gap-4 justify-center">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setShowDeleteModal(false);
+                                            setSelectedCatToDelete(null);
+                                        }}
+                                        className="bg-gray-500 text-white px-6 py-2 rounded-md font-semibold hover:bg-gray-600 transition-colors"
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={confirmDelete}
+                                        className="bg-red-600 text-white px-6 py-2 rounded-md font-semibold hover:bg-red-700 transition-colors"
+                                    >
+                                        Excluir
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Modal de Erro com Opção de Inativação */}
+                {showErrorModal && (
+                    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+                        <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+                            <div className="text-center">
+                                <div className="text-red-600 text-6xl mb-4">❌</div>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-2">Erro na Exclusão</h3>
+                                <p className="text-gray-600 mb-4">{errorMessage}</p>
+
+                                {errorMessage.includes('vinculações') && (
+                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                                        <h4 className="font-semibold text-blue-800 mb-2">Alternativa Sugerida:</h4>
+                                        <p className="text-blue-700 text-sm mb-3">
+                                            Você pode inativar esta CAT ao invés de excluí-la.
+                                            Isso manterá o registro no histórico sem afetar relatórios.
+                                        </p>
+                                        <button
+                                            type="button"
+                                            onClick={handleInactivateCat}
+                                            className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-semibold hover:bg-blue-700 transition-colors"
+                                        >
+                                            Inativar CAT
+                                        </button>
+                                    </div>
+                                )}
+
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowErrorModal(false);
+                                        setSelectedCatToDelete(null);
+                                        setErrorMessage('');
+                                    }}
+                                    className="bg-gray-500 text-white px-6 py-2 rounded-md font-semibold hover:bg-gray-600 transition-colors"
+                                >
+                                    Fechar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Modal de Sucesso */}
+                {showSuccessModal && (
+                    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+                        <div className="bg-white p-6 rounded-lg shadow-lg">
+                            <div className="text-center">
+                                <div className="text-green-600 text-6xl mb-4">✓</div>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-2">Sucesso!</h3>
+                                <p className="text-gray-600">{successMessage}</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

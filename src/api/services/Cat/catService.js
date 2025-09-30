@@ -227,7 +227,7 @@ const catService = {
    */
   gerarRelatorioPdf: async (id) => {
     try {
-      const response = await apiService.get(`/cat/${id}/relatorio`, {
+      const response = await apiService.get(`/reports/cat/${id}`, {
         responseType: 'blob'
       });
       return response.data;

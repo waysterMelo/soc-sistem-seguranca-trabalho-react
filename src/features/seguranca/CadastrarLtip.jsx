@@ -418,13 +418,11 @@ export default function CadastrarLTIP() {
                 }
 
                  if (ltip.imagemCapa) {
-                    console.log("Caminho da imagem recebido:", ltip.imagemCapa);
+                  
                     const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
-                    console.log("URL base da API:", apiBaseUrl);
                     const imageUrl = ltip.imagemCapa.startsWith('http')
                         ? ltip.imagemCapa
                         : `${apiBaseUrl}${ltip.imagemCapa}`;
-                    console.log("URL final da imagem:", imageUrl);
                     setCapaPreviewUrl(imageUrl);
                 }
             } catch (error) {
@@ -572,7 +570,7 @@ export default function CadastrarLTIP() {
         setTimeout(() => navigate('/seguranca/ltip'), 1500);
     } catch (error) {
         setErrorType('save');
-        setErrorMessage("Erro ao salvar o LTIP. Tente novamente.");
+        setErrorMessage("Erro ao salvar o LTIP. Tente novamente.", error);
         setShowErrorModal(true);
     }
 };

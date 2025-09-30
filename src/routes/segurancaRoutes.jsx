@@ -31,6 +31,7 @@ const SegurancaRoutes = (
 
         <Route path="seguranca/cat" element={<ListarCAT />} />
         <Route path="seguranca/novo-cat" element={<CadastrarCAT />} />
+        <Route path="seguranca/editar-cat/:id" element={<CadastrarCAT />} />
         
         <Route path="seguranca/treinamentos" element={<ListarTreinamentos />} />
         <Route path="seguranca/novo-treinamento" element={<CadastrarTreinamento />} />

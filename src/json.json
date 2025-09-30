@@ -1,0 +1,190 @@
+{
+    "id": 17,
+    "unidadeOperacional": {
+        "id": 1,
+        "nome": "Unidade Alpha",
+        "descricao": "Unidade principal de operações",
+        "situacao": "ATIVO",
+        "empresa": {
+            "id": 4,
+            "tipoEmpresa": "JURIDICA",
+            "cpfOuCnpj": "12345678000199",
+            "inscricaoEstadual": "341434324234324324",
+            "status": "ATIVO",
+            "razaoSocial": "Minha Empresa de Teste LTDA modificada",
+            "nomeFantasia": "Empresa Teste modificada",
+            "logomarcaUrl": "/logos/184e1825-4edf-46c3-b871-bfdf7f1c94ea.png",
+            "endereco": {
+                "id": 95,
+                "cep": "35720000",
+                "cidade": "Matozinhos modificada",
+                "estado": "MG",
+                "logradouro": "Rua Teste modificada",
+                "numero": "123",
+                "bairro": "Centro modificada",
+                "complemento": "Sala 1 modificada",
+                "regiao": "Metropolitana modificada"
+            },
+            "telefonePrincipal": "5435435454354",
+            "telefoneSecundario": "435435435435435",
+            "email": "contato@empresateste.com",
+            "grauRisco": "RISCO_2",
+            "cnaePrincipal": null,
+            "tipoMatrizFilial": "MATRIZ",
+            "medicoResponsavel": null,
+            "observacoes": "Empresa em fase de testes."
+        },
+        "cep": "35720000",
+        "cidade": "matozinhos",
+        "estado": "MG",
+        "logradouro": "Rua Brasilia",
+        "numero": 1042,
+        "bairro": "cruzeiro",
+        "complemento": "casa",
+        "regiao": "sul",
+        "emailContato": "contato@unidadealpha.com",
+        "dddTelefone1": "31",
+        "numeroTelefone1": "999998888",
+        "dddTelefone2": "31",
+        "numeroTelefone2": "33334444",
+        "grauRisco": "RISCO_2",
+        "cnaePrincipal": {
+            "id": 10,
+            "codigo": "0115-6/00",
+            "descricao": "Cultivo de soja"
+        }
+    },
+    "setor": {
+        "id": 14,
+        "nome": "RECURSOS HUMANOS",
+        "descricao": "DP",
+        "empresa": {
+            "id": 4,
+            "razaoSocial": "Minha Empresa de Teste LTDA modificada",
+            "nomeFantasia": "Empresa Teste modificada",
+            "cpfOuCnpj": "12345678000199"
+        },
+        "unidadeOperacional": {
+            "id": 1,
+            "nome": "Unidade Alpha",
+            "descricao": "Unidade principal de operações"
+        },
+        "status": "ATIVO",
+        "tipoEmpresa": "JURIDICA",
+        "tipoDocumento": "CNPJ",
+        "numeroDocumento": 3213546874687
+    },
+    "status": "ATIVO",
+    "medicoResponsavel": {
+        "nome": "Wayster",
+        "sobrenome": "Melo",
+        "cpf": "123.456.789-09",
+        "rg": "MG-123456",
+        "orgaoEmissorRg": "SSP/MG",
+        "sexo": "MASCULINO",
+        "endereco": {
+            "id": 6,
+            "cep": "35700-000",
+            "cidade": "Matozinhos",
+            "estado": "MG",
+            "logradouro": "Rua Brasília",
+            "numero": "1042",
+            "bairro": "Cruzeiro",
+            "complemento": "Casa",
+            "regiao": "Zona Norte"
+        },
+        "telefone1": null,
+        "telefone2": null,
+        "email": "wayster@ignix.com.br",
+        "cboId": null,
+        "nis": "12345678900",
+        "conselho": "CRM",
+        "numeroInscricaoConselho": "123456",
+        "estadoConselho": "MG",
+        "id": 1,
+        "cboNomeOcupacao": null,
+        "status": "ATIVO"
+    },
+    "elaboradores": [
+        {
+            "nome": "Mariana",
+            "sobrenome": "Souza",
+            "cpf": "987.654.321-00",
+            "rg": "MG-987654",
+            "orgaoEmissorRg": "SSP/MG",
+            "sexo": "FEMININO",
+            "endereco": {
+                "id": 8,
+                "cep": "30130-110",
+                "cidade": "Belo Horizonte",
+                "estado": "MG",
+                "logradouro": "Av. Afonso Pena",
+                "numero": "1000",
+                "bairro": "Centro",
+                "complemento": "Sala 201",
+                "regiao": "Centro-Sul"
+            },
+            "telefone1": null,
+            "telefone2": null,
+            "email": "mariana.souza@ignix.com.br",
+            "cboId": null,
+            "nis": "99887766554",
+            "conselho": "COREN",
+            "numeroInscricaoConselho": "654321",
+            "estadoConselho": "MG",
+            "id": 3,
+            "cboNomeOcupacao": null,
+            "status": "ATIVO"
+        }
+    ],
+    "dataDocumento": "2025-10-01",
+    "dataVencimento": "2026-10-01",
+    "imagemCapa": "/uploads/capa-pcmso/052ab19a-85f5-4f62-ad27-eaacf948fc06.png",
+    "introducao": "Introdução do PCMSO",
+    "sobrePcmso": "Sobre o PCMSO",
+    "conclusao": "Conclusão do PCMSO",
+    "exames": [
+        {
+            "id": 53,
+            "funcaoId": 14,
+            "nomeFuncao": "Auxiliar de pessoal",
+            "exameId": 1,
+            "nomeExame": "1,1-dicloro-2,2-bis (P-clorofeniletileno)",
+            "codigoExame": "0001",
+            "tipoExame": "ADMISSIONAL",
+            "periodicidadeMeses": 12,
+            "riscos": [
+                {
+                    "id": 36,
+                    "riscoCatalogo": {
+                        "id": 4,
+                        "grupo": "GRUPO_1_FISICOS",
+                        "descricao": "Radiações não ionizantes"
+                    }
+                }
+            ]
+        },
+        {
+            "id": 54,
+            "funcaoId": 15,
+            "nomeFuncao": "Administrador de pessoal",
+            "exameId": 3,
+            "nomeExame": "1,2 dihidroxi-4-(N-acetilcisteinil)-butano",
+            "codigoExame": "0003",
+            "tipoExame": "PERIODICO",
+            "periodicidadeMeses": 6,
+            "riscos": [
+                {
+                    "id": 37,
+                    "riscoCatalogo": {
+                        "id": 3,
+                        "grupo": "GRUPO_1_FISICOS",
+                        "descricao": "Radiações ionizantes"
+                    }
+                }
+            ]
+        }
+    ],
+    "criadoEm": "2025-09-30T15:40:27.865961",
+    "atualizadoEm": "2025-09-30T15:40:27.865961"
+}

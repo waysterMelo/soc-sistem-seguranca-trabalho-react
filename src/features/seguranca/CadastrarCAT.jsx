@@ -679,7 +679,7 @@ const TabCid = ({ onCidSearch, selectedCid, onCidClear }) => (
         <FormField label="CID - Classificação Internacional de Doenças" required>
             <InputWithActions
                 placeholder="Clique para selecionar CID..."
-                value=""
+                value={selectedCid ? `${selectedCid.codigo} - ${selectedCid.descricao}` : ""}
                 onClick={onCidSearch}
                 actions={
                     <>
@@ -817,6 +817,15 @@ const CATForm = () => {
                         houveObito: cat.houveObito === true,
                         houveInternacao: cat.houveInternacao === true,
                         provavelAfastamento: cat.provavelAfastamento === true,
+                        // Tratar especificamente o endereço do local do acidente
+                        localAcidenteEndereco: {
+                            cep: cat.localAcidenteEndereco?.cep || '',
+                            logradouro: cat.localAcidenteEndereco?.logradouro || '',
+                            numero: cat.localAcidenteEndereco?.numero || '',
+                            bairro: cat.localAcidenteEndereco?.bairro || '',
+                            cidade: cat.localAcidenteEndereco?.cidade || '',
+                            estado: cat.localAcidenteEndereco?.estado || ''
+                        }
                     }));
 
                     // Carregar seleções

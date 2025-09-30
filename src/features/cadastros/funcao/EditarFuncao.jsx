@@ -120,7 +120,7 @@ export default function EditarFuncao() {
                 },
                 setor: data.setor || {id: null, nome: ''},
               
-                cbo: data.cboId ? {
+                cbo: data.codigoCbo ? {
                     id: data.cboId,
                     nomeOcupacao: data.nomeCbo,
                     codigoCbo: data.codigoCbo
@@ -161,7 +161,12 @@ export default function EditarFuncao() {
         setModalSetorOpen(false);
     };
     const handleCboSelect = (cbo) => {
-        setFormData(prev => ({...prev, cbo, nome: cbo.descricao}));
+        const normalizedCbo = {
+            id: cbo.id,
+            codigoCbo: cbo.codigo,
+            nomeOcupacao: cbo.descricao
+        };
+        setFormData(prev => ({...prev, cbo: normalizedCbo, nome: cbo.descricao}));
         setModalCboOpen(false);
     };
     const addToList = (setList, item) => setList(currentList => !currentList.some(i => i.id === item.id) ? [...currentList, item] : currentList);

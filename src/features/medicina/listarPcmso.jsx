@@ -478,7 +478,8 @@ export default function ListarPcmso() {
                 showNotification('PCMSO excluído com sucesso!', 'success');
                 setRefreshKey(oldKey => oldKey + 1); 
             } catch (error) {
-                toast.error('Erro ao excluir o PCMSO.', error);
+                const errorMessage = error.response?.data?.message || error.response?.data || 'Erro ao excluir o PCMSO.';
+                toast.error(errorMessage);
             } finally {
                 setIsDeleteModalOpen(false);
                 setPcmsoToDelete(null);

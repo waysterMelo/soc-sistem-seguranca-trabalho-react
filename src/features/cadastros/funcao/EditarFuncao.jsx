@@ -65,6 +65,7 @@ export default function EditarFuncao() {
     const [activeTab, setActiveTab] = useState('riscos');
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+
     const [formData, setFormData] = useState({
         nome: '',
         empresa: {id: null, razaoSocial: ''},
@@ -127,7 +128,7 @@ export default function EditarFuncao() {
                 } : {id: null, codigoCbo: '', nomeOcupacao: ''},
                 quantidadeFuncionarios: data.quantidadeFuncionarios || 0,
                 descricaoFuncao: data.descricaoFuncao || '',
-                tipoGfip: reverseGfipMap[data.tipoGfip] || 'Não exposto - sem adicional sobre o RAT',
+                gfip: reverseGfipMap[data.tipoGfip] || 'Não exposto - sem adicional sobre o RAT',
                 atividadesInsalubres: data.atividadesInsalubres || '',
                 informacoesComplementaresRegistrosAmbientais: data.informacoesComplementaresRegistrosAmbientais || '',
                 status: data.status || 'ATIVO'
@@ -250,7 +251,12 @@ export default function EditarFuncao() {
         e.preventDefault();
         setSaving(true);
 
-        const gfipMap = { /* ... */};
+        const gfipMap = {
+            'Não exposto - sem adicional sobre o RAT': 'NAO_EXPOSTO_SEM_ADICIONAL',
+            'Adicional de 1% - trabalho com baixo risco': 'EXPOSTO_ADICIONAL_1',
+            'Adicional de 2% - trabalho com médio risco': 'EXPOSTO_ADICIONAL_2',
+            'Adicional de 3% - trabalho com alto risco': 'EXPOSTO_ADICIONAL_3'
+        };
 
         const payload = {
             nome: formData.nome,
@@ -351,13 +357,13 @@ export default function EditarFuncao() {
                                                                               value={formData.nome}
                                                                               onChange={handleInputChange}
                                                                               className="w-full py-2 px-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"/></FormField>
-                            <FormField label="Quantidade de funcionários"><input type="number" name="qtdFuncionarios"
-                                                                                 value={formData.quantidadeFuncionarios}
+                            <FormField label="Quantidade de funcionários"><input type="number" name="quantidadeFuncionarios"
+                                                                                 value={formData.quantidadeFuncionarios || ''}
                                                                                  onChange={handleInputChange}
                                                                                  className="w-full py-2 px-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"/></FormField>
                             <FormField label="Descrição da Função" className="col-span-2" required><textarea rows="5"
-                                                                                                             name="descricao"
-                                                                                                             value={formData.descricaoFuncao}
+                                                                                                             name="descricaoFuncao"
+                                                                                                             value={formData.descricaoFuncao || ''}
                                                                                                              onChange={handleInputChange}
                                                                                                              className="w-full py-2 px-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea></FormField>
                             <FormField label="GFIP"><select name="gfip" value={formData.gfip}
@@ -376,6 +382,17 @@ export default function EditarFuncao() {
                                     alto risco
                                 </option>
                             </select></FormField>
+                            <FormField label="Situação" required>
+                                <select
+                                    name="status"
+                                    value={formData.status}
+                                    onChange={handleInputChange}
+                                    className="w-full py-2 px-3 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                    <option value="ATIVO">Ativo</option>
+                                    <option value="INATIVO">Inativo</option>
+                                </select>
+                            </FormField>
                         </div>
                     </FormSection>
 

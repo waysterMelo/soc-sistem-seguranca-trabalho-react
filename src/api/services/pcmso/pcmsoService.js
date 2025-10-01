@@ -46,13 +46,17 @@ const pcmsoService = {
     return response.data;
   },
 
-  async getPcmsos(page = 0, size = 5) {
+  async getPcmsos(page = 0, size = 5, sort = 'id,desc', empresaId, unidadeId, status) {
         try {
             const params = {
                 page,
                 size,
-                sort: 'id,desc',
+                sort,
             };
+            if (empresaId) params.empresaId = empresaId;
+            if (unidadeId) params.unidadeId = unidadeId;
+            if (status) params.status = status;
+
             const response = await apiService.get('/pcmso', { params });
             return response.data;
         } catch (error) {

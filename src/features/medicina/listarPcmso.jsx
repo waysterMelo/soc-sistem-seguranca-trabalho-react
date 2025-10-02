@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import pcmsoService from '../../api/services/pcmso/pcmsoService.js';
 import EmpresaSearchModal from '../../components/modal/empresaSearchModal.jsx';
 import UnidadesOperacionaisModal from '../../components/modal/unidadesOperacionaisModal.jsx';
+import apiService from '../../api/apiService.js'; // Importando o apiService
 import {
-     Plus, Edit, Trash2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, X, Frown, Smile, ClipboardList, Filter, Search
+     Plus, Edit, Trash2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, X, Frown, Smile, ClipboardList, Filter, Search, Printer
 } from 'lucide-react';
 
 const InputWithActions = ({ placeholder, value, actions, className = '', onClick }) => (
@@ -37,7 +38,8 @@ const Notification = ({ message, type }) => {
     );
 };
 
-const PcmsoList = ({ onCreateNew, onEdit, onDelete }) => {
+// Removido isGeneratingReport das props
+const PcmsoList = ({ onCreateNew, onEdit, onDelete, onGenerateReport }) => {
     const [pcmsoPage, setPcmsoPage] = useState(null);
     const [currentPage, setCurrentPage] = useState(0);
     const [itemsPerPage, setItemsPerPage] = useState(5);
@@ -299,8 +301,8 @@ const PcmsoList = ({ onCreateNew, onEdit, onDelete }) => {
                                             {item.status}
                                           </span>
                                             </td>
-                                            <td className="py-3 px-4">
-                                                <div className="flex gap-3">
+                                            <td class="py-3 px-4">
+                                                <div class="flex gap-3">
                                                     <button
                                                         onClick={() => onEdit(item)}
                                                         className="text-gray-500 hover:text-blue-600 transition-colors"
@@ -314,6 +316,14 @@ const PcmsoList = ({ onCreateNew, onEdit, onDelete }) => {
                                                         aria-label="Excluir"
                                                     >
                                                         <Trash2 size={18} />
+                                                    </button>
+                                                    {/* Botão de impressão simplificado */}
+                                                    <button
+                                                        onClick={() => onGenerateReport(item.id)}
+                                                        className="text-gray-500 hover:text-green-600 transition-colors"
+                                                        aria-label="Imprimir PCMSO"
+                                                    >
+                                                        <Printer size={18} />
                                                     </button>
                                                 </div>
                                             </td>
@@ -452,6 +462,7 @@ export default function ListarPcmso() {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [pcmsoToDelete, setPcmsoToDelete] = useState(null);
     const [refreshKey, setRefreshKey] = useState(0);
+    // Removido o estado isGeneratingReport
 
     const showNotification = (message, type = 'success') => {
         setNotification({ message, type });
@@ -469,6 +480,12 @@ export default function ListarPcmso() {
     const handleDelete = (id) => {
         setPcmsoToDelete(id);
         setIsDeleteModalOpen(true);
+    };
+
+    // Lógica simplificada para gerar relatório
+    const handleGenerateReport = (pcmsoId) => {
+        const reportUrl = `${apiService.defaults.baseURL}/report/pcmso/${pcmsoId}`;
+        window.open(reportUrl, '_blank');
     };
 
     const confirmDelete = async () => {
@@ -495,11 +512,13 @@ export default function ListarPcmso() {
     return (
         <>
             <Notification message={notification?.message} type={notification?.type} />
+            {/* Removida a prop isGeneratingReport */}
             <PcmsoList
                 key={refreshKey}
                 onCreateNew={handleCreateNew}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
+                onGenerateReport={handleGenerateReport}
             />
 
             {isDeleteModalOpen && (

@@ -448,7 +448,7 @@ export default function EditarPGR() {
 
                 if (capaProperty) {
                     // Construir URL base
-                    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+                    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
                     // Se conteudoCapa é apenas o nome do arquivo, construir o caminho completo
                     let fullUrl;

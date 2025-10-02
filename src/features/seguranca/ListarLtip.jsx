@@ -170,7 +170,7 @@ export default function ListarLTIP() {
     // Função para imprimir LTIP
     const handlePrintLtip = async (ltipId) => {
         try {
-            const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+            const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
             const reportUrl = `${apiBaseUrl}/ltip/${ltipId}/report`;
 
             // Abrir o relatório em uma nova aba

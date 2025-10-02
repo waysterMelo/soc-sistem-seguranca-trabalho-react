@@ -419,7 +419,7 @@ export default function CadastrarLTIP() {
 
                  if (ltip.imagemCapa) {
                   
-                    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+                    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
                     const imageUrl = ltip.imagemCapa.startsWith('http')
                         ? ltip.imagemCapa
                         : `${apiBaseUrl}${ltip.imagemCapa}`;

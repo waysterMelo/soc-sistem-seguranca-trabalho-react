@@ -72,7 +72,9 @@ const pcmsoService = {
             console.error(`Erro ao deletar PCMSO com ID ${id}:`, error);
             throw error;
         }
-  }
+  },
+
+
 };
 
 export default pcmsoService;

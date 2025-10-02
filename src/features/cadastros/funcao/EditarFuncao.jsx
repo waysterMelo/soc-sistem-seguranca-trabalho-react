@@ -175,7 +175,7 @@ export default function EditarFuncao() {
     const handleRiscoSelect = (riscoSelecionado) => {
 
         const novoRiscoFormatado = {
-            id: Date.now(), // Gera um ID temporário único para a chave do React
+            id: Date.now(), 
             riscoCatalogo: {
                 id: riscoSelecionado.id,
                 grupo: riscoSelecionado.grupo,
@@ -198,8 +198,8 @@ export default function EditarFuncao() {
     const handleAgenteSelect = (agenteSelecionado) => {
         // Formata o objeto para a estrutura correta
         const novoAgenteFormatado = {
-            id: Date.now(), // ID temporário para a key
-            agenteNocivoCatalogo: { // <- Envolve o objeto
+            id: Date.now(), 
+            agenteNocivoCatalogo: { 
                 id: agenteSelecionado.id,
                 codigoEsocial: agenteSelecionado.codigoEsocial,
                 descricao: agenteSelecionado.descricao

@@ -51,8 +51,8 @@ const menuItems = [
         path: '/medicina',
         subItems: [
             { name: 'PCMSO', path: 'medicina/pcmso' },
-            { name: 'PCMSO Analitico', path: 'medicina/pcmso-analitico' },
-            { name: 'Espirometria', path: 'medicina/espirometria' },
+            //{ name: 'PCMSO Analitico', path: 'medicina/pcmso-analitico' },
+            { name: 'Espirometria', path: 'medicina/listar/espirometria' },
             { name: 'ASO', path: 'medicina/aso' },
             { name: 'Afastamento', path: 'medicina/afastamento' }
         ],

@@ -1,5 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Check, Save, User, Upload, FileText, Plus, Search, Building, Briefcase } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { X, Check, Save, User, Upload, FileText, Plus, Search, Building, Briefcase, CheckCircle } from 'lucide-react';
 import FuncionarioSearchModal from '../../components/modal/FuncionarioSearchModal.jsx';
 import EmpresaSearchModal from '../../components/modal/empresaSearchModal.jsx';
 import SetorSearchModal from '../../components/modal/SetorSearchModal.jsx';
@@ -10,40 +13,18 @@ import asoService from '../../api/services/aso/asoService.js';
 
 
 export default function CadastrarAso() {
-    const [notification, setNotification] = useState(null);
-
-    const showNotification = (message, type = 'success') => {
-        setNotification({ message, type, id: Date.now() });
-        setTimeout(() => setNotification(null), 4000);
-    };
-
     return (
         <div className="bg-gray-50 min-h-screen font-sans">
-            <Notification notification={notification} />
-            <AsoForm showNotification={showNotification} />
+            <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} />
+            <AsoForm />
         </div>
     );
 }
 
 
-const Notification = ({ notification }) => {
-    if (!notification) return null;
-    const { message, type } = notification;
-    const typeClasses = {
-        success: 'bg-green-600',
-        error: 'bg-red-600',
-        warning: 'bg-yellow-500',
-    };
-    return (
-        <div className={`fixed top-5 right-5 z-50 ${typeClasses[type]} text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 animate-fadeIn`}>
-            {type === 'success' ? <Check size={20} /> : <X size={20} />}
-            <span>{message}</span>
-        </div>
-    );
-};
-
-
-const AsoForm = ({ showNotification }) => {
+const AsoForm = () => {
+    const navigate = useNavigate();
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [formData, setFormData] = useState({
         empresaId: '',
         unidadeId: '',
@@ -106,7 +87,7 @@ const AsoForm = ({ showNotification }) => {
                 setFuncionarios(response.data.content || []);
             } catch (error) {
                 console.error('Erro ao carregar funcionários:', error);
-                showNotification('Erro ao carregar funcionários', 'error');
+                toast.error('Erro ao carregar funcionários');
                 setFuncionarios([]);
             } finally {
                 setLoadingFuncionarios(false);
@@ -197,10 +178,10 @@ const AsoForm = ({ showNotification }) => {
                     }));
                     setExames(examesData);
                 }
-                showNotification('Riscos e exames do funcionário carregados.', 'success');
+                toast.success('Riscos e exames do funcionário carregados.');
             } catch (error) {
                 console.error('Erro ao buscar riscos e exames do funcionário:', error);
-                showNotification('Falha ao carregar riscos e exames.', 'error');
+                toast.error('Falha ao carregar riscos e exames.');
             }
         }
     };
@@ -278,9 +259,9 @@ const AsoForm = ({ showNotification }) => {
     };
 
     const handleFileChange = (file, exameId) => {
-        setExames(prevExames => prevExames.map(ex =>
-            ex.id === exameId ? { ...ex, file } : ex
-        ));
+    setExames(prevExames => prevExames.map(ex =>
+        ex.id === exameId ? { ...ex, file: file } : ex
+            ));
     };
 
     const handleConfirmRiscos = (novosRiscos) => {
@@ -291,31 +272,30 @@ const AsoForm = ({ showNotification }) => {
     const handleSave = async () => {
         // Validações básicas
         if (!formData.empresaId) {
-            showNotification('Selecione uma empresa', 'error');
+            toast.warn('Selecione uma empresa');
             return;
         }
         if (!formData.funcionarioId) {
-            showNotification('Selecione um funcionário', 'error');
+            toast.warn('Selecione um funcionário');
             return;
         }
         if (!formData.dataEmissao) {
-            showNotification('Informe a data de emissão', 'error');
+            toast.warn('Informe a data de emissão');
             return;
         }
         if (!formData.tipoAso) {
-            showNotification('Selecione o tipo de ASO', 'error');
+            toast.warn('Selecione o tipo de ASO');
             return;
         }
         if (!formData.medicoExaminadorId) {
-            showNotification('Selecione o médico examinador', 'error');
+            toast.warn('Selecione o médico examinador');
             return;
         }
 
         setIsLoading(true);
 
         try {
-            // Mapear dados do formulário para o formato da API
-            const apiPayload = {
+            const asoJsonPayload = {
                 empresaId: parseInt(formData.empresaId),
                 unidadeId: formData.unidadeId ? parseInt(formData.unidadeId) : null,
                 setorId: formData.setorId ? parseInt(formData.setorId) : null,
@@ -333,25 +313,29 @@ const AsoForm = ({ showNotification }) => {
                 observacoes: formData.observacoes || null,
                 conclusaoColaborador: formData.conclusaoColaborador || null,
                 riscoIds: riscos.map(risco => risco.id),
-                exames: exames
-                    .filter(exame => exame.file)
-                    .map(exame => ({
-                        exameCatalogoId: exame.id,
-                        caminhoAnexo: exame.file ? `/uploads/${exame.file.name}` : null
-                    }))
+                 exames: exames.map(exame => ({
+                exameCatalogoId: exame.id,          
+                })),
             };
 
-            await asoService.createAso(apiPayload);
+             const filesToUpload = exames
+            .filter(exame => exame.file)
+            .map(exame => ({
+                exameId: exame.id, 
+                file: exame.file,
+            }));
 
-            showNotification('ASO cadastrado com sucesso!', 'success');
+            await asoService.createAso(asoJsonPayload, filesToUpload);
 
-            // Reset do formulário após sucesso
-            resetForm();
+            setShowSuccessModal(true);
+            setTimeout(() => {
+                navigate('/medicina/aso');
+            }, 2000);
 
         } catch (error) {
             const errorMessage = error.response?.data?.message || 'Erro ao cadastrar ASO. Tente novamente.';
             console.error('Erro ao salvar ASO:', error);
-            showNotification(errorMessage, 'error');
+            toast.error(errorMessage);
         } finally {
             setIsLoading(false);
         }
@@ -601,14 +585,7 @@ const AsoForm = ({ showNotification }) => {
                         </FormSection>
 
                         <FormSection title="Exames">
-                            <div className="flex justify-end mb-4">
-                                <button
-                                    type="button"
-                                    className="bg-blue-600 text-white px-3 py-1.5 rounded-md font-semibold text-sm hover:bg-blue-700 flex items-center gap-2"
-                                >
-                                    <Plus size={16} /> Adicionar Exame
-                                </button>
-                            </div>
+                        
                             {exames.length > 0 ? (
                                 <ul className="space-y-2">
                                     {exames.map(exame =>
@@ -630,15 +607,7 @@ const AsoForm = ({ showNotification }) => {
 
                         <FormSection title="Riscos Trabalhistas">
                             <p className="text-sm text-gray-500 mb-4">Confirme os riscos que este profissional está exposto neste ASO.</p>
-                            <div className="flex gap-2 mb-4">
-                                <button
-                                    type="button"
-                                    onClick={() => setIsAddingRisks(true)}
-                                    className="bg-blue-600 text-white px-3 py-1.5 rounded-md font-semibold text-sm hover:bg-blue-700 flex items-center gap-2"
-                                >
-                                    <Plus size={16} /> Adicionar Riscos
-                                </button>
-                            </div>
+                        
                             <div className="space-y-2">
                                 {riscos.length > 0 ? riscos.map(risco => (
                                     <div key={risco.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-md border">
@@ -826,6 +795,18 @@ const AsoForm = ({ showNotification }) => {
                     onConfirm={handleConfirmRiscos}
                     onCancel={() => setIsAddingRisks(false)}
                 />
+            )}
+
+            {showSuccessModal && (
+                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+                    <div className="bg-white p-8 rounded-lg shadow-2xl text-center">
+                        <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4">
+                            <CheckCircle size={48} className="text-green-600" />
+                        </div>
+                        <h3 className="text-2xl font-bold text-gray-900 mb-2">Salvo com Sucesso!</h3>
+                        <p className="text-gray-600">O ASO foi salvo e você será redirecionado.</p>
+                    </div>
+                </div>
             )}
         </>
     );

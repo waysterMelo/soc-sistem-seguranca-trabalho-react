@@ -1,10 +1,33 @@
 import apiService from '../../apiService';
 
 const asoService = {
-    createAso: async (payload) => {
+     createAso: async (asoData, files = []) => {
         try {
-            const response = await apiService.post('/aso', payload);
+            const formData = new FormData();
+
+            // Mapeia os arquivos para incluir o nome original no payload JSON
+            const examesComNomesDeArquivo = asoData.exames.map(exame => {
+                const arquivoAssociado = files.find(f => f.exameId === exame.exameCatalogoId);
+                return {
+                    ...exame,
+                    nomeArquivoOriginal: arquivoAssociado ? arquivoAssociado.file.name : null
+                };
+            });
+
+            const payloadFinal = { ...asoData, exames: examesComNomesDeArquivo };
+
+            formData.append('aso', new Blob([JSON.stringify(payloadFinal)], {
+                type: 'application/json'
+            }));
+
+            // Adiciona os arquivos de exame
+            files.forEach(item => {
+                formData.append('files', item.file);
+            });
+
+            const response = await apiService.post('/aso', formData);
             return response.data;
+
         } catch (error) {
             console.error("Erro ao criar ASO:", error);
             throw error;
@@ -51,16 +74,22 @@ const asoService = {
         }
     },
 
+    getAsosByFuncionario: async (funcionarioId) => {
+        try {
+            const response = await apiService.get(`/aso/funcionario/${funcionarioId}`);
+            return response.data;
+        } catch (error) {
+            console.error(`Erro ao buscar ASOs para o funcionário ${funcionarioId}:`, error);
+            throw error;
+        }
+    },
+
     // Assuming an endpoint for file uploads related to exams
     uploadExameAnexo: async (file) => {
         try {
             const formData = new FormData();
             formData.append('file', file);
-            const response = await apiService.post('/aso/exames/upload', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-            });
+            const response = await apiService.post('/aso/exames/upload', formData);
             return response.data; // Should return path or ID
         } catch (error) {
             console.error("Erro ao fazer upload do anexo do exame:", error);

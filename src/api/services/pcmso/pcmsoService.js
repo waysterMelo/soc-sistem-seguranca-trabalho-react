@@ -74,6 +74,17 @@ const pcmsoService = {
         }
   },
 
+  getExamesByFuncaoId: async (funcaoId) => {
+    try {
+        // The actual endpoint might be different
+        const response = await apiService.get(`/pcmso/exames/funcao/${funcaoId}`);
+        return response.data;
+    } catch (error) {
+        console.error(`Erro ao buscar exames para a função com ID ${funcaoId}:`, error);
+        throw error;
+    }
+  },
+
 
 };
 

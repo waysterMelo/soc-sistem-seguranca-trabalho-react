@@ -1,0 +1,56 @@
+riscos retorna
+[
+    {
+        "id": 52,
+        "riscoCatalogo": {
+            "id": 4,
+            "grupo": "GRUPO_1_FISICOS",
+            "descricao": "Radiações não ionizantes"
+        }
+    },
+    {
+        "id": 53,
+        "riscoCatalogo": {
+            "id": 2,
+            "grupo": "GRUPO_1_FISICOS",
+            "descricao": "Vibrações"
+        }
+    }
+]
+
+exames retorna
+[
+    {
+        "id": 74,
+        "exameCatalogo": {
+            "id": 1,
+            "codigoExame": "0001",
+            "nomeExame": "1,1-dicloro-2,2-bis (P-clorofeniletileno)"
+        },
+        "tipoExame": "ADMISSIONAL",
+        "periodicidadeMeses": null,
+        "obrigatorio": true
+    },
+    {
+        "id": 75,
+        "exameCatalogo": {
+            "id": 2,
+            "codigoExame": "0002",
+            "nomeExame": "1,1,1-tricloroetano"
+        },
+        "tipoExame": "ADMISSIONAL",
+        "periodicidadeMeses": null,
+        "obrigatorio": true
+    },
+    {
+        "id": 76,
+        "exameCatalogo": {
+            "id": 3,
+            "codigoExame": "0003",
+            "nomeExame": "1,2 dihidroxi-4-(N-acetilcisteinil)-butano"
+        },
+        "tipoExame": "ADMISSIONAL",
+        "periodicidadeMeses": null,
+        "obrigatorio": true
+    }
+]

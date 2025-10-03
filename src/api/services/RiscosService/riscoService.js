@@ -1,24 +1,17 @@
-import apiService from "../../apiService";
+import apiService from '../../apiService';
 
-class RiscoService {
-    constructor() {
-        this.api = apiService;
-        this.endpoint = "/riscos-catalogo";
-    }
-
-    // Busca riscos filtrando por ID do setor
-    async getBySetorId(setorId) {
+const riscoService = {
+    // Placeholder function - assumes an endpoint exists to get risks by function ID
+    getRiscosByFuncaoId: async (funcaoId) => {
         try {
-            const params = { setorId: setorId };
-            const response = await this.api.get(this.endpoint, { params });
-            // A API pode retornar a lista dentro de 'content' ou diretamente
-            return response.data.content || response.data;
-        } catch (error)
-        {
-            console.error(`Erro ao buscar riscos para o setor ${setorId}:`, error);
+            // The actual endpoint might be different, e.g., '/riscos/funcao/{funcaoId}'
+            const response = await apiService.get(`/riscos?funcaoId=${funcaoId}`);
+            return response.data;
+        } catch (error) {
+            console.error(`Erro ao buscar riscos para a função com ID ${funcaoId}:`, error);
             throw error;
         }
-    }
-}
+    },
+};
 
-export default new RiscoService();
+export default riscoService;

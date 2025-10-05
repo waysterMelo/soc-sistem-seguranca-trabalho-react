@@ -467,8 +467,8 @@ export default function CadastrarLTCAT() {
         const loadingToast = toast.loading(`Carregando detalhes do setor: ${setor.nome}...`);
 
         try {
-            // O modal pode retornar um setor "simples". Buscamos o setor completo com as funções.
-            const setoresDaEmpresa = await setorService.getSetoresByEmpresa(selectedEmpresa.id);
+            const setoresResponse = await setorService.getSetoresByEmpresa(selectedEmpresa.id, { page: 0, size: 1000 });
+            const setoresDaEmpresa = setoresResponse.content || [];
 
             // A API retorna um array de setores. Encontramos o que foi selecionado.
             const setorCompleto = setoresDaEmpresa.find(s => s.id === setor.id);

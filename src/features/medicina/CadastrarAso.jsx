@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { X, Check, Save, User, Upload, FileText, Plus, Search, Building, Briefcase, CheckCircle } from 'lucide-react';
+import { X, Check, Save, User, Upload, FileText, Plus, Search, Building, Briefcase, CheckCircle, ChevronLeft, Download } from 'lucide-react';
 import FuncionarioSearchModal from '../../components/modal/FuncionarioSearchModal.jsx';
 import EmpresaSearchModal from '../../components/modal/empresaSearchModal.jsx';
 import SetorSearchModal from '../../components/modal/SetorSearchModal.jsx';
@@ -13,17 +13,19 @@ import asoService from '../../api/services/aso/asoService.js';
 
 
 export default function CadastrarAso() {
+    const { id } = useParams();
     return (
         <div className="bg-gray-50 min-h-screen font-sans">
             <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} />
-            <AsoForm />
+            <AsoForm asoId={id} />
         </div>
     );
 }
 
 
-const AsoForm = () => {
+const AsoForm = ({ asoId }) => {
     const navigate = useNavigate();
+    const isEditMode = Boolean(asoId);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [formData, setFormData] = useState({
         empresaId: '',
@@ -97,6 +99,83 @@ const AsoForm = () => {
         carregarFuncionarios();
     }, [setorSelecionado]);
 
+    useEffect(() => {
+        if (isEditMode && asoId) {
+            const fetchAsoData = async () => {
+                setIsLoading(true);
+                try {
+                    const response = await asoService.getAsoById(asoId);
+                    const asoData = response.data || response;
+
+                    if (!asoData) {
+                        toast.error('Dados do ASO não encontrados.');
+                        navigate('/medicina/aso');
+                        return;
+                    }
+
+                    const func = asoData.funcionario;
+                    const empresa = func?.empresa;
+                    const unidade = func?.unidade;
+                    const setor = func?.setor;
+                    const medicoExam = asoData.medicoExaminador;
+                    const medicoResp = asoData.medicoResponsavelPcmso;
+
+                    const formatDate = (dateStr) => dateStr ? new Date(dateStr).toISOString().split('T')[0] : '';
+
+                    setFormData({
+                        empresaId: empresa?.id || '',
+                        unidadeId: unidade?.id || '',
+                        setorId: setor?.id || '',
+                        funcionarioId: func?.id || '',
+                        tipoRetificacao: asoData.tipoRetificacao || 'ORIGINAL',
+                        dataAsoRetificado: formatDate(asoData.dataAsoRetificado),
+                        tipoAso: asoData.tipoAso || '',
+                        dataEmissao: formatDate(asoData.dataEmissao),
+                        medicoExaminadorId: medicoExam?.id || '',
+                        medicoResponsavelPcmsoId: medicoResp?.id || '',
+                        conclusaoAso: asoData.conclusaoAso || '',
+                        diasInapto: asoData.diasInapto ?? '',
+                        status: asoData.status || 'CONCLUIDO',
+                        naoInformar: asoData.naoInformar || false,
+                        observacoes: asoData.observacoes || '',
+                        conclusaoColaborador: asoData.conclusaoColaborador || ''
+                    });
+
+                    // Populate selection states
+                    setEmpresaSelecionada(empresa);
+                    setUnidadeSelecionada(unidade);
+                    setSetorSelecionado(setor);
+                    setFuncionarioSelecionado(func);
+                    setMedicoExaminador(medicoExam);
+                    setMedicoResponsavel(medicoResp);
+                    
+                    // Populate risks and exams
+                    setRiscos(asoData.riscos?.map(r => ({
+                        id: r.id,
+                        nome: r.descricao,
+                        grupo: r.grupo
+                    })) || []);
+
+                    setExames(asoData.exames?.map(e => e.exame ? ({
+                        id: e.exame.id,
+                        codigo: e.exame.codigoExame,
+                        nome: e.exame.nomeExame,
+                        file: null,
+                        resultadoUrl: e.resultadoUrl
+                    }) : null).filter(Boolean) || []);
+                } catch (error) {
+                    console.error("Erro ao carregar dados do ASO:", error);
+                    toast.error('Falha ao carregar dados do ASO para edição.');
+                    navigate('/medicina/aso');
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+
+            fetchAsoData();
+        }
+    }, [asoId, isEditMode, navigate]);
+
     const handleInputChange = (field, value) => {
         setFormData(prev => ({
             ...prev,
@@ -147,6 +226,7 @@ const AsoForm = () => {
     };
 
     const handleFuncionarioSelect = async (funcionario) => {
+        if (isEditMode) return; // Do not allow changing employee in edit mode
         setFuncionarioSelecionado(funcionario);
         setFormData(prev => ({
             ...prev,
@@ -205,6 +285,7 @@ const AsoForm = () => {
 
     // Handlers para limpeza
     const handleClearEmpresa = () => {
+        if (isEditMode) return;
         setEmpresaSelecionada(null);
         setUnidadeSelecionada(null);
         setSetorSelecionado(null);
@@ -219,6 +300,7 @@ const AsoForm = () => {
     };
 
     const handleClearUnidade = () => {
+        if (isEditMode) return;
         setUnidadeSelecionada(null);
         setSetorSelecionado(null);
         setFuncionarioSelecionado(null);
@@ -231,6 +313,7 @@ const AsoForm = () => {
     };
 
     const handleClearSetor = () => {
+        if (isEditMode) return;
         setSetorSelecionado(null);
         setFuncionarioSelecionado(null);
         setFormData(prev => ({
@@ -241,6 +324,7 @@ const AsoForm = () => {
     };
 
     const handleClearFuncionario = () => {
+        if (isEditMode) return;
         setFuncionarioSelecionado(null);
         setFormData(prev => ({
             ...prev,
@@ -325,7 +409,11 @@ const AsoForm = () => {
                 file: exame.file,
             }));
 
-            await asoService.createAso(asoJsonPayload, filesToUpload);
+            if (isEditMode) {
+                await asoService.updateAso(asoId, asoJsonPayload, filesToUpload);
+            } else {
+                await asoService.createAso(asoJsonPayload, filesToUpload);
+            }
 
             setShowSuccessModal(true);
             setTimeout(() => {
@@ -374,11 +462,16 @@ const AsoForm = () => {
         <>
             <div className="p-4 sm:p-6 lg:p-8">
                 <div className="mx-auto">
-                    <div className="mb-6">
-                        <h1 className="text-3xl font-bold text-gray-800">
-                            Cadastrar ASO
-                        </h1>
-                        <p className="text-gray-600 mt-2">Preencha as informações para cadastrar um novo Atestado de Saúde Ocupacional</p>
+                    <div className="flex justify-between items-start mb-6">
+                        <div>
+                            <h1 className="text-3xl font-bold text-gray-800">
+                                {isEditMode ? 'Editar ASO' : 'Cadastrar ASO'}
+                            </h1>
+                            <p className="text-gray-600 mt-2">{isEditMode ? 'Atualize as informações do Atestado de Saúde Ocupacional.' : 'Preencha as informações para cadastrar um novo Atestado de Saúde Ocupacional'}</p>
+                        </div>
+                        <button onClick={() => navigate(-1)} className="bg-gray-500 text-white px-4 py-2 rounded-md font-semibold hover:bg-gray-600 flex items-center justify-center gap-2 transition-colors">
+                            <ChevronLeft size={18} /> Voltar
+                        </button>
                     </div>
 
                     <div className="space-y-6">
@@ -395,8 +488,10 @@ const AsoForm = () => {
                                             `${empresaSelecionada.razaoSocial} - ${empresaSelecionada.cpfOuCnpj}` :
                                             ''
                                         }
-                                        onClick={() => setShowEmpresaModal(true)}
+                                        onClick={() => !isEditMode && setShowEmpresaModal(true)}
+                                        readOnly={isEditMode}
                                         actions={
+                                            !isEditMode &&
                                             <>
                                                 <button
                                                     type="button"
@@ -418,7 +513,7 @@ const AsoForm = () => {
                                 </div>
 
                                 {/* Seleção de Unidade - condicional à empresa */}
-                                {empresaSelecionada && (
+                                {empresaSelecionada && (!isEditMode || (isEditMode && unidadeSelecionada)) && (
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
                                             Unidade Operacional
@@ -426,8 +521,10 @@ const AsoForm = () => {
                                         <InputWithActions
                                             placeholder="Selecione uma unidade..."
                                             value={unidadeSelecionada ? unidadeSelecionada.nome : ''}
-                                            onClick={() => setShowUnidadeModal(true)}
+                                            onClick={() => !isEditMode && setShowUnidadeModal(true)}
+                                            readOnly={isEditMode}
                                             actions={
+                                                !isEditMode &&
                                                 <>
                                                     <button
                                                         type="button"
@@ -450,7 +547,7 @@ const AsoForm = () => {
                                 )}
 
                                 {/* Seleção de Setor - condicional à unidade */}
-                                {unidadeSelecionada && (
+                                {unidadeSelecionada && (!isEditMode || (isEditMode && setorSelecionado)) && (
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
                                             Setor
@@ -458,8 +555,10 @@ const AsoForm = () => {
                                         <InputWithActions
                                             placeholder="Selecione um setor..."
                                             value={setorSelecionado ? setorSelecionado.nome : ''}
-                                            onClick={() => setShowSetorModal(true)}
+                                            onClick={() => !isEditMode && setShowSetorModal(true)}
+                                            readOnly={isEditMode}
                                             actions={
+                                                !isEditMode &&
                                                 <>
                                                     <button
                                                         type="button"
@@ -504,6 +603,8 @@ const AsoForm = () => {
                                                         onClick={() => handleFuncionarioSelect(funcionario)}
                                                         className={`p-4 cursor-pointer hover:bg-gray-50 border-b border-gray-100 last:border-b-0 transition-colors ${
                                                             funcionarioSelecionado?.id === funcionario.id ? 'bg-blue-50 border-blue-200' : ''
+                                                        } ${
+                                                            isEditMode ? 'cursor-not-allowed bg-gray-100' : ''
                                                         }`}
                                                     >
                                                         <div className="flex items-center justify-between">
@@ -752,7 +853,7 @@ const AsoForm = () => {
                             className="bg-green-600 text-white px-6 py-2 rounded-md font-semibold hover:bg-green-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <Save size={18} />
-                            {isLoading ? 'Salvando...' : 'Salvar ASO'}
+                            {isLoading ? (isEditMode ? 'Atualizando...' : 'Salvando...') : (isEditMode ? 'Atualizar ASO' : 'Salvar ASO')}
                         </button>
                     </div>
                 </div>
@@ -803,8 +904,8 @@ const AsoForm = () => {
                         <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4">
                             <CheckCircle size={48} className="text-green-600" />
                         </div>
-                        <h3 className="text-2xl font-bold text-gray-900 mb-2">Salvo com Sucesso!</h3>
-                        <p className="text-gray-600">O ASO foi salvo e você será redirecionado.</p>
+                        <h3 className="text-2xl font-bold text-gray-900 mb-2">{isEditMode ? 'Atualizado com Sucesso!' : 'Salvo com Sucesso!'}</h3>
+                        <p className="text-gray-600">{isEditMode ? 'O ASO foi atualizado e você será redirecionado.' : 'O ASO foi salvo e você será redirecionado.'}</p>
                     </div>
                 </div>
             )}
@@ -933,7 +1034,7 @@ const InputField = ({ label, value, onChange, ...props }) => (
         <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
         <input
             {...props}
-            value={value || ''}
+            value={value ?? ''}
             onChange={onChange}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
         />
@@ -982,27 +1083,56 @@ const SearchableSelect = ({ options, placeholder, label, value, onChange }) => (
 const ExameUploadItem = ({ exame, onFileChange }) => {
     const fileInputRef = useRef(null);
     const handleButtonClick = () => fileInputRef.current?.click();
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
     return (
         <li className="flex flex-col sm:flex-row items-center justify-between p-3 bg-gray-50 rounded-md border">
-            <div className="flex items-center gap-3 mb-2 sm:mb-0">
+            <div className="flex items-center gap-3 mb-2 sm:mb-0 flex-1 min-w-0">
                 <FileText size={18} className="text-gray-500" />
-                <span className="text-sm text-gray-800 font-medium">{exame.codigo} - {exame.nome}</span>
+                <span className="text-sm text-gray-800 font-medium truncate">{exame.codigo} - {exame.nome}</span>
             </div>
             <div className="flex items-center gap-2">
-                {exame.file ? (
-                    <div className="flex items-center gap-2 text-sm text-green-700 bg-green-100 px-3 py-1 rounded-full">
-                        <Check size={16} />
-                        <span>{exame.file.name}</span>
+                {/* Case 1: A new file has been selected for upload */}
+                {exame.file && (
+                    <div className="flex items-center gap-2 text-sm text-blue-700 bg-blue-100 px-3 py-1 rounded-full">
+                        <Upload size={16} />
+                        <span className="truncate max-w-xs">{exame.file.name}</span>
                         <button
                             type="button"
                             onClick={() => onFileChange(null, exame.id)}
-                            className="text-green-700 hover:text-green-900"
+                            className="text-blue-700 hover:text-blue-900"
+                            title="Cancelar anexo"
                         >
                             <X size={14} />
                         </button>
                     </div>
-                ) : (
+                )}
+
+                {/* Case 2: An existing file URL is present and no new file is selected */}
+                {!exame.file && exame.resultadoUrl && (
+                    <>
+                        <a
+                            href={`${apiBaseUrl}${exame.resultadoUrl}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm bg-green-100 text-green-800 border border-green-200 px-3 py-1 rounded-md hover:bg-green-200 flex items-center gap-2"
+                            title="Baixar resultado existente"
+                        >
+                            <Download size={14} /> Download
+                        </a>
+                        <button
+                            type="button"
+                            onClick={handleButtonClick}
+                            className="text-sm bg-white border border-gray-300 px-3 py-1 rounded-md hover:bg-gray-100 flex items-center gap-2"
+                            title="Substituir anexo"
+                        >
+                            <Upload size={14} /> Substituir
+                        </button>
+                    </>
+                )}
+
+                {/* Case 3: No file selected and no existing URL */}
+                {!exame.file && !exame.resultadoUrl && (
                     <button
                         type="button"
                         onClick={handleButtonClick}
@@ -1011,6 +1141,7 @@ const ExameUploadItem = ({ exame, onFileChange }) => {
                         <Upload size={14} /> Anexar Resultado
                     </button>
                 )}
+
                 <input
                     type="file"
                     ref={fileInputRef}

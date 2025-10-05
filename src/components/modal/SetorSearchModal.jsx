@@ -52,42 +52,20 @@ const SetorSearchModal = ({
       const response = await setorService.buscarComFiltros(params);
 
 
-      if (response && response.data) {
-        if (response.data.content && Array.isArray(response.data.content)) {
-          setSetores(response.data.content);
-          setTotalElements(response.data.totalElements || 0);
-          setTotalPages(response.data.totalPages || 0);
+      if (response && response.data && Array.isArray(response.data.content)) {
+        setSetores(response.data.content);
+        setTotalElements(response.data.totalElements || 0);
+        setTotalPages(response.data.totalPages || 0);
 
-          if (response.data.content.length === 0) {
-            setError("Nenhum setor encontrado para esta empresa");
-          }
-        } else if (Array.isArray(response.data)) {
-
-          // Aplicar paginação manual
-          const start = (currentPage - 1) * entriesPerPage;
-          const end = start + entriesPerPage;
-          const paginatedData = response.data.slice(start, end);
-          
-          setSetores(paginatedData);
-          setTotalElements(response.data.length);
-          setTotalPages(Math.ceil(response.data.length / entriesPerPage));
-
-          if (response.data.length === 0) {
-            setError("Nenhum setor encontrado para esta empresa");
-          }
-        } else {
-          console.error('Formato de resposta inesperado:', typeof response.data, response.data);
-          setSetores([]);
-          setTotalElements(0);
-          setTotalPages(0);
-          setError("Formato de resposta inesperado da API");
+        if (response.data.content.length === 0) {
+          setError("Nenhum setor encontrado para esta empresa");
         }
       } else {
-        console.error('Resposta vazia ou inválida:', response);
+        console.error('Formato de resposta inesperado ou vazio:', response);
         setSetores([]);
         setTotalElements(0);
         setTotalPages(0);
-        setError("Resposta vazia do servidor");
+        setError("Nenhum setor encontrado ou formato de resposta inesperado.");
       }
     } catch (err) {
       console.error('Erro ao buscar setores:', err);

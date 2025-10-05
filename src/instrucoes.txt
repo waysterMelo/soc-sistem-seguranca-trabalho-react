@@ -1,9 +1,0 @@
-CHAME o end point /aso/funcionario/8, para retornar as aso do funcionario, quando acabar de selecionar o setor deve aparecer uma lista de funcionarios que foram encontrados , mesma coisa que é feito no cadastro    
-    
-    {
-        "id": 15,
-        "nomeFuncionario": "WAYSTER",
-        "nomeEmpresa": "Empresa Teste modificada",
-        "tipoAso": "ADMISSIONAL",
-        "dataEmissao": "2025-10-03"
-    },

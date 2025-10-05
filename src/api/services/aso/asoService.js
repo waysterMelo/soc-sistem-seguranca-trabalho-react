@@ -74,9 +74,9 @@ const asoService = {
         }
     },
 
-    getAsosByFuncionario: async (funcionarioId) => {
+    getAsosByFuncionario: async (funcionarioId, params) => {
         try {
-            const response = await apiService.get(`/aso/funcionario/${funcionarioId}`);
+            const response = await apiService.get(`/aso/funcionario/${funcionarioId}`, { params });
             return response.data;
         } catch (error) {
             console.error(`Erro ao buscar ASOs para o funcionário ${funcionarioId}:`, error);

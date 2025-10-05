@@ -20,7 +20,12 @@ const getAllUnidades = (params) => {
         throw new Error('empresaId é obrigatório');
     }
 
+    // remove empresaId from params before passing to api.get
+    const { empresaId: _, ...apiParams } = params;
+
+
     return api.get(`/unidade-operacional/${empresaId}/unidades-empresa`, {
+        params: { ...apiParams, sort: 'nome,asc' },
         headers: {
             'Accept': 'application/json'
         }

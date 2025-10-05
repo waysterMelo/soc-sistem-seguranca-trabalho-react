@@ -129,7 +129,7 @@ const catService = {
       const params = {
         page,
         size,
-        sort: 'id,desc',
+        sort: 'dataAcidente,desc',
         ...filters
       };
 

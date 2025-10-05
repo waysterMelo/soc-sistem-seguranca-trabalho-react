@@ -56,15 +56,6 @@ const menuItems = [
             { name: 'ASO', path: 'medicina/aso' },
             { name: 'Afastamento', path: 'medicina/afastamento' }
         ],
-    },
-    {
-        name: 'Configurações Relatórios',
-        icon: <Shield size={20} />,
-        path: '/configiracoes',
-        subItems: [
-            { name: 'Cat', path: 'medicina/config-cat' },
-            { name: 'EPI-EPC', path: 'medicina/config-epi-epc' }
-            ]
     }
 ];
 
@@ -137,10 +128,9 @@ export default function Sidebar() {
                     <div className="border-t border-gray-700/50 p-3">
                         <div className="flex items-center justify-between">
                             <div className={`flex items-center gap-3 overflow-hidden transition-all ${isExpanded ? "w-52" : "w-0"}`}>
-                                <Settings size={20} className="flex-shrink-0" />
                                 <div className="leading-4">
-                                    <h4 className="font-semibold">Config.</h4>
-                                    <span className="text-xs text-gray-400">geral</span>
+                            
+                                    <span className="text-xs text-gray-400">SAIR</span>
                                 </div>
                             </div>
                             <button className="p-2 rounded-lg hover:bg-gray-700 text-red-500 hover:text-red-400"><LogOut size={20} /></button>

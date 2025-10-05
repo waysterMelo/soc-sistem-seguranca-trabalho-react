@@ -271,28 +271,11 @@ export default function ListarCAT() {
         try {
             const response = await catService.getCats(page, size, filters);
 
-            if (response && response.data) {
-                if (Array.isArray(response.data.content)) {
-                    setCats(response.data.content);
-                    setCurrentPage(response.data.number || 0);
-                    setTotalPages(response.data.totalPages || 0);
-                    setTotalElements(response.data.totalElements || 0);
-                } else if (Array.isArray(response.data)) {
-                    setCats(response.data);
-                    setCurrentPage(0);
-                    setTotalPages(1);
-                    setTotalElements(response.data.length);
-                } else {
-                    setCats([]);
-                    setCurrentPage(0);
-                    setTotalPages(0);
-                    setTotalElements(0);
-                }
-            } else if (Array.isArray(response)) {
-                setCats(response);
-                setCurrentPage(0);
-                setTotalPages(1);
-                setTotalElements(response.length);
+            if (response && response.content) {
+                setCats(response.content);
+                setCurrentPage(response.number || 0);
+                setTotalPages(response.totalPages || 0);
+                setTotalElements(response.totalElements || 0);
             } else {
                 setCats([]);
                 setCurrentPage(0);
@@ -379,80 +362,33 @@ export default function ListarCAT() {
 
     // Carregar CATs automaticamente quando funcionários são selecionados
     useEffect(() => {
-        const loadCatsByFuncionarios = async () => {
-            if (selectedFuncionarios.length === 0) {
-                // Se nenhum funcionário selecionado, limpar lista
-                setCats([]);
-                setCurrentPage(0);
-                setTotalPages(0);
-                setTotalElements(0);
-                setHasSearched(false);
-                return;
-            }
+        if (selectedFuncionarios.length === 0) {
+            setCats([]);
+            setCurrentPage(0);
+            setTotalPages(0);
+            setTotalElements(0);
+            setHasSearched(false);
+            return;
+        }
 
-            // Se há funcionários selecionados, buscar CATs de cada um
-            setLoading(true);
-            setError('');
-            setHasSearched(true);
-
-            try {
-                const allCats = [];
-
-                // Buscar CATs para cada funcionário selecionado
-                for (const funcionario of selectedFuncionarios) {
-                    if (funcionario && funcionario.id && typeof funcionario.id === 'number' && funcionario.id > 0) {
-                        try {
-                            const response = await catService.getCatsByFuncionario(funcionario.id, 0, 100);
-
-                            if (response && response.data) {
-                                if (Array.isArray(response.data.content)) {
-                                    allCats.push(...response.data.content);
-                                } else if (Array.isArray(response.data)) {
-                                    allCats.push(...response.data);
-                                }
-                            } else if (Array.isArray(response)) {
-                                allCats.push(...response);
-                            }
-                        } catch (funcError) {
-                            console.error(`Erro ao buscar CATs do funcionário ${funcionario.id}:`, funcError);
-                            // Continue com os outros funcionários mesmo se um falhar
-                        }
-                    }
-                }
-
-                // Remover duplicatas baseado no ID
-                const uniqueCats = allCats.filter((cat, index, self) =>
-                    index === self.findIndex(c => c.id === cat.id)
-                );
-
-                // Ordenar por data de acidente (mais recente primeiro)
-                uniqueCats.sort((a, b) => {
-                    const dateA = new Date(a.dataAcidente || 0);
-                    const dateB = new Date(b.dataAcidente || 0);
-                    return dateB - dateA;
-                });
-
-                setCats(uniqueCats);
-                setCurrentPage(0);
-                setTotalElements(uniqueCats.length);
-                // Para simplificar, vamos paginar no frontend
-                const catsPerPage = pageSize;
-                setTotalPages(Math.ceil(uniqueCats.length / catsPerPage));
-
-            } catch (err) {
-                console.error('Erro ao buscar CATs dos funcionários:', err);
-                setError('Erro ao carregar CATs dos funcionários selecionados.');
-                setCats([]);
-                setCurrentPage(0);
-                setTotalPages(0);
-                setTotalElements(0);
-            } finally {
-                setLoading(false);
-            }
+        const filters = {
+            funcionarioIds: selectedFuncionarios.map(f => f.id)
         };
 
-        loadCatsByFuncionarios();
-    }, [selectedFuncionarios, pageSize]); // Monitorar mudanças nos funcionários selecionados
+        if (searchTerm.trim()) {
+            filters.search = searchTerm.trim();
+        }
+        if (selectedEmpresa?.id) {
+            filters.empresaId = selectedEmpresa.id;
+        }
+        if (selectedSetor?.id) {
+            filters.setorId = selectedSetor.id;
+        }
+
+        setHasSearched(true);
+        fetchCats(0, pageSize, filters);
+
+    }, [selectedFuncionarios, pageSize, searchTerm, selectedEmpresa, selectedSetor]);
 
     // Toggle funcionário selecionado
     const handleToggleFuncionario = (funcionario) => {
@@ -919,9 +855,7 @@ export default function ListarCAT() {
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
-                                    {cats
-                                        .slice(currentPage * pageSize, (currentPage + 1) * pageSize)
-                                        .map((cat) => (
+                                    {cats.map((cat) => (
                                         <tr key={cat.id} className="hover:bg-gray-50">
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                                 #{cat.id}

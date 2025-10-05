@@ -108,8 +108,10 @@ const AlternativaModal = ({ isOpen, onClose, onInativar, unidadeNome }) => {
 
 export default function ListarUnidades() {
     const [searchTerm, setSearchTerm] = useState('');
-    const [currentPage, setCurrentPage] = useState(1);
-    const [entriesPerPage, setEntriesPerPage] = useState(5);
+    const [page, setPage] = useState(0);
+    const [size, setSize] = useState(5);
+    const [totalPages, setTotalPages] = useState(0);
+    const [totalElements, setTotalElements] = useState(0);
     const [unidades, setUnidades] = useState([]);
     const [loading, setLoading] = useState(false);
     const [empresaSelecionada, setEmpresaSelecionada] = useState(null);
@@ -126,14 +128,13 @@ export default function ListarUnidades() {
     });
     const [processandoUnidade, setProcessandoUnidade] = useState(false);
 
-    // Carregar unidades operacionais com base na empresa selecionada
     useEffect(() => {
         if (empresaSelecionada) {
-            buscarUnidadesPorEmpresa(empresaSelecionada.id);
+            buscarUnidadesPorEmpresa(empresaSelecionada.id, page, size, searchTerm);
         } else {
             setUnidades([]);
         }
-    }, [empresaSelecionada]);
+    }, [empresaSelecionada, page, size, searchTerm]);
 
     const handleEmpresaSelect = async (empresa) => {
         try {
@@ -145,13 +146,13 @@ export default function ListarUnidades() {
             setShowEmpresaModal(false);
 
             // Busca as unidades da empresa selecionada
-            await buscarUnidadesPorEmpresa(empresaCompleta.id);
+            await buscarUnidadesPorEmpresa(empresaCompleta.id, 0, size, searchTerm);
         } catch (error) {
             console.error("Erro ao buscar detalhes da empresa:", error);
             // Usa os dados básicos da empresa caso a busca detalhada falhe
             setEmpresaSelecionada(empresa);
             setShowEmpresaModal(false);
-            await buscarUnidadesPorEmpresa(empresa.id);
+            await buscarUnidadesPorEmpresa(empresa.id, 0, size, searchTerm);
         }
     };
 
@@ -160,13 +161,12 @@ export default function ListarUnidades() {
         setUnidades([]);
     };
 
-    const buscarUnidadesPorEmpresa = async (empresaId) => {
+    const buscarUnidadesPorEmpresa = async (empresaId, page = 0, size = 5, searchTerm = '') => {
         setLoading(true);
         try {
-            const response = await unidadeService.getAll({ empresaId });
-            const unidadesData = Array.isArray(response.data) ? response.data :
-                response.data?.content ? response.data.content : [];
-            // Buscar total de setores para cada unidade
+            const response = await unidadeService.getAll({ empresaId, page, size, nome: searchTerm });
+            const unidadesData = response.data?.content || [];
+            
             const unidadesComTotalSetores = await Promise.all(
                 unidadesData.map(async (unidade) => {
                     try {
@@ -184,6 +184,9 @@ export default function ListarUnidades() {
                 })
             );
             setUnidades(unidadesComTotalSetores);
+            setPage(response.data.number);
+            setTotalPages(response.data.totalPages);
+            setTotalElements(response.data.totalElements);
         } catch (error) {
             console.error("Erro detalhado:", {
                 message: error.message,
@@ -289,16 +292,7 @@ export default function ListarUnidades() {
         }
     };
 
-    // Filtrar unidades com base no termo de pesquisa
-    const unidadesFiltradas = unidades.filter(unidade =>
-        unidade.nome?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
 
-    // Paginação
-    const indexOfLastEntry = currentPage * entriesPerPage;
-    const indexOfFirstEntry = indexOfLastEntry - entriesPerPage;
-    const currentEntries = unidadesFiltradas.slice(indexOfFirstEntry, indexOfLastEntry);
-    const totalPages = Math.ceil(unidadesFiltradas.length / entriesPerPage);
 
     return (
         <div className="bg-gray-50 min-h-screen p-4 sm:p-6 lg:p-8 font-sans">
@@ -351,12 +345,23 @@ export default function ListarUnidades() {
                         </div>
                     </div>
 
-                    {/* Barra de Busca e Entradas por Página */}
-                    <div className="flex flex-col sm:flex-row justify-between items-center mb-4">
+                    <div class="flex flex-col sm:flex-row justify-between items-center mb-4">
+                        <div class="relative w-full sm:w-auto">
+                            <input
+                                type="text"
+                                placeholder="Buscar por nome da unidade..."
+                                className="w-full py-2 px-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                            <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                                <Search size={18} className="text-gray-400" />
+                            </div>
+                        </div>
                         <select
                             className="w-full sm:w-auto mt-2 sm:mt-0 border border-gray-300 rounded-md px-3 py-2 focus:outline-none"
-                            value={entriesPerPage}
-                            onChange={(e) => setEntriesPerPage(Number(e.target.value))}
+                            value={size}
+                            onChange={(e) => setSize(Number(e.target.value))}
                         >
                             <option value="5">5</option>
                             <option value="10">10</option>
@@ -385,8 +390,8 @@ export default function ListarUnidades() {
                                         </div>
                                     </td>
                                 </tr>
-                            ) : empresaSelecionada && currentEntries.length > 0 ? (
-                                currentEntries.map((unidade) => (
+                            ) : empresaSelecionada && unidades.length > 0 ? (
+                                unidades.map((unidade) => (
                                     <tr key={unidade.id} className="hover:bg-gray-50">
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{unidade.nome}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{empresaSelecionada.razaoSocial}</td>
@@ -428,22 +433,22 @@ export default function ListarUnidades() {
                     </div>
 
                     {/* Paginação (será exibida se houver dados) */}
-                    {currentEntries.length > 0 && (
+                    {unidades.length > 0 && (
                         <div className="flex flex-col sm:flex-row justify-between items-center pt-4 border-t border-gray-200">
                             <div className="text-sm text-gray-700">
-                                Mostrando <span className="font-medium">{indexOfFirstEntry + 1}</span> a <span className="font-medium">{Math.min(indexOfLastEntry, unidadesFiltradas.length)}</span> de <span className="font-medium">{unidadesFiltradas.length}</span> resultados
+                                Mostrando <span className="font-medium">{page * size + 1}</span> a <span className="font-medium">{Math.min((page + 1) * size, totalElements)}</span> de <span className="font-medium">{totalElements}</span> resultados
                             </div>
                             <div className="inline-flex mt-2 sm:mt-0">
                                 <button
-                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                                    disabled={currentPage === 1}
+                                    onClick={() => setPage(prev => Math.max(prev - 1, 0))}
+                                    disabled={page === 0}
                                     className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-l-md hover:bg-gray-50 disabled:opacity-50"
                                 >
                                     Anterior
                                 </button>
                                 <button
-                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                                    disabled={currentPage === totalPages}
+                                    onClick={() => setPage(prev => Math.min(prev + 1, totalPages - 1))}
+                                    disabled={page >= totalPages - 1}
                                     className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border-t border-b border-r border-gray-300 rounded-r-md hover:bg-gray-50 disabled:opacity-50"
                                 >
                                     Próximo

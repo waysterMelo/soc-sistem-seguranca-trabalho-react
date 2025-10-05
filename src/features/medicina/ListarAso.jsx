@@ -35,8 +35,7 @@ export default function ListarAso() {
     const navigate = useNavigate();
 
     // Data states
-    const [allAsos, setAllAsos] = useState([]); // Holds all ASOs for the selected employee
-    const [asos, setAsos] = useState([]); // Holds the ASOs for the current page
+    const [asos, setAsos] = useState([]);
     const [pagination, setPagination] = useState({ page: 0, size: 5, totalPages: 0 });
     const [loading, setLoading] = useState(false);
 
@@ -55,38 +54,28 @@ export default function ListarAso() {
     const [modalState, setModalState] = useState({ empresa: false, unidade: false, setor: false });
 
     // Fetch all ASOs for an employee
-    const fetchAsos = useCallback(async () => {
+    const fetchAsos = useCallback(async (page = 0) => {
         if (!filters.funcionarioId) {
-            setAllAsos([]);
+            setAsos([]);
             return;
         }
         setLoading(true);
         try {
-            const response = await asoService.getAsosByFuncionario(filters.funcionarioId);
-            setAllAsos(response || []);
+            const params = { page, size: pagination.size, sort: 'dataEmissao,desc' };
+            const response = await asoService.getAsosByFuncionario(filters.funcionarioId, params);
+            setAsos(response.content || []);
+            setPagination(prev => ({ ...prev, totalPages: response.totalPages, page }));
         } catch (error) {
             toast.error("Erro ao carregar ASOs do funcionário.");
-            setAllAsos([]);
+            setAsos([]);
         } finally {
             setLoading(false);
         }
-    }, [filters.funcionarioId]);
+    }, [filters.funcionarioId, pagination.size]);
 
     useEffect(() => {
-        fetchAsos();
-    }, [fetchAsos]);
-
-    // Effect for frontend pagination
-    useEffect(() => {
-        const total = allAsos.length;
-        const totalPages = Math.ceil(total / pagination.size);
-        setPagination(prev => ({ ...prev, totalPages }));
-
-        const start = pagination.page * pagination.size;
-        const end = start + pagination.size;
-        setAsos(allAsos.slice(start, end));
-
-    }, [allAsos, pagination.page, pagination.size]);
+        fetchAsos(pagination.page);
+    }, [fetchAsos, pagination.page]);
 
     // Effect to fetch employees when sector changes
     useEffect(() => {
@@ -287,7 +276,7 @@ export default function ListarAso() {
                                     )}
                                     </tbody>
                                 </table>
-                                {allAsos.length > pagination.size && (
+                                {pagination.totalPages > 1 && (
                                     <div className="flex justify-between items-center p-4 bg-white border-t">
                                         <span className="text-sm text-gray-700">
                                             Página {pagination.page + 1} de {pagination.totalPages || 1}

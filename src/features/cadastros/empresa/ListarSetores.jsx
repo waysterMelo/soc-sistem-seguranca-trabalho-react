@@ -65,7 +65,7 @@ const InputWithActions = ({ placeholder, value, actions, readOnly = true }) => (
 export default function ListarSetores() {
     // Estados principais
     const [setores, setSetores] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     
     // Estados de filtros
@@ -97,7 +97,8 @@ export default function ListarSetores() {
 
             const params = {
                 page: currentPage - 1,
-                size: entriesPerPage
+                size: entriesPerPage,
+                sort: 'nome,asc'
             };
 
             if (searchTerm && searchTerm.trim() !== '') {
@@ -115,52 +116,10 @@ export default function ListarSetores() {
 
             const response = await setorService.buscarComFiltros(params);
 
-            if (response.data) {
-                if (response.data.content) {
-                    // Formato Spring Boot PageImpl
-                    setSetores(response.data.content);
-                    setTotalElements(response.data.totalElements);
-                    setTotalPages(response.data.totalPages);
-                } else if (Array.isArray(response.data)) {
-                    // Formato array simples: filtrar e paginar manualmente
-                    const allSetores = response.data;
-
-                    // 1) Filtrar conforme os filtros atuais
-                    const filtered = allSetores.filter(setor => {
-                        if (searchTerm && !setor.nome.toLowerCase().includes(searchTerm.toLowerCase())) {
-                            return false;
-                        }
-                        if (empresaFiltro && setor.empresa?.id !== empresaFiltro.id) {
-                            return false;
-                        }
-                        if (unidadeFiltro && setor.unidadeOperacional?.id !== unidadeFiltro.id) {
-                            return false;
-                        }
-                        if (statusFiltro !== 'todos') {
-                            const st = statusFiltro === 'ativos' ? 'ATIVO' : 'INATIVO';
-                            if (setor.status !== st) return false;
-                        }
-                        return true;
-                    });
-
-                    const total = filtered.length;
-                    const pages = Math.ceil(total / entriesPerPage);
-                    const start = (currentPage - 1) * entriesPerPage;
-                    const end = start + entriesPerPage;
-                    const paginated = filtered.slice(start, end);
-
-                    setSetores(paginated);
-                    setTotalElements(total);
-                    setTotalPages(pages);
-
-
-                } else {
-                    // Caso não seja nenhum dos formatos esperados
-                    console.error('Formato de resposta inesperado:', response.data);
-                    setSetores([]);
-                    setTotalElements(0);
-                    setTotalPages(0);
-                }
+            if (response.data && response.data.content) {
+                setSetores(response.data.content);
+                setTotalElements(response.data.totalElements);
+                setTotalPages(response.data.totalPages);
             } else {
                 setSetores([]);
                 setTotalElements(0);
@@ -178,7 +137,13 @@ export default function ListarSetores() {
     };
 
     useEffect(() => {
-        fetchSetores();
+        if (unidadeFiltro) {
+            fetchSetores();
+        } else {
+            setSetores([]);
+            setTotalElements(0);
+            setTotalPages(0);
+        }
     }, [currentPage, entriesPerPage, searchTerm, empresaFiltro, unidadeFiltro, statusFiltro]);
 
     const handleSelectEmpresa = (empresa) => {
@@ -195,6 +160,7 @@ export default function ListarSetores() {
 
     const handleClearEmpresa = () => {
         setEmpresaFiltro(null);
+        setUnidadeFiltro(null);
         setCurrentPage(1);
     };
 
@@ -378,8 +344,9 @@ export default function ListarSetores() {
                                     <>
                                         <button 
                                             type="button" 
-                                            className="bg-green-500 text-white p-2.5 border border-green-500 hover:bg-green-600"
+                                            className="bg-green-500 text-white p-2.5 border border-green-500 hover:bg-green-600 disabled:bg-gray-400"
                                             onClick={() => setShowUnidadeModal(true)}
+                                            disabled={!empresaFiltro}
                                         >
                                             <Search size={18}/>
                                         </button>
@@ -401,24 +368,27 @@ export default function ListarSetores() {
                         <input
                             type="text"
                             placeholder="Procure por algum registro..."
-                            className="w-full sm:flex-grow pl-4 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full sm:flex-grow pl-4 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
                             value={searchTerm}
                             onChange={handleSearchChange}
+                            disabled={!unidadeFiltro}
                         />
                         <div className='flex w-full sm:w-auto gap-2'>
                             <select 
-                                className="w-full sm:w-auto border border-gray-300 rounded-md px-3 py-2 focus:outline-none"
+                                className="w-full sm:w-auto border border-gray-300 rounded-md px-3 py-2 focus:outline-none disabled:bg-gray-100"
                                 value={statusFiltro}
                                 onChange={handleStatusChange}
+                                disabled={!unidadeFiltro}
                             >
                                 <option value="todos">Todos</option>
                                 <option value="ativos">Ativos</option>
                                 <option value="inativos">Inativos</option>
                             </select>
                             <select
-                                className="w-full sm:w-auto border border-gray-300 rounded-md px-3 py-2 focus:outline-none"
+                                className="w-full sm:w-auto border border-gray-300 rounded-md px-3 py-2 focus:outline-none disabled:bg-gray-100"
                                 value={entriesPerPage}
                                 onChange={handleEntriesPerPageChange}
+                                disabled={!unidadeFiltro}
                             >
                                 <option value="5">5</option>
                                 <option value="10">10</option>
@@ -459,7 +429,7 @@ export default function ListarSetores() {
                                             </div>
                                         </td>
                                     </tr>
-                                ) : setores.length > 0 ? (
+                                ) : totalElements > 0 ? (
                                     setores.map((setor, index) => {
                                         const setorFormatado = formatarSetor(setor);
                                         return (
@@ -501,7 +471,7 @@ export default function ListarSetores() {
                                 ) : (
                                     <tr>
                                         <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
-                                            Nenhum registro encontrado!
+                                            {unidadeFiltro ? 'Nenhum registro encontrado!' : 'Selecione uma empresa e uma unidade operacional para listar os setores.'}
                                         </td>
                                     </tr>
                                 )}

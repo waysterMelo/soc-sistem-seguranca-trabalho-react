@@ -46,7 +46,7 @@ const pcmsoService = {
     return response.data;
   },
 
-  async getPcmsos(page = 0, size = 5, sort = 'id,desc', empresaId, unidadeId, status) {
+  async getPcmsos(page = 0, size = 5, sort = 'id,desc', empresaId, unidadeOperacionalId, status) {
         try {
             const params = {
                 page,
@@ -54,7 +54,7 @@ const pcmsoService = {
                 sort,
             };
             if (empresaId) params.empresaId = empresaId;
-            if (unidadeId) params.unidadeId = unidadeId;
+            if (unidadeOperacionalId) params.unidadeOperacionalId = unidadeOperacionalId;
             if (status) params.status = status;
 
             const response = await apiService.get('/pcmso', { params });

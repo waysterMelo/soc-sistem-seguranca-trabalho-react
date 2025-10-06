@@ -8,6 +8,7 @@ const SetorSearchModal = ({
   onSelect, 
   onSelectMultiple, 
   empresaId, 
+  unidadeOperacionalId,
   multiSelect = false 
 }) => {
   // Estados
@@ -39,6 +40,7 @@ const SetorSearchModal = ({
       // Parâmetros para a requisição
       const params = {
         empresaId: empresaId,
+        unidadeOperacionalId: unidadeOperacionalId,
         page: currentPage - 1,
         size: entriesPerPage
       };
@@ -47,6 +49,9 @@ const SetorSearchModal = ({
       if (searchTerm && searchTerm.trim() !== '') {
         params.nome = searchTerm.trim();
       }
+      
+      // Limpa parâmetros nulos
+      Object.keys(params).forEach(key => params[key] == null && delete params[key]);
 
       // Fazer a requisição
       const response = await setorService.buscarComFiltros(params);
@@ -58,7 +63,7 @@ const SetorSearchModal = ({
         setTotalPages(response.data.totalPages || 0);
 
         if (response.data.content.length === 0) {
-          setError("Nenhum setor encontrado para esta empresa");
+          setError("Nenhum setor encontrado para os filtros aplicados.");
         }
       } else {
         console.error('Formato de resposta inesperado ou vazio:', response);
@@ -82,7 +87,7 @@ const SetorSearchModal = ({
     } finally {
       setLoading(false);
     }
-  }, [empresaId, currentPage, entriesPerPage, searchTerm]);
+  }, [empresaId, unidadeOperacionalId, currentPage, entriesPerPage, searchTerm]);
 
   useEffect(() => {
     if (isOpen && empresaId) {

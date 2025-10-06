@@ -25,16 +25,21 @@ class PgrService {
         }
     }
 
-    async getPgrsByEmpresaId(empresaId, page = 0, size = 5, nome = '', status = 'ATIVO', sort) { 
+    async getPgrsByEmpresaId(empresaId, page = 0, size = 5, nome = '', status = 'ATIVO', sort, unidadeId = null) {
         try {
-            const params = { 
+            const params = {
                 page,
                 size,
                 sort: sort || 'id,desc',
                 nome,
-                status: status || undefined ,
+                status: status || undefined,
+                unidadeId: unidadeId || undefined,
             };
-            const response = await this.api.get(`${this.endpoint}/empresa/${empresaId}/status-filter`, { params });
+
+            // Clean up undefined/null params to avoid sending them in the query
+            Object.keys(params).forEach(key => (params[key] === undefined || params[key] === null) && delete params[key]);
+
+            const response = await this.api.get(`${this.endpoint}/empresa/${empresaId}`, { params });
             return response.data;
         } catch (error) {
             console.error(`Erro ao buscar PGRs para a empresa ${empresaId}:`, error);

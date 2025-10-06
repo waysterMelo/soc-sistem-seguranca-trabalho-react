@@ -71,19 +71,20 @@ const ltipService = {
         }
   },
 
-  async getLtipsByFilters(empresaId, funcaoId, setorId = null, page = 0, size = 10) {
+  async getLtipsByFilters(empresaId, funcaoId = null, setorId = null, unidadeOperacionalId = null, page = 0, size = 10) {
         try {
             const params = {
                 empresaId,
                 funcaoId,
+                setorId,
+                unidadeOperacionalId,
                 page,
                 size,
                 sort: 'id,desc'
             };
 
-            if (setorId) {
-                params.setorId = setorId;
-            }
+            // Remove null or undefined filters
+            Object.keys(params).forEach(key => (params[key] == null) && delete params[key]);
 
             const response = await apiService.get('/ltip', { params });
             return response.data;

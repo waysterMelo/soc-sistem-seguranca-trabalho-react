@@ -46,13 +46,17 @@ const ltcatService = {
     return response.data;
   },
 
-  async getLtcats(page = 0, size = 5) {
+  async getLtcats(page = 0, size = 5, filters = {}) {
         try {
             const params = {
                 page,
                 size,
                 sort: 'id,desc',
+                ...filters,
             };
+            
+            Object.keys(params).forEach(key => (params[key] == null) && delete params[key]);
+
             const response = await apiService.get('/ltcat', { params });
             return response.data;
         } catch (error) {

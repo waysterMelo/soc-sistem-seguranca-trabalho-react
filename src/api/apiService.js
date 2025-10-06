@@ -4,6 +4,20 @@ import {toast} from "react-toastify";
 
 const api = axios.create({
     baseURL: import.meta.env.VITE_API_BASE_URL,
+    paramsSerializer: (params) => {
+        const searchParams = new URLSearchParams();
+        for (const key of Object.keys(params)) {
+            const value = params[key];
+            if (Array.isArray(value)) {
+                if (value.length > 0) {
+                    searchParams.append(key, value.join(','));
+                }
+            } else if (value !== null && value !== undefined && value !== '') {
+                searchParams.append(key, value);
+            }
+        }
+        return searchParams.toString();
+    },
 });
 
 api.interceptors.response.use(

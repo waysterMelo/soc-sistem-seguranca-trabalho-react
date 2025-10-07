@@ -201,12 +201,12 @@ export default function ListarCAT() {
     const navigate = useNavigate();
 
     // Estados principais
-    const [cats, setCats] = useState([]);
+    const [allCats, setAllCats] = useState([]); // Armazena todas as CATs buscadas
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [hasSearched, setHasSearched] = useState(false);
 
-    // Estados de paginação
+    // Estados de paginação (agora client-side)
     const [currentPage, setCurrentPage] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
     const [totalElements, setTotalElements] = useState(0);
@@ -238,55 +238,19 @@ export default function ListarCAT() {
     const [errorMessage, setErrorMessage] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
 
-    const fetchCats = async (page = 0, size = 10, filters = {}) => {
-        setLoading(true);
-        setError('');
-        try {
-            const response = await catService.getCats(page, size, filters);
-            if (response && response.content) {
-                setCats(response.content);
-                setCurrentPage(response.number || 0);
-                setTotalPages(response.totalPages || 0);
-                setTotalElements(response.totalElements || 0);
-            } else {
-                setCats([]);
-                setCurrentPage(0);
-                setTotalPages(0);
-                setTotalElements(0);
-            }
-        } catch (err) {
-            console.error('Erro ao buscar CATs:', err);
-            setError('Erro ao carregar lista de CATs. Tente novamente.');
-            setCats([]);
-        } finally {
-            setLoading(false);
-        }
-    };
-
     const fetchFuncionarios = async (setorId, page = 0, size = 10) => {
         if (!setorId) {
             setFuncionarios([]);
-            setFuncionariosCurrentPage(0);
-            setFuncionariosTotalPages(0);
-            setFuncionariosTotalElements(0);
             return;
         }
-
         setLoadingFuncionarios(true);
         try {
             const response = await funcionarioService.buscarFuncionariosPorSetor(setorId, { page, size, sort: 'nome,asc' });
-            if (response && response.data) {
-                if (Array.isArray(response.data.content)) {
-                    setFuncionarios(response.data.content);
-                    setFuncionariosCurrentPage(response.data.number || 0);
-                    setFuncionariosTotalPages(response.data.totalPages || 0);
-                    setFuncionariosTotalElements(response.data.totalElements || 0);
-                } else {
-                    setFuncionarios([]);
-                    setFuncionariosCurrentPage(0);
-                    setFuncionariosTotalPages(0);
-                    setFuncionariosTotalElements(0);
-                }
+            if (response?.data?.content) {
+                setFuncionarios(response.data.content);
+                setFuncionariosCurrentPage(response.data.number || 0);
+                setFuncionariosTotalPages(response.data.totalPages || 0);
+                setFuncionariosTotalElements(response.data.totalElements || 0);
             }
         } catch (error) {
             console.error('Erro ao buscar funcionários:', error);
@@ -299,7 +263,6 @@ export default function ListarCAT() {
     useEffect(() => {
         if (selectedSetor) {
             setSelectedFuncionarios([]);
-            setFuncionariosCurrentPage(0);
             fetchFuncionarios(selectedSetor.id, 0, funcionariosPageSize);
         } else {
             setFuncionarios([]);
@@ -308,53 +271,68 @@ export default function ListarCAT() {
     }, [selectedSetor, funcionariosPageSize]);
 
     useEffect(() => {
-        if (selectedFuncionarios.length === 0) {
-            setCats([]);
-            setCurrentPage(0);
-            setTotalPages(0);
-            setTotalElements(0);
-            setHasSearched(false);
-            return;
-        }
+        const fetchCatsForSelected = async () => {
+            if (selectedFuncionarios.length === 0) {
+                setAllCats([]);
+                setHasSearched(false);
+                return;
+            }
 
-        const filters = {
-            funcionarioIds: selectedFuncionarios.map(f => f.id),
-            empresaId: selectedEmpresa?.id,
-            setorId: selectedSetor?.id,
+            setLoading(true);
+            setError('');
+            setHasSearched(true);
+
+            try {
+                const promises = selectedFuncionarios.map(func =>
+                    catService.getCatsByFuncionario(func.id, 0, 1000) // Fetch all CATs per employee
+                );
+
+                const results = await Promise.all(promises);
+                const allCatsResult = results.flatMap(response => response.content || []);
+                const uniqueCats = Array.from(new Map(allCatsResult.map(cat => [cat.id, cat])).values());
+                uniqueCats.sort((a, b) => new Date(b.dataAcidente) - new Date(a.dataAcidente));
+
+                setAllCats(uniqueCats);
+
+            } catch (err) {
+                console.error('Erro ao buscar CATs dos funcionários:', err);
+                setError('Erro ao carregar a lista de CATs. Tente novamente.');
+                setAllCats([]);
+            } finally {
+                setLoading(false);
+            }
         };
 
-        if (searchTerm.trim()) {
-            filters.search = searchTerm.trim();
-        }
+        fetchCatsForSelected();
+    }, [selectedFuncionarios]);
+    
+    // Client-side filtering and pagination
+    const filteredCats = allCats.filter(cat => 
+        (cat.acidentado?.nome.toLowerCase() + ' ' + cat.acidentado?.sobrenome.toLowerCase()).includes(searchTerm.toLowerCase())
+    );
 
-        setHasSearched(true);
-        fetchCats(0, pageSize, filters);
+    useEffect(() => {
+        setTotalElements(filteredCats.length);
+        setTotalPages(Math.ceil(filteredCats.length / pageSize));
+        setCurrentPage(0);
+    }, [filteredCats.length, pageSize]);
 
-    }, [selectedFuncionarios, pageSize, searchTerm, selectedEmpresa, selectedSetor]);
+    const paginatedCats = filteredCats.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
 
     const handleToggleFuncionario = (funcionario) => {
         setSelectedFuncionarios(prev => {
             const isSelected = prev.some(f => f.id === funcionario.id);
-            if (isSelected) {
-                return prev.filter(f => f.id !== funcionario.id);
-            } else {
-                return [...prev, funcionario];
-            }
+            return isSelected ? prev.filter(f => f.id !== funcionario.id) : [...prev, funcionario];
         });
     };
 
     const handleFuncionariosPageChange = (newPage) => {
-        if (selectedSetor) {
-            fetchFuncionarios(selectedSetor.id, newPage, funcionariosPageSize);
-        }
+        if (selectedSetor) fetchFuncionarios(selectedSetor.id, newPage, funcionariosPageSize);
     };
 
     const handleFuncionariosPageSizeChange = (newSize) => {
         setFuncionariosPageSize(newSize);
-        setFuncionariosCurrentPage(0);
-        if (selectedSetor) {
-            fetchFuncionarios(selectedSetor.id, 0, newSize);
-        }
+        if (selectedSetor) fetchFuncionarios(selectedSetor.id, 0, newSize);
     };
 
     const clearFilters = () => {
@@ -363,11 +341,6 @@ export default function ListarCAT() {
         setSelectedUnidade(null);
         setSelectedSetor(null);
         setSelectedFuncionarios([]);
-        setCats([]);
-        setCurrentPage(0);
-        setTotalPages(0);
-        setTotalElements(0);
-        setHasSearched(false);
     };
 
     const handlePageChange = (newPage) => setCurrentPage(newPage);
@@ -375,10 +348,7 @@ export default function ListarCAT() {
 
     const formatDate = (dateString) => {
         if (!dateString) return '-';
-        try {
-            const date = new Date(dateString);
-            return date.toLocaleDateString('pt-BR');
-        } catch { return dateString; }
+        try { return new Date(dateString).toLocaleDateString('pt-BR'); } catch { return dateString; }
     };
 
     const formatTipoCat = (tipo) => {
@@ -398,9 +368,7 @@ export default function ListarCAT() {
             setShowDeleteModal(false);
             setSuccessMessage('CAT excluída com sucesso!');
             setShowSuccessModal(true);
-            if (selectedFuncionarios.length > 0) {
-                setSelectedFuncionarios([...selectedFuncionarios]);
-            }
+            setSelectedFuncionarios([...selectedFuncionarios]); // Trigger reload
             setTimeout(() => setShowSuccessModal(false), 2000);
         } catch (error) {
             setShowDeleteModal(false);
@@ -417,9 +385,7 @@ export default function ListarCAT() {
             setShowErrorModal(false);
             setSuccessMessage('CAT inativada com sucesso!');
             setShowSuccessModal(true);
-            if (selectedFuncionarios.length > 0) {
-                setSelectedFuncionarios([...selectedFuncionarios]);
-            }
+            setSelectedFuncionarios([...selectedFuncionarios]); // Trigger reload
             setTimeout(() => setShowSuccessModal(false), 2000);
         } catch (error) {
             setErrorMessage(`Erro ao inativar CAT: ${error.message}`);
@@ -459,7 +425,6 @@ export default function ListarCAT() {
                                     placeholder="Clique para selecionar empresa..."
                                     value={selectedEmpresa ? `${selectedEmpresa.razaoSocial}` : ''}
                                     onClick={() => setIsEmpresaModalOpen(true)}
-                                    disabled={true}
                                     actions={<>
                                         <button type="button" onClick={() => setIsEmpresaModalOpen(true)} className="p-2.5 text-white bg-blue-600 hover:bg-blue-700 rounded-l-md"><Search size={18}/></button>
                                         <button type="button" onClick={clearFilters} className="p-2.5 text-white bg-red-500 hover:bg-red-600 rounded-r-md"><X size={18}/></button>
@@ -521,7 +486,7 @@ export default function ListarCAT() {
                         {selectedFuncionarios.length > 0 && <div className="flex items-center p-4 bg-blue-50 border-blue-200 rounded-lg"><CheckCircle size={20} className="text-blue-600 mr-3" /><p className="text-blue-800 text-sm"><strong>✓ CATs carregadas!</strong> Visualizando as CATs de {selectedFuncionarios.length} funcionário(s) selecionado(s).</p></div>}
                     </div>
 
-                    {cats.length > 0 && (
+                    {loading ? <LoadingSpinner /> : error ? <ErrorState message={error} onRetry={() => setSelectedFuncionarios([...selectedFuncionarios])} /> : paginatedCats.length === 0 ? <EmptyState hasSearched={hasSearched} /> : (
                         <div className="overflow-x-auto">
                             <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-gray-50">
@@ -536,7 +501,7 @@ export default function ListarCAT() {
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
-                                    {cats.map((cat) => (
+                                    {paginatedCats.map((cat) => (
                                         <tr key={cat.id} className="hover:bg-gray-50">
                                             <td className="px-6 py-4">#{cat.id}</td>
                                             <td className="px-6 py-4">{cat.acidentado?.nome} {cat.acidentado?.sobrenome}</td>
@@ -551,10 +516,6 @@ export default function ListarCAT() {
                             </table>
                         </div>
                     )}
-
-                    {!loading && !error && cats.length === 0 && <EmptyState hasSearched={hasSearched} />}
-                    {loading && <LoadingSpinner />}
-                    {error && <ErrorState message={error} onRetry={() => hasSearched && fetchCats(0, pageSize, { funcionarioIds: selectedFuncionarios.map(f => f.id) })} />}
 
                     {!loading && !error && totalPages > 1 && (
                         <div className="flex justify-between items-center pt-4 border-t"><p className="text-sm">Mostrando {currentPage * pageSize + 1} a {Math.min((currentPage + 1) * pageSize, totalElements)} de {totalElements}</p><div><button onClick={() => handlePageChange(0)} disabled={currentPage === 0}>First</button><button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 0}>Prev</button><span>{currentPage + 1}</span><button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages - 1}>Next</button><button onClick={() => handlePageChange(totalPages - 1)} disabled={currentPage === totalPages - 1}>Last</button></div></div>

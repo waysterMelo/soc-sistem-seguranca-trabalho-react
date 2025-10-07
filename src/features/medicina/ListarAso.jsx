@@ -177,9 +177,19 @@ export default function ListarAso() {
         closeModal('setor');
     };
 
-    const handleFuncionarioSelect = (funcionario) => {
-        setSelectedFuncionario(funcionario);
-        setPagination(prev => ({ ...prev, page: 0 }));
+    const handleFuncionarioSelect = async (funcionario) => {
+        // Ao selecionar um funcionário, busca os dados completos dele para evitar erros de entidade não encontrada no backend
+        setLoading(true);
+        try {
+            const response = await funcionarioService.getById(funcionario.id);
+            setSelectedFuncionario(response.data);
+            setPagination(prev => ({ ...prev, page: 0 }));
+        } catch (error) {
+            toast.error("Erro ao carregar os detalhes do funcionário.");
+            setSelectedFuncionario(null);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleClearEmpresa = () => {

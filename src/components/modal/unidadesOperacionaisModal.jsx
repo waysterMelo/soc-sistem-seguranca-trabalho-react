@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Search, X, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { Search, X, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Loader2, Building2, MapPin, AlertCircle } from "lucide-react";
 import { unidadeService } from "../../api/services/cadastros/serviceUnidadeOperacional.js";
 import api from "../../api/apiService.js";
 
@@ -191,69 +191,91 @@ const UnidadesOperacionaisModal = ({ isOpen, onClose, onSelect, empresaId = 1 })
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-xl max-w-5xl w-full mx-4 max-h-[90vh] overflow-hidden">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 animate-fadeIn">
+            <div className="bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col animate-slideUp">
                 {/* Header do Modal */}
-                <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                    <h2 className="text-2xl font-semibold text-gray-800">
-                        Selecionar Unidade Operacional
-                    </h2>
+                <div className="flex items-center justify-between px-6 py-5 border-b border-gray-200 bg-gradient-to-r from-blue-50 via-white to-blue-50">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-blue-100 rounded-lg">
+                            <Building2 className="text-blue-600" size={24} />
+                        </div>
+                        <div>
+                            <h2 className="text-2xl font-bold text-gray-800">
+                                Selecionar Unidade Operacional
+                            </h2>
+                            <p className="text-sm text-gray-600 mt-0.5">Escolha uma unidade da lista abaixo</p>
+                        </div>
+                    </div>
                     <button
                         onClick={onClose}
-                        className="text-gray-400 hover:text-gray-600 transition-colors"
+                        className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-2 rounded-lg transition-all"
+                        aria-label="Fechar modal"
                     >
                         <X size={24} />
                     </button>
                 </div>
 
                 {/* Conteúdo do Modal */}
-                <div className="p-6">
+                <div className="p-6 flex-1 flex flex-col overflow-hidden">
                     {/* Campo de Pesquisa */}
-                    <form onSubmit={handleSearch} className="mb-6">
+                    <form onSubmit={handleSearch} className="mb-5">
                         <div className="relative">
+                            <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                             <input
                                 type="text"
-                                placeholder="Pesquisar por nome..."
+                                placeholder="Digite o nome da unidade operacional..."
                                 value={searchTerm}
                                 onChange={handleSearchChange}
-                                className="w-full py-3 px-4 pl-12 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                className="w-full py-3 px-4 pl-12 pr-32 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm transition-all"
+                                autoFocus
                             />
-                            <Search size={20} className="absolute left-4 top-3.5 text-gray-400" />
                             {searchTerm && (
                                 <button 
                                     type="button"
                                     onClick={handleClearSearch}
-                                    className="absolute right-24 top-3 text-gray-400 hover:text-gray-600"
+                                    className="absolute right-28 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
+                                    title="Limpar busca"
                                 >
-                                    <X size={20} />
+                                    <X size={18} />
                                 </button>
                             )}
                             <button 
                                 type="submit"
-                                className="absolute right-3 top-2 bg-blue-600 text-white px-4 py-1.5 rounded-md hover:bg-blue-700"
+                                className="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 font-medium shadow-sm transition-all"
                             >
                                 Buscar
                             </button>
                         </div>
+                        {totalItems > 0 && (
+                            <div className="flex items-center gap-2 mt-3">
+                                <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-700">
+                                    <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                                    {totalItems} unidade(s) encontrada(s)
+                                </div>
+                            </div>
+                        )}
                     </form>
 
                     {/* Estado de carregamento */}
                     {loading && (
-                        <div className="flex items-center justify-center p-8">
-                            <Loader2 size={30} className="animate-spin text-blue-600" />
-                            <span className="ml-2 text-gray-600">Carregando unidades operacionais...</span>
+                        <div className="flex-1 flex items-center justify-center py-16">
+                            <div className="text-center">
+                                <Loader2 size={48} className="animate-spin text-blue-600 mx-auto mb-4" />
+                                <p className="text-gray-600 font-medium">Carregando unidades operacionais...</p>
+                                <p className="text-gray-500 text-sm mt-1">Aguarde um momento</p>
+                            </div>
                         </div>
                     )}
 
                     {/* Mensagem de erro */}
-                    {error && (
-                        <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
-                            <div className="flex">
+                    {error && !loading && (
+                        <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg mb-4">
+                            <div className="flex items-start">
                                 <div className="flex-shrink-0">
-                                    <X className="h-5 w-5 text-red-500" />
+                                    <AlertCircle className="h-5 w-5 text-red-500" />
                                 </div>
                                 <div className="ml-3">
-                                    <p className="text-sm text-red-700">{error}</p>
+                                    <p className="text-sm text-red-700 font-medium">{error}</p>
                                 </div>
                             </div>
                         </div>
@@ -261,80 +283,108 @@ const UnidadesOperacionaisModal = ({ isOpen, onClose, onSelect, empresaId = 1 })
 
                     {/* Tabela de Unidades */}
                     {!loading && !error && (
-                        <div className="border border-gray-200 rounded-lg overflow-hidden">
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50">
-                                    <tr>
-                                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Nome
-                                        </th>
-                                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Local
-                                        </th>
-                                        <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Ação
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
-                                    {unidades.length > 0 ? (
-                                        unidades.map(unidade => (
-                                            <tr key={unidade.id} className="hover:bg-gray-50 transition-colors">
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                    {unidade.nome}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                    {unidade.endereco?.cidade || "N/A"}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-right">
-                                                    <button
-                                                        onClick={() => onSelect(unidade)}
-                                                        className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
-                                                    >
-                                                        Selecionar
-                                                    </button>
+                        <div className="flex-1 overflow-hidden rounded-lg border border-gray-200 shadow-sm">
+                            <div className="overflow-y-auto max-h-[400px]">
+                                <table className="min-w-full bg-white">
+                                    <thead className="bg-gradient-to-r from-gray-50 to-gray-100 sticky top-0 z-10">
+                                        <tr>
+                                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">
+                                                Nome da Unidade
+                                            </th>
+                                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200">
+                                                Localização
+                                            </th>
+                                            <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-b-2 border-gray-200 w-32">
+                                                Ação
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-200">
+                                        {unidades.length > 0 ? (
+                                            unidades.map(unidade => (
+                                                <tr key={unidade.id} className="hover:bg-blue-50 transition-colors duration-150 group">
+                                                    <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                                                        <div className="flex items-center gap-2">
+                                                            <Building2 size={16} className="text-blue-600" />
+                                                            {unidade.nome}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-sm text-gray-600">
+                                                        <div className="flex items-center gap-2">
+                                                            <MapPin size={14} className="text-gray-400" />
+                                                            {unidade.endereco?.cidade || "N/A"}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-center">
+                                                        <button
+                                                            onClick={() => onSelect(unidade)}
+                                                            className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-all shadow-sm hover:shadow-md group-hover:scale-105"
+                                                        >
+                                                            Selecionar
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        ) : (
+                                            <tr>
+                                                <td colSpan="3" className="py-16">
+                                                    <div className="flex flex-col items-center justify-center text-gray-500">
+                                                        <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
+                                                            <Building2 size={32} className="text-gray-400" />
+                                                        </div>
+                                                        <p className="font-semibold text-lg text-gray-700">
+                                                            {searchTerm ? 
+                                                                'Nenhuma unidade encontrada' : 
+                                                                'Nenhuma unidade disponível'}
+                                                        </p>
+                                                        <p className="text-sm mt-2">
+                                                            {searchTerm 
+                                                                ? `Não encontramos resultados para "${searchTerm}"` 
+                                                                : 'Não há unidades operacionais cadastradas no momento'}
+                                                        </p>
+                                                    </div>
                                                 </td>
                                             </tr>
-                                        ))
-                                    ) : (
-                                        <tr>
-                                            <td colSpan="3" className="px-6 py-8 text-center text-gray-500">
-                                                {searchTerm ? 
-                                                    'Nenhuma unidade operacional encontrada para essa busca' : 
-                                                    'Nenhuma unidade operacional disponível'
-                                                }
-                                            </td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     )}
 
                     {/* Paginação */}
                     {!loading && !error && totalPages > 1 && (
-                        <div className="flex items-center justify-between mt-6">
-                            <div className="text-sm text-gray-700">
-                                Mostrando {currentPage * pageSize + 1} a {Math.min((currentPage + 1) * pageSize, totalItems)} de {totalItems} resultados
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-5 pt-4 border-t border-gray-200">
+                            <div className="text-sm text-gray-600 font-medium">
+                                Mostrando <span className="text-blue-600 font-bold">{currentPage * pageSize + 1}</span> a <span className="text-blue-600 font-bold">{Math.min((currentPage + 1) * pageSize, totalItems)}</span> de <span className="text-blue-600 font-bold">{totalItems}</span> resultados
                             </div>
                             
-                            <div className="flex items-center space-x-2">
+                            <div className="flex items-center space-x-1">
+                                <button
+                                    onClick={() => handlePageChange(0)}
+                                    disabled={currentPage === 0}
+                                    className="p-2 rounded-lg hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-md"
+                                    title="Primeira página"
+                                >
+                                    <ChevronsLeft size={18} className="text-gray-600" />
+                                </button>
                                 <button
                                     onClick={handlePreviousPage}
                                     disabled={currentPage === 0}
-                                    className="px-3 py-2 rounded-md border border-gray-300 text-sm font-medium text-gray-500 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="p-2 rounded-lg hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-md"
+                                    title="Página anterior"
                                 >
-                                    <ChevronLeft size={16} />
+                                    <ChevronLeft size={18} className="text-gray-600" />
                                 </button>
                                 
                                 {getPageNumbers().map(page => (
                                     <button
                                         key={page}
                                         onClick={() => handlePageChange(page)}
-                                        className={`px-3 py-2 rounded-md text-sm font-medium ${
+                                        className={`min-w-[40px] px-3 py-2 text-sm font-semibold rounded-lg transition-all ${
                                             currentPage === page
-                                                ? 'bg-blue-600 text-white'
-                                                : 'border border-gray-300 text-gray-500 bg-white hover:bg-gray-50'
+                                                ? 'bg-blue-600 text-white shadow-md'
+                                                : 'bg-white text-gray-700 hover:bg-gray-100 shadow-sm'
                                         }`}
                                     >
                                         {page + 1}
@@ -344,9 +394,18 @@ const UnidadesOperacionaisModal = ({ isOpen, onClose, onSelect, empresaId = 1 })
                                 <button
                                     onClick={handleNextPage}
                                     disabled={currentPage === totalPages - 1}
-                                    className="px-3 py-2 rounded-md border border-gray-300 text-sm font-medium text-gray-500 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="p-2 rounded-lg hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-md"
+                                    title="Próxima página"
                                 >
-                                    <ChevronRight size={16} />
+                                    <ChevronRight size={18} className="text-gray-600" />
+                                </button>
+                                <button
+                                    onClick={() => handlePageChange(totalPages - 1)}
+                                    disabled={currentPage === totalPages - 1}
+                                    className="p-2 rounded-lg hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-md"
+                                    title="Última página"
+                                >
+                                    <ChevronsRight size={18} className="text-gray-600" />
                                 </button>
                             </div>
                         </div>
@@ -354,10 +413,10 @@ const UnidadesOperacionaisModal = ({ isOpen, onClose, onSelect, empresaId = 1 })
                 </div>
 
                 {/* Footer do Modal */}
-                <div className="flex justify-end gap-4 p-6 border-t border-gray-200 bg-gray-50">
+                <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-gray-50">
                     <button
                         onClick={onClose}
-                        className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 font-medium hover:bg-gray-100 transition-colors"
+                        className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-100 transition-colors shadow-sm"
                     >
                         Cancelar
                     </button>

@@ -515,13 +515,7 @@ export default function ListarAso() {
                                                                 >
                                                                     <Edit size={18} />
                                                                 </button>
-                                                                <button
-                                                                    onClick={() => handlePrint(aso)}
-                                                                    className="text-gray-600 hover:text-gray-800 transition-colors"
-                                                                    title="Imprimir ASO"
-                                                                >
-                                                                    <Printer size={18} />
-                                                                </button>
+                                                            
                                                                 <button
                                                                     onClick={() => handleDelete(aso)}
                                                                     className="text-red-600 hover:text-red-800 transition-colors"

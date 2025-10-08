@@ -19,7 +19,7 @@ const SidebarContext = createContext();
 
 // --- Dados dos Itens do Menu (fornecidos por você) ---
 const menuItems = [
-    { name: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/dashboard' },
+    { name: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/' },
     {
         name: 'Cadastros',
         icon: <Building size={20} />,
@@ -54,6 +54,14 @@ const menuItems = [
             { name: 'Espirometria', path: 'medicina/espirometria' },
             { name: 'ASO', path: 'medicina/aso' },
             { name: 'Afastamento', path: 'medicina/afastamentos' }
+        ],
+    },
+    {
+        name: 'Configurações',
+        icon: <Settings size={20} />,
+        path: '/configuracoes',
+        subItems: [
+            { name: 'Usuários', path: '/configuracoes/admin/usuarios' },
         ],
     }
 ];

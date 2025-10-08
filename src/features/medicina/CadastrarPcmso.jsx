@@ -441,7 +441,6 @@ export default function CadastrarPcmso() {
         if (!selectedUnidade) erros.push("Unidade Operacional é obrigatória.");
         if (!selectedMedicoResponsavel) erros.push("Médico responsável é obrigatório.");
         if (!pcmsoFormData.dataDocumento) erros.push("Data do documento é obrigatória.");
-        if (!pcmsoFormData.dataVencimento) erros.push("Data de vencimento é obrigatória.");
 
         if (erros.length > 0) {
             erros.forEach(msg => toast.warning(msg));
@@ -488,7 +487,6 @@ export default function CadastrarPcmso() {
                 elaboradoresIds: selectedElaboradores.map(e => e.id),
                 status: pcmsoFormData.status,
                 dataDocumento: pcmsoFormData.dataDocumento,
-                dataVencimento: pcmsoFormData.dataVencimento,
                 introducao: pcmsoFormData.introducao,
                 sobrePcmso: pcmsoFormData.sobrePcmso,
                 conclusao: pcmsoFormData.conclusao,
@@ -618,16 +616,7 @@ export default function CadastrarPcmso() {
                                 className="mt-1 w-full py-2 px-3 border border-gray-300 rounded-md"
                             />
                         </div>
-                        <div>
-                            <label className="text-sm font-medium text-gray-600">Data de Vencimento *</label>
-                            <input
-                                type="date"
-                                name="dataVencimento"
-                                value={pcmsoFormData.dataVencimento}
-                                onChange={handleInputChange}
-                                className="mt-1 w-full py-2 px-3 border border-gray-300 rounded-md"
-                            />
-                        </div>
+                      
                         <div>
                             <label className="text-sm font-medium text-gray-600">Médico Responsável *</label>
                             <InputWithActions

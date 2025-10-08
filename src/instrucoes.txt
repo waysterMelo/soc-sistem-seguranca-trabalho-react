@@ -1,110 +1,136 @@
-alterarStatusFuncionario
-: 
-true
-cid
-: 
-{id: 12452, codigo: 'A000', descricao: 'Cólera devida a Vibrio cholerae 01, biótipo cholerae'}
-cnpj
-: 
-"12345678000199"
-dataFim
-: 
-"2025-10-06"
-dataInicio
-: 
-"2025-10-06"
-emitente
-: 
-cboId
-: 
-7065
-cboNomeOcupacao
-: 
-"Abade"
-conselho
-: 
-"CRM"
-cpf
-: 
-"52998224725"
-email
-: 
-"waystermelo@gmail.com"
-endereco
-: 
-{id: 92, cep: '32720000', cidade: 'MATOZINHOS', estado: 'MG', logradouro: 'RUA MARGINAL', …}
-estadoConselho
-: 
-"MG"
-id
-: 
-6
-nis
-: 
-"23423423423"
-nome
-: 
-"ANDRE"
-numeroInscricaoConselho
-: 
-"234234324234"
-orgaoEmissorRg
-: 
-"SSP"
-rg
-: 
-"18320073"
-sexo
-: 
-"MASCULINO"
-sobrenome
-: 
-"SILVA"
-status
-: 
-"ATIVO"
-telefone1
-: 
-"31996152559"
-telefone2
-: 
-"31313416584"
-[[Prototype]]
-: 
-Object
-exibirCpfAtestado
-: 
-true
-exibirRgAtestado
-: 
-false
-funcionario
-: 
-{id: 8, nome: 'WAYSTER', sobrenome: 'MELO', cpf: '119.824.196-95', rg: '18320073', …}
-id
-: 
-4
-mesmaDoenca60Dias
-: 
-false
-motivoAfastamento
-: 
-{id: 1, codigo: '1', descricao: 'Acidente/doença do trabalho'}
-numeroReciboEsocial
-: 
-"234324"
-observacao
-: 
-"ddsads"
-onusRemuneracao
-: 
-"EMPREGADOR"
-tipoAcidente
-: 
-"NAO_INFORMADO"
-tipoRetificacao
-: 
-"ORIGINAL"
-totalDias
-: 
-1
+# Instruções para o Backend - API Completa (v1)
+
+Olá equipe de backend,
+
+Este documento contém todas as especificações de API necessárias para que o frontend funcione 100%.
+
+---
+
+## 1. Módulo de Gerenciamento de Usuários
+
+### 1.1. Modelo de Dados: `Usuario`
+- **`id`**: `Integer` (PK)
+- **`nomeCompleto`**: `String`
+- **`email`**: `String` (Único)
+- **`senha`**: `String` (Armazenar com hash)
+- **`nivelAcesso`**: `String` (Enum: `'ADMINISTRADOR'`, `'USUARIO_PADRAO'`)
+- **`status`**: `String` (Enum: `'ATIVO'`, `'INATIVO'`)
+- **`empresaId`**: `Integer` (FK para `empresas`, nulo)
+
+### 1.2. Endpoints: `/usuarios`
+- **`GET /usuarios`**: Lista paginada de usuários. Aceita query params `page`, `size`, e `search`.
+  - **Resposta:** Objeto de paginação `{ content: [], totalPages, totalElements, ... }`.
+- **`GET /usuarios/:id`**: Busca um usuário.
+- **`POST /usuarios`**: Cria um usuário.
+- **`PUT /usuarios/:id`**: Atualiza um usuário.
+- **`DELETE /usuarios/:id`**: Deleta um usuário.
+
+---
+
+## 2. Módulo do Dashboard
+
+### 2.1. Endpoint: Próximos Exames ASO a Vencer
+- **Objetivo:** Alimentar o card "Próximos Exames Periódicos (ASO)".
+- **Método:** `GET`
+- **Endpoint:** `/dashboard/aso/proximos-vencimentos`
+- **Params:** `dias` (default 30), `limit` (default 5).
+- **Resposta:** Array de objetos `[{ id, funcionarioNome, dataVencimento }]`.
+
+### 2.2. Endpoint: Afastamentos Recentes
+- **Objetivo:** Alimentar o card "Afastamentos Recentes".
+- **Método:** `GET`
+- **Endpoint:** `/dashboard/afastamentos/recentes`
+- **Params:** `limit` (default 5).
+- **Resposta:** Array de objetos `[{ id, funcionarioNome, motivo, dataInicio, totalDias }]`.
+
+### 2.3. Endpoint: Status de Documentos
+- **Objetivo:** Alimentar o card "Vencimento de Documento".
+- **Método:** `GET`
+- **Endpoint:** `/dashboard/documentos-status`
+- **Params:** `limit` (default 3).
+- **Resposta:** Array de objetos `[{ id, tipo, responsavel, status, dataVencimento }]`. O `status` pode ser "Válido", "Vencido", "Atenção".
+
+### 2.4. Endpoint: Resumo de Empresas
+- **Objetivo:** Alimentar o gráfico de "Empresas".
+- **Método:** `GET`
+- **Endpoint:** `/dashboard/empresas-summary`
+- **Resposta:** Objeto com a contagem de empresas por status.
+  ```json
+  {
+    "ativo": 75,
+    "inativo": 15,
+    "revisao": 10
+  }
+  ```
+
+### 2.5. Endpoint: Resumo de ASOs Emitidos
+- **Objetivo:** Alimentar o gráfico de "ASOs Emitidos".
+- **Método:** `GET`
+- **Endpoint:** `/dashboard/asos-emitidos-summary`
+- **Params:** `periodo` (Enum: `'daily'`, `'weekly'`, `'monthly'`, `'yearly'`).
+- **Resposta:** Objeto com `labels` (array de strings) e `data` (array de números).
+  ```json
+  {
+    "labels": ["Jan", "Fev", "Mar", ...],
+    "data": [3, 5, 4, ...]
+  }
+  ```
+
+### 2.6. Endpoint: Resumo de Riscos
+- **Objetivo:** Alimentar o gráfico de "Riscos Emitidos por Grupo".
+- **Método:** `GET`
+- **Endpoint:** `/dashboard/riscos-summary`
+- **Resposta:** Array de objetos, um para cada grupo de risco com seu total.
+  ```json
+  [
+    { "grupo": "Físicos", "total": 2 },
+    { "grupo": "Acidentes", "total": 2 },
+    { "grupo": "Químicos", "total": 5 }
+  ]
+  ```
+
+---
+
+## 3. Atualização do Backend - API do Dashboard Pronta
+
+Olá equipe de frontend,
+
+A implementação de todos os endpoints da API para o **Módulo do Dashboard** foi concluída. A API está pronta para ser integrada aos componentes visuais do dashboard.
+
+**Endpoints Disponíveis:**
+
+### **Próximos Exames ASO a Vencer**
+- **Endpoint:** `GET /dashboard/aso/proximos-vencimentos`
+- **Parâmetros:** `dias` (padrão: 30), `limit` (padrão: 5)
+- **Uso:** Alimenta o card "Próximos Exames Periódicos (ASO)".
+
+### **Afastamentos Recentes**
+- **Endpoint:** `GET /dashboard/afastamentos/recentes`
+- **Parâmetros:** `limit` (padrão: 5)
+- **Uso:** Alimenta o card "Afastamentos Recentes".
+
+### **Status de Documentos**
+- **Endpoint:** `GET /dashboard/documentos-status`
+- **Parâmetros:** `limit` (padrão: 3)
+- **Uso:** Alimenta o card "Vencimento de Documento" (inclui PGR, PCMSO, LTCAT).
+
+### **Resumo de Empresas**
+- **Endpoint:** `GET /dashboard/empresas-summary`
+- **Uso:** Alimenta o gráfico de "Empresas".
+
+### **Resumo de ASOs Emitidos**
+- **Endpoint:** `GET /dashboard/asos-emitidos-summary`
+- **Parâmetros:** `periodo` (Enum: `'daily'`, `'weekly'`, `'monthly'`, `'yearly'`, padrão: `'monthly'`)
+- **Uso:** Alimenta o gráfico de "ASOs Emitidos".
+
+### **Resumo de Riscos**
+- **Endpoint:** `GET /dashboard/riscos-summary`
+- **Uso:** Alimenta o gráfico de "Riscos Emitidos por Grupo".
+
+---
+
+**URL Base da API:** `VITE_API_BASE_URL`
+
+Qualquer dúvida, estamos à disposição.
+
+Obrigado!

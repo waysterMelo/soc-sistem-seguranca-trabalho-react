@@ -74,6 +74,16 @@ const asoService = {
         }
     },
 
+    getProximosVencimentos: async () => {
+        try {
+            const response = await apiService.get('/dashboard/aso/proximos-vencimentos');
+            return response.data;
+        } catch (error) {
+            console.error("Erro ao buscar próximos vencimentos de ASO:", error);
+            throw error;
+        }
+    },
+
     getAsosByFuncionario: async (funcionarioId, params) => {
         try {
             const response = await apiService.get(`/aso/funcionario/${funcionarioId}`, { params });

@@ -7,9 +7,6 @@ import { toast } from 'react-toastify';
 import funcionariosService from '../../../api/services/cadastros/funcionariosServices.js';
 import { useNavigate, useParams } from 'react-router-dom';
 import EmpresaSearchModal from "../../../components/modal/empresaSearchModal.jsx";
-import empresasService from '../../../api/services/cadastros/serviceEmpresas.js';
-import funcoesService from '../../../api/services/cadastros/funcoesService.js';
-import setoresService from '../../../api/services/cadastros/serviceSetores.js';
 import FuncaoSearchModal from "../../../components/modal/funcaoSearchModal.jsx";
 import SetorSearchModal from "../../../components/modal/SetorSearchModal.jsx";
 
@@ -497,6 +494,7 @@ export default function EditarFuncionario() {
                             >
                                 <option value="ATIVO">Ativo</option>
                                 <option value="INATIVO">Inativo</option>
+                                <option value="AFASTADO">Afastado</option>
                             </select>
                         </FormField>
                     </FormSection>

@@ -603,7 +603,7 @@ export default function EditarPGR() {
             await pgrService.updatePgr(id, pgrData, capaFile);
             setShowSuccessModal(true);
             setTimeout(() => {
-                navigate("/seguranca/listar-pgr");
+                navigate("/seguranca/pgr");
             }, 1500);
         } catch (error) {
             setSaveError(error.message);

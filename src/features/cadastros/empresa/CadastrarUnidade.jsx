@@ -662,7 +662,7 @@ export default function CadastrarUnidade() {
                     <div className="flex justify-end space-x-4 mt-8">
                         <button 
                             type="button" 
-                            onClick={() => navigate('/cadastros/nova-unidade')}
+                            onClick={() => navigate('/cadastros/listar/unidades')}
                             className="bg-red-600 text-white px-8 py-2.5 rounded-md font-semibold hover:bg-red-700 transition-colors"
                         >
                             Cancelar

@@ -25,9 +25,11 @@ const CadastrosRoutes = (
     <>
         <Route path="cadastros/listar/empresas" element={<EmpresaListPage />} />
         <Route path="cadastros/nova-empresa" element={<CadastrarEmpresa />} />
-        <Route path="/cadastros/editar-empresa/:id" element={<EditarEmpresa />} />
+        <Route path="cadastros/editar-empresa/:id" element={<EditarEmpresa />} />
+
+        
         <Route path="cadastros/listar/unidades" element={<ListarUnidades />} />
-        <Route path="/cadastros/editar-unidade/:id" element={<EditarUnidade />} />
+        <Route path="cadastros/editar-unidade/:id" element={<EditarUnidade />} />
         <Route path="cadastros/nova-unidade" element={<CadastrarUnidade />} />
         <Route path="cadastros/listar/setores" element={<ListarSetores />} />
         <Route path="cadastros/novo-setor" element={<CadastrarSetor />} />
@@ -43,8 +45,8 @@ const CadastrosRoutes = (
         <Route path="cadastros/aparelhos" element={<ListarAparelhos />} />
         <Route path="cadastros/editar-funcionario/:id" element={<EditarFuncionario />} />
         <Route path="cadastros/editar/funcao/:id" element={<EditarFuncao />} />
-        <Route path="/cadastros/aparelhos" element={<ListarAparelhos />} />
-        <Route path="/cadastros/editar-aparelho/:id" element={<EditarAparelho />} />
+        <Route path="cadastros/aparelhos" element={<ListarAparelhos />} />
+        <Route path="cadastros/editar-aparelho/:id" element={<EditarAparelho />} />
     </>
 );
 

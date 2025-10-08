@@ -4,6 +4,7 @@ import DashboardPage from './features/dashboard/DashboardPage';
 import CadastrosRoutes from "./routes/cadastrosRoutes.jsx";
 import SegurancaRoutes from "./routes/segurancaRoutes.jsx";
 import MediciasRoutes from "./routes/medicinaRoutes.jsx";
+import configuracoesRoutes from "./routes/configuracoesRoutes.jsx";
 import {ToastContainer} from "react-toastify";
 
 
@@ -21,6 +22,7 @@ function App() {
                 {CadastrosRoutes}
                 {SegurancaRoutes}
                 {MediciasRoutes}
+                {configuracoesRoutes}
             </Route>
             <Route path="*" element={<NotFound />} />
         </Routes>

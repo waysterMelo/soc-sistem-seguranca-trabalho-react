@@ -1,1 +1,0 @@
-- sempre mostre seu plano de ação e aguarde meu ok para prosseguir.

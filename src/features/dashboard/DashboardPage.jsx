@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Doughnut, Line, Bar } from 'react-chartjs-2';
 import {
     Chart as ChartJS,
@@ -12,9 +12,13 @@ import {
     Tooltip,
     Legend,
 } from 'chart.js';
-import { Bell, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Bell, TrendingUp, Shield, Users, FileText, AlertTriangle, Calendar } from 'lucide-react';
+import ProximosExamesCard from './ProximosExamesCard.jsx';
+import AfastamentosRecentesCard from './AfastamentosRecentesCard.jsx';
+import DocumentosVencidosCard from './DocumentosVencidosCard.jsx';
+import { useState } from 'react';
+import dashboardService from '../../api/services/dashboardService.js';
 
-// Registra os componentes necessários do Chart.js para que os gráficos funcionem
 ChartJS.register(
     ArcElement,
     CategoryScale,
@@ -27,81 +31,191 @@ ChartJS.register(
     Legend
 );
 
-// --- Componentes dos Gráficos ---
-
-// Gráfico 1: Empresas (Rosca)
 const CompanyStatusChart = () => {
-    const data = {
-        labels: ['Ativo', 'Inativo', 'Revisão'],
-        datasets: [{
-            data: [75, 15, 10],
-            backgroundColor: ['#22c55e', '#f97316', '#eab308'],
-            borderColor: '#ffffff',
-            borderWidth: 4,
-            hoverOffset: 8,
-        }],
-    };
+    const [data, setData] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const response = await dashboardService.getEmpresasSummary();
+                const empresasData = response.data;
+                
+                setData({
+                    labels: ['Ativo', 'Inativo', 'Revisão'],
+                    datasets: [{
+                        data: [
+                            empresasData.ativo || 0,
+                            empresasData.inativo || 0,
+                            empresasData.revisao || 0  // Se não tiver revisão, será 0
+                        ],
+                        backgroundColor: ['#10b981', '#f59e0b', '#3b82f6'],
+                        borderColor: '#ffffff',
+                        borderWidth: 3,
+                        hoverOffset: 8,
+                    }],
+                });
+            } catch (error) {
+                console.error('Erro ao buscar dados das empresas:', error);
+                // Dados de fallback em caso de erro
+                setData({
+                    labels: ['Ativo', 'Inativo', 'Revisão'],
+                    datasets: [{
+                        data: [0, 0, 0],
+                        backgroundColor: ['#10b981', '#f59e0b', '#3b82f6'],
+                        borderColor: '#ffffff',
+                        borderWidth: 3,
+                        hoverOffset: 8,
+                    }],
+                });
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, []);
 
     const options = {
         responsive: true,
         maintainAspectRatio: false,
-        cutout: '70%',
+        cutout: '65%',
         plugins: {
             legend: {
                 position: 'bottom',
                 labels: {
                     usePointStyle: true,
                     pointStyle: 'circle',
-                    padding: 20,
-                    color: '#4b5563', // Cor do texto da legenda
+                    padding: 15,
+                    color: '#374151',
+                    font: { 
+                        size: window.innerWidth < 640 ? 10 : 12, 
+                        weight: '500' 
+                    }
                 },
             },
         },
     };
 
-    return <Doughnut data={data} options={options} />;
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-40">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+            </div>
+        );
+    }
+
+    return data ? <Doughnut data={data} options={options} /> : <div className="flex items-center justify-center h-40 text-gray-500">Sem dados</div>;
 };
 
-// Gráfico 2: ASOs Emitidos (Linha)
+
 const AsoChart = () => {
-    const data = {
-        labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul'],
-        datasets: [{
-            label: 'ASOs Emitidos',
-            data: [3, 5, 4, 7, 6, 8, 10],
-            borderColor: '#3b82f6',
-            backgroundColor: 'rgba(59, 130, 246, 0.1)',
-            fill: true,
-            tension: 0.4,
-        }],
-    };
+    const [data, setData] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [period, setPeriod] = useState('monthly');
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const response = await dashboardService.getAsosEmitidosSummary({ periodo: period });
+                const asoData = response.data;
+                
+                setData({
+                    labels: asoData.labels || ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul'],
+                    datasets: [{
+                        label: 'ASOs Emitidos',
+                        data: asoData.data || [0, 0, 0, 0, 0, 0, 0],
+                        borderColor: '#6366f1',
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: window.innerWidth < 640 ? 3 : 6,
+                        pointHoverRadius: window.innerWidth < 640 ? 5 : 8,
+                        pointBackgroundColor: '#6366f1',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                    }],
+                });
+            } catch (error) {
+                console.error('Erro ao buscar dados dos ASOs:', error);
+                // Dados de fallback em caso de erro
+                setData({
+                    labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul'],
+                    datasets: [{
+                        label: 'ASOs Emitidos',
+                        data: [0, 0, 0, 0, 0, 0, 0],
+                        borderColor: '#6366f1',
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: window.innerWidth < 640 ? 3 : 6,
+                        pointHoverRadius: window.innerWidth < 640 ? 5 : 8,
+                        pointBackgroundColor: '#6366f1',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                    }],
+                });
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, [period]); // Recarrega quando o período muda
+    
     const options = {
         responsive: true,
         maintainAspectRatio: false,
-        scales: { y: { beginAtZero: true } },
-        plugins: { legend: { display: false } },
+        scales: { 
+            y: { 
+                beginAtZero: true,
+                grid: { color: 'rgba(0,0,0,0.05)' },
+                ticks: { font: { size: window.innerWidth < 640 ? 10 : 12 } }
+            },
+            x: {
+                grid: { display: false },
+                ticks: { font: { size: window.innerWidth < 640 ? 10 : 12 } }
+            }
+        },
+        plugins: { 
+            legend: { display: false },
+            tooltip: { titleFont: { size: 12 }, bodyFont: { size: 11 } }
+        },
     };
-    return <Line data={data} options={options} />;
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-40">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+            </div>
+        );
+    }
+
+    return data ? <Line data={data} options={options} /> : (
+        <div className="flex items-center justify-center h-40 text-gray-500">
+            Sem dados disponíveis
+        </div>
+    );
 };
 
 
-// Gráfico 3: Riscos Emitidos por Grupo (Barra Horizontal Empilhada)
+// Gráfico 3: Riscos - Responsivo
 const RiskChart = () => {
     const data = {
-        labels: [''], // Rótulo vazio para uma única barra
+        labels: [''],
         datasets: [
             {
                 label: 'Físicos',
                 data: [2],
-                backgroundColor: '#22c55e',
-                barPercentage: 0.5,
+                backgroundColor: '#10b981',
+                barPercentage: 0.6,
                 categoryPercentage: 1.0
             },
             {
                 label: 'Acidentes',
                 data: [2],
                 backgroundColor: '#3b82f6',
-                barPercentage: 0.5,
+                barPercentage: 0.6,
                 categoryPercentage: 1.0
             }
         ]
@@ -116,33 +230,35 @@ const RiskChart = () => {
                 stacked: true,
                 grid: { display: false },
                 ticks: {
+                    font: { size: window.innerWidth < 640 ? 10 : 12 },
                     callback: function(value) {
-                        // Mostra apenas números inteiros
-                        if (Math.floor(value) === value) {
-                            return value;
-                        }
+                        if (Math.floor(value) === value) return value;
                     },
                 }
             },
             y: {
                 stacked: true,
                 grid: { display: false },
-                ticks: { display: false } // Oculta o rótulo do eixo y
+                ticks: { display: false }
             }
         },
         plugins: {
-            tooltip: {
-                callbacks: {
-                    title: () => null // Oculta o título da tooltip
-                }
+            tooltip: { 
+                callbacks: { title: () => null },
+                titleFont: { size: 12 }, 
+                bodyFont: { size: 11 } 
             },
             legend: {
                 position: 'bottom',
                 labels: {
                     usePointStyle: true,
                     pointStyle: 'circle',
-                    padding: 20,
-                    color: '#4b5563',
+                    padding: window.innerWidth < 640 ? 15 : 20,
+                    color: '#374151',
+                    font: { 
+                        size: window.innerWidth < 640 ? 10 : 12, 
+                        weight: '500' 
+                    }
                 }
             }
         }
@@ -151,157 +267,177 @@ const RiskChart = () => {
     return <Bar data={data} options={options} />;
 };
 
-
-// Gráfico 4: Evento eSocial S-2210 (Linha)
-const EsocialChart = () => {
-    const data = {
-        labels: ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'],
-        datasets: [{
-            label: 'Eventos S-2210',
-            data: [1, 0, 2, 1, 3, 0, 1],
-            borderColor: '#8b5cf6',
-            backgroundColor: 'rgba(139, 92, 246, 0.1)',
-            fill: true,
-            tension: 0.4,
-        }],
-    };
-    const options = {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: { y: { beginAtZero: true } },
-        plugins: { legend: { display: false } },
-    };
-    return <Line data={data} options={options} />;
-};
-
-
-// --- Componentes de UI ---
-
-// Componente de Card Genérico
-const DashboardCard = ({ title, children, className = '' }) => (
-    <div className={`bg-white p-6 rounded-lg shadow-md transition-transform duration-300 hover:-translate-y-1 ${className}`}>
-        {title && <h3 className="text-lg font-semibold mb-4 border-b pb-2 text-gray-700">{title}</h3>}
+// Card Totalmente Responsivo
+const DashboardCard = ({ 
+    title, 
+    children, 
+    className = '', 
+    icon: Icon, 
+    gradient = "from-white to-gray-50",
+    fullWidth = false 
+}) => (
+    <div className={`
+        ${fullWidth ? 'col-span-1 sm:col-span-2 lg:col-span-3 xl:col-span-2' : 'col-span-1'}
+        bg-gradient-to-br ${gradient} 
+        p-3 sm:p-4 md:p-6 
+        rounded-xl sm:rounded-2xl 
+        shadow-md hover:shadow-lg 
+        border border-gray-100/50 
+        transition-all duration-300 
+        hover:-translate-y-1 
+        ${className}
+    `}>
+        {title && (
+            <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4 md:mb-6 pb-2 sm:pb-3 border-b border-gray-200/50">
+                {Icon && <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600 flex-shrink-0" />}
+                <h3 className="text-sm sm:text-base md:text-lg font-bold text-gray-800 truncate">{title}</h3>
+            </div>
+        )}
         {children}
     </div>
 );
 
-// Botões de filtro de tempo (D, S, M, A)
+// Botões de Filtro Responsivos
 const TimeFilterButtons = () => (
-    <div className="flex space-x-1">
-        {['D', 'S', 'M', 'A'].map(filter => (
-            <button key={filter} className="px-3 py-1 text-xs font-medium rounded-md bg-gray-100 text-gray-600 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-colors">
+    <div className="flex bg-gray-100/70 rounded-md sm:rounded-lg p-0.5 sm:p-1">
+        {['D', 'S', 'M', 'A'].map((filter, index) => (
+            <button 
+                key={filter} 
+                className={`
+                    px-2 sm:px-3 py-1 sm:py-1.5 
+                    text-xs font-semibold 
+                    rounded-sm sm:rounded-md 
+                    transition-all duration-200 
+                    ${index === 2 
+                        ? 'bg-indigo-600 text-white shadow-md' 
+                        : 'text-gray-600 hover:bg-white hover:shadow-sm'
+                    }
+                `}
+            >
                 {filter}
             </button>
         ))}
     </div>
 );
 
-
-// --- Componente Principal ---
-
 export default function Dashboard() {
     return (
-        <div className="bg-gray-50 min-h-screen font-sans text-gray-800">
-            {/* Container Principal */}
-            <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-
-                {/* Cabeçalho */}
-                <header className="flex justify-between items-start mb-8">
-                    <div>
-                        <h1 className="text-3xl font-bold text-gray-900">METRA CLOUD</h1>
-                        <p className="text-gray-500 mt-1">Sistema de Soluções para gestão de SST e eSocial</p>
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
+            <div className="hidden sm:block absolute inset-0 bg-[url('data:image/svg+xml,%3csvg xmlns=%22http://www.w3.org/2000/svg%22 
+            viewBox=%220 0 32 32%22 width=%2232%22 height=%2232%22 fill=%22none%22 stroke=%22rgb(148 163 184 / 0.05)%22%3e%3cpath d=%22m0 .5 32 32M32 .5 0 32%22/%3e%3c/svg%3e')] opacity-50"></div>
+            
+            <div className="relative z-10 w-full mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-3 sm:py-4 md:py-6 lg:py-8">
+                
+                {/* Cabeçalho Responsivo */}
+                <header className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 sm:gap-0 mb-6 sm:mb-8 md:mb-12">
+                    <div className="flex items-center gap-3 sm:gap-4">
+                        <div className="p-2 sm:p-3 bg-gradient-to-br from-indigo-600 to-purple-700 rounded-lg sm:rounded-xl shadow-lg">
+                            <Shield className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+                        </div>
+                        <div className="min-w-0">
+                            <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent leading-tight">
+                                CHECK LIST OPERACIONAL
+                            </h1>
+                            <p className="text-xs sm:text-sm md:text-base text-gray-600 mt-1 sm:mt-2 font-medium">
+                                Sistema de Soluções para gestão de SST e eSocial
+                            </p>
+                        </div>
                     </div>
-                    <button className="p-2 rounded-full text-gray-500 hover:bg-gray-200 hover:text-gray-700 transition-colors">
-                        <Bell size={24} />
-                    </button>
+                    <div className="flex items-center justify-end sm:justify-start gap-3">
+                        <button className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-white/80 backdrop-blur-sm text-gray-700 hover:bg-white hover:text-indigo-600 transition-all duration-200 shadow-md hover:shadow-lg">
+                            <Bell size={18} className="sm:w-5 sm:h-5" />
+                        </button>
+                    </div>
                 </header>
 
-                {/* Grade de Conteúdo do Dashboard */}
-                <main className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-                    {/* Card 1: Vencimento de Documento */}
-                    <DashboardCard title="Vencimento de Documento">
-                        <div className="space-y-4">
-                            <div className="flex justify-between items-center">
-                                <div>
-                                    <p className="font-medium">LTCAT</p>
-                                    <p className="text-sm text-gray-500">WAYSTER HENRIQUE CRUZ DE MELO</p>
-                                </div>
-                                <span className="bg-red-100 text-red-700 text-xs font-semibold px-2.5 py-0.5 rounded-full">Vencido</span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                                <div>
-                                    <p className="font-medium">LTIP</p>
-                                    <p className="text-sm text-gray-500">WAYSTER HENRIQUE CRUZ DE MELO</p>
-                                </div>
-                                <span className="bg-red-100 text-red-700 text-xs font-semibold px-2.5 py-0.5 rounded-full">Vencido</span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                                <div>
-                                    <p className="font-medium">PGR</p>
-                                    <p className="text-sm text-gray-500">WAYSTER HENRIQUE CRUZ DE MELO</p>
-                                </div>
-                                <span className="bg-green-100 text-green-700 text-xs font-semibold px-2.5 py-0.5 rounded-full">Válido</span>
-                            </div>
-                        </div>
-                        <div className="text-right mt-4">
-                            <a href="#" className="text-sm text-green-600 hover:underline font-medium">ver todos os documentos</a>
+                {/* Grid de Cards TOTALMENTE RESPONSIVO */}
+                <main className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 md:gap-6 lg:gap-8">
+                    
+                    {/* Card 1: Documentos Vencidos */}
+                    <DashboardCard 
+                        title="Documentos Vencidos" 
+                        icon={AlertTriangle}
+                        gradient="from-red-50 to-rose-50"
+                        className="border-red-100/50"
+                    >
+                        <div className="min-h-0">
+                            <DocumentosVencidosCard />
                         </div>
                     </DashboardCard>
 
                     {/* Card 2: Empresas */}
-                    <DashboardCard title="Empresas" className="flex flex-col items-center">
-                        <div className="w-full h-48 lg:h-56 flex-grow">
+                    <DashboardCard 
+                        title="Status das Empresas" 
+                        icon={Users}
+                        gradient="from-green-50 to-emerald-50"
+                        className="border-green-100/50"
+                    >
+                        <div className="w-full h-32 sm:h-40 md:h-48 lg:h-56 xl:h-64">
                             <CompanyStatusChart />
                         </div>
                     </DashboardCard>
 
                     {/* Card 3: ASOs Emitidos */}
-                    <DashboardCard>
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-lg font-semibold text-gray-700">ASOs Emitidos</h3>
+                    <DashboardCard 
+                        title="ASOs Emitidos" 
+                        icon={TrendingUp}
+                        gradient="from-blue-50 to-indigo-50"
+                        className="border-blue-100/50"
+                    >
+                        <div className="flex justify-end mb-2 sm:mb-4">
                             <TimeFilterButtons />
                         </div>
-                        <div className="w-full h-48 lg:h-56">
+                        <div className="w-full h-32 sm:h-40 md:h-48 lg:h-56">
                             <AsoChart />
                         </div>
                     </DashboardCard>
 
-                    {/* Card 4: EPI's em Vencimento */}
-                    <DashboardCard title="EPI's em Vencimento">
-                        <div className="text-center text-gray-500 py-10">
-                            <p>Nenhum equipamento vencendo.</p>
-                        </div>
-                        <div className="text-right mt-4">
-                            <a href="#" className="text-sm text-green-600 hover:underline font-medium">ver todos os equipamentos</a>
+                    {/* Card 4: Próximos Exames */}
+                    <DashboardCard 
+                        title="Próximos Exames" 
+                        icon={Calendar}
+                        gradient="from-amber-50 to-orange-50"
+                        className="border-amber-100/50"
+                    >
+                        <div className="min-h-0">
+                            <ProximosExamesCard />
                         </div>
                     </DashboardCard>
 
-                    {/* Card 5: Riscos Emitidos por Grupo */}
-                    <DashboardCard title="Riscos Emitidos por Grupo">
-                        <div className="w-full h-48 lg:h-56 flex items-end">
+                    {/* Card 5: Riscos por Grupo */}
+                    <DashboardCard 
+                        title="Riscos por Grupo" 
+                        icon={Shield}
+                        gradient="from-purple-50 to-violet-50"
+                        className="border-purple-100/50"
+                    >
+                        <div className="w-full h-32 sm:h-40 md:h-48 lg:h-56 flex items-center justify-center">
                             <RiskChart />
                         </div>
                     </DashboardCard>
 
-                    {/* Card 6: Evento eSocial S-2210 */}
-                    <DashboardCard>
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-lg font-semibold text-gray-700">Evento eSocial S-2210</h3>
-                            <div className="flex items-center space-x-2">
-                                <TimeFilterButtons />
-                                <div className="flex border rounded-md">
-                                    <button className="p-1 text-gray-500 hover:bg-gray-100 border-r"><ChevronLeft size={16}/></button>
-                                    <button className="p-1 text-gray-500 hover:bg-gray-100"><ChevronRight size={16}/></button>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="w-full h-48 lg:h-56">
-                            <EsocialChart />
+                    {/* Card 6: Afastamentos */}
+                    <DashboardCard 
+                        title="Afastamentos Recentes" 
+                        icon={FileText}
+                        gradient="from-teal-50 to-cyan-50"
+                        className="border-teal-100/50"
+                    >
+                        <div className="min-h-0">
+                            <AfastamentosRecentesCard />
                         </div>
                     </DashboardCard>
 
                 </main>
+
+                {/* Footer Responsivo */}
+                <footer className="mt-8 sm:mt-12 md:mt-16 text-center">
+                    <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-white/60 backdrop-blur-sm rounded-full text-xs sm:text-sm text-gray-600 border border-gray-200/50">
+                        <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <span className="hidden sm:inline">Sistema atualizado em tempo real</span>
+                        <span className="sm:hidden">Tempo real</span>
+                    </div>
+                </footer>
             </div>
         </div>
     );

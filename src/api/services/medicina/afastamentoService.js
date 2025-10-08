@@ -40,6 +40,26 @@ const afastamentoService = {
             throw error;
         }
     },
+
+    getRecentes: async () => {
+        try {
+            const response = await apiService.get('/dashboard/afastamentos/recentes');
+            return response.data;
+        } catch (error) {
+            console.error("Erro ao buscar afastamentos recentes:", error);
+            throw error;
+        }
+    },
+
+    deleteAfastamento: async (id) => {
+        try {
+            const response = await apiService.delete(`/afastamentos/${id}`);
+            return response.data;
+        } catch (error) {
+            console.error(`Erro ao deletar afastamento ${id}:`, error);
+            throw error;
+        }
+    },
 };
 
 export default afastamentoService;

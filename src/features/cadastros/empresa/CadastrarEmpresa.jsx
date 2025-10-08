@@ -668,7 +668,7 @@ export default function CadastrarEmpresa() {
                         <button
                             type="button"
                             className="bg-white border border-gray-300 text-gray-700 px-6 py-2 rounded-md text-sm font-medium hover:bg-gray-50 transition-colors"
-                            onClick={() => navigate('/cadastros/empresas')}
+                            onClick={() => navigate('/cadastros/listar/empresas')}
                         >
                             Cancelar
                         </button>

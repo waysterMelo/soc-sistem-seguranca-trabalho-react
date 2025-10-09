@@ -880,7 +880,8 @@ const AsoForm = ({ asoId }) => {
                 onClose={() => setShowSetorModal(false)}
                 onSelect={handleSetorSelect}
                 empresaId={formData.empresaId}
-                unidadeId={formData.unidadeId}
+                unidadeOperacionalId={formData.unidadeId}
+                key={unidadeSelecionada?.id}
             />
 
             <PrestadorServicoModal

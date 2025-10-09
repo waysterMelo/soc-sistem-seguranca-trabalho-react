@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import asoService from '../../api/services/aso/asoService';
+import dashboardService from '../../api/services/dashboardService';
 import { toast } from 'react-toastify';
-import { Calendar, User, AlertTriangle } from 'lucide-react';
+import { Calendar, User, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
 
 // Componente de Card Genérico do Dashboard
 const DashboardCard = ({ title, children, className = '' }) => (
@@ -14,13 +14,25 @@ const DashboardCard = ({ title, children, className = '' }) => (
 export default function ProximosExamesCard() {
     const [exames, setExames] = useState([]);
     const [loading, setLoading] = useState(true);
+    
+    // NOVOS estados para paginação
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const itemsPerPage = 2;
 
     useEffect(() => {
         const fetchExames = async () => {
             try {
-                const response = await asoService.getProximosVencimentos();
-                if (Array.isArray(response)) {
-                    setExames(response);
+                const response = await dashboardService.getAsoProximosVencimentos();
+                if (response.data && Array.isArray(response.data)) {
+                    // NOVA lógica: calcular paginação dos dados
+                    const allExames = response.data;
+                    const totalPages = Math.ceil(allExames.length / itemsPerPage);
+                    const startIndex = (currentPage - 1) * itemsPerPage;
+                    const paginatedExames = allExames.slice(startIndex, startIndex + itemsPerPage);
+                    
+                    setExames(paginatedExames);
+                    setTotalPages(totalPages);
                 }
             } catch (error) {
                 toast.error('Não foi possível carregar os próximos exames.');
@@ -29,7 +41,14 @@ export default function ProximosExamesCard() {
             }
         };
         fetchExames();
-    }, []);
+    }, [currentPage]); // NOVO: recarrega quando muda a página
+
+    // NOVA função: mudança de página
+    const handlePageChange = (newPage) => {
+        if (newPage >= 1 && newPage <= totalPages) {
+            setCurrentPage(newPage);
+        }
+    };
 
     const formatDate = (dateString) => {
         const options = { year: 'numeric', month: 'long', day: 'numeric' };
@@ -58,9 +77,55 @@ export default function ProximosExamesCard() {
                     ))}
                 </div>
             )}
-            <div className="text-right mt-4">
-                <a href="#" className="text-sm text-green-600 hover:underline font-medium">ver todos os ASOs</a>
-            </div>
+
+            {/* NOVA seção: Controles de Paginação */}
+            {totalPages > 1 && (
+                <div className="flex justify-center items-center gap-2 mt-6 pt-4 border-t border-gray-200">
+                    <button
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                            currentPage === 1
+                                ? 'text-gray-400 bg-gray-100 cursor-not-allowed'
+                                : 'text-indigo-600 bg-indigo-50 hover:bg-indigo-100'
+                        }`}
+                    >
+                        <ChevronLeft size={14} />
+                        Anterior
+                    </button>
+
+                    <div className="flex gap-1">
+                        {Array.from({ length: totalPages }, (_, i) => (
+                            <button
+                                key={i + 1}
+                                onClick={() => handlePageChange(i + 1)}
+                                className={`w-8 h-8 text-xs font-medium rounded-lg transition-colors ${
+                                    currentPage === i + 1
+                                        ? 'bg-indigo-600 text-white'
+                                        : 'text-indigo-600 hover:bg-indigo-50'
+                                }`}
+                            >
+                                {i + 1}
+                            </button>
+                        ))}
+                    </div>
+
+                    <button
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                            currentPage === totalPages
+                                ? 'text-gray-400 bg-gray-100 cursor-not-allowed'
+                                : 'text-indigo-600 bg-indigo-50 hover:bg-indigo-100'
+                        }`}
+                    >
+                        Próxima
+                        <ChevronRight size={14} />
+                    </button>
+                </div>
+            )}
+
+
         </DashboardCard>
     );
 }

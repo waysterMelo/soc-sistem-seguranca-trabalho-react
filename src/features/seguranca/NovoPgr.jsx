@@ -496,6 +496,7 @@ export default function CadastrarPGR() {
 
     const handleUnidadeSelect = (unidade) => {
         setSelectedUnidade(unidade);
+        setSelectedSetor(null);
         setIsUnidadeModalOpen(false);
     };
 
@@ -656,10 +657,11 @@ export default function CadastrarPGR() {
                             <p className="text-sm text-gray-600 mb-4">Para visualizar os riscos, escolha o setor desejado.</p>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <InputWithActions
-                                    placeholder="Selecione um setor..."
+                                    placeholder={selectedUnidade ? "Selecione um setor..." : "Selecione uma unidade primeiro"}
                                     value={selectedSetor ? selectedSetor.nome : ''}
-                                    onClick={() => setIsSetorModalOpen(true)}
-                                    actions={<button type="button" className="p-2.5 text-white bg-green-500 hover:bg-green-600 rounded-r-md">
+                                    onClick={() => selectedUnidade && setIsSetorModalOpen(true)}
+                                    disabled={!selectedUnidade}
+                                    actions={<button type="button" disabled={!selectedUnidade} className="p-2.5 text-white bg-green-500 hover:bg-green-600 rounded-r-md disabled:bg-gray-400">
                                         <Search size={18} /></button>}
                                 />
                             </div>
@@ -827,12 +829,14 @@ export default function CadastrarPGR() {
                     onClose={() => setIsEmpresaModalOpen(false)}
                 />
             )}
-            {isSetorModalOpen && (
+            {isSetorModalOpen && selectedUnidade && (
                 <SetorSearchModal
+                    key={selectedUnidade.id}
                     isOpen={isSetorModalOpen}
                     onSelect={handleSetorSelect}
                     onClose={() => setIsSetorModalOpen(false)}
                     empresaId={selectedEmpresa?.id}
+                    unidadeOperacionalId={selectedUnidade?.id}
                 />
             )}
             {isPrestadorModalOpen && (

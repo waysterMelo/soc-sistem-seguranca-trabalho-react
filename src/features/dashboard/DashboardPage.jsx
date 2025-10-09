@@ -198,28 +198,78 @@ const AsoChart = () => {
     );
 };
 
-
-// Gráfico 3: Riscos - Responsivo
+// Gráfico 3: Riscos - Responsivo COM API
 const RiskChart = () => {
-    const data = {
-        labels: [''],
-        datasets: [
-            {
-                label: 'Físicos',
-                data: [2],
-                backgroundColor: '#10b981',
-                barPercentage: 0.6,
-                categoryPercentage: 1.0
-            },
-            {
-                label: 'Acidentes',
-                data: [2],
-                backgroundColor: '#3b82f6',
-                barPercentage: 0.6,
-                categoryPercentage: 1.0
+    const [data, setData] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const response = await dashboardService.getRiscosSummary();
+                const riscosData = response.data;
+                
+                if (Array.isArray(riscosData) && riscosData.length > 0) {
+                    // Extrair labels e dados dos riscos
+                    const labels = riscosData.map(risco => risco.grupo || risco.nome || 'Sem grupo');
+                    const valores = riscosData.map(risco => risco.count || risco.total || 0);
+                    const cores = [
+                        '#10b981', '#3b82f6', '#f59e0b', '#ef4444', 
+                        '#8b5cf6', '#06b6d4', '#84cc16', '#f97316'
+                    ]; // Cores para diferentes grupos
+                    
+                    setData({
+                        labels: [''], // Mantém label vazio para barra horizontal única
+                        datasets: riscosData.map((risco, index) => ({
+                            label: risco.grupo || risco.nome || `Grupo ${index + 1}`,
+                            data: [risco.count || risco.total || 0],
+                            backgroundColor: cores[index % cores.length],
+                            barPercentage: 0.6,
+                            categoryPercentage: 1.0
+                        }))
+                    });
+                } else {
+                    // Dados de fallback se não houver riscos
+                    setData({
+                        labels: [''],
+                        datasets: [{
+                            label: 'Sem dados',
+                            data: [0],
+                            backgroundColor: '#d1d5db',
+                            barPercentage: 0.6,
+                            categoryPercentage: 1.0
+                        }]
+                    });
+                }
+            } catch (error) {
+                console.error('Erro ao buscar dados dos riscos:', error);
+                // Dados de fallback em caso de erro
+                setData({
+                    labels: [''],
+                    datasets: [
+                        {
+                            label: 'Físicos',
+                            data: [0],
+                            backgroundColor: '#10b981',
+                            barPercentage: 0.6,
+                            categoryPercentage: 1.0
+                        },
+                        {
+                            label: 'Acidentes',
+                            data: [0],
+                            backgroundColor: '#3b82f6',
+                            barPercentage: 0.6,
+                            categoryPercentage: 1.0
+                        }
+                    ]
+                });
+            } finally {
+                setLoading(false);
             }
-        ]
-    };
+        };
+
+        fetchData();
+    }, []);
 
     const options = {
         indexAxis: 'y',
@@ -264,8 +314,22 @@ const RiskChart = () => {
         }
     };
 
-    return <Bar data={data} options={options} />;
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-40">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+            </div>
+        );
+    }
+
+    return data ? <Bar data={data} options={options} /> : (
+        <div className="flex items-center justify-center h-40 text-gray-500">
+            Sem dados de riscos
+        </div>
+    );
 };
+
+
 
 // Card Totalmente Responsivo
 const DashboardCard = ({ 

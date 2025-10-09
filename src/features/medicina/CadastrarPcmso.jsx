@@ -517,12 +517,14 @@ export default function CadastrarPcmso() {
         setSelectedEmpresa(empresa);
         setIsEmpresaModalOpen(false);
         setSelectedUnidade(null);
+        setSelectedSetores([]);
     };
 
     const handleSelectUnidade = (unidade) => {
         setSelectedUnidade(unidade);
         setIsUnidadeModalOpen(false);
         setPcmsoFormData(prev => ({ ...prev, unidadeOperacionalId: unidade.id }));
+        setSelectedSetores([]);
     };
 
     const handleSelectMedico = (medico) => {
@@ -706,11 +708,11 @@ export default function CadastrarPcmso() {
                                 <InputWithActions
                                     placeholder="Selecione um setor"
                                     value={selectedSetores.map(s => s.nome).join(', ')}
-                                    onClick={() => selectedEmpresa && setIsSetorModalOpen(true)}
+                                    onClick={() => selectedUnidade && setIsSetorModalOpen(true)}
                                     actions={
                                         <button type="button"
-                                                onClick={() => selectedEmpresa && setIsSetorModalOpen(true)}
-                                                disabled={!selectedEmpresa}
+                                                onClick={() => selectedUnidade && setIsSetorModalOpen(true)}
+                                                disabled={!selectedUnidade}
                                                 className="p-2.5 text-white bg-green-500 hover:bg-green-600 rounded-r-md disabled:bg-gray-400">
                                             <Plus size={18}/>
                                         </button>
@@ -864,8 +866,9 @@ export default function CadastrarPcmso() {
                     onSelect={handleSelectElaborador}
                 />
 
-                {selectedEmpresa && (
+                {selectedUnidade && (
                     <SetorSearchModal
+                        key={selectedUnidade.id}
                         isOpen={isSetorModalOpen}
                         onClose={() => setIsSetorModalOpen(false)}
                         onSelect={(setor) => {
@@ -875,7 +878,7 @@ export default function CadastrarPcmso() {
                             setIsSetorModalOpen(false);
                         }}
                         empresaId={selectedEmpresa.id}
-                    />
+                                                  unidadeOperacionalId={selectedUnidade.id}                    />
                 )}
 
                 {/* Modal de Sucesso */}

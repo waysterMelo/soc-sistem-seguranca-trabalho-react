@@ -77,7 +77,7 @@ export default function Sidebar() {
         <>
             {/* Botão de menu para telas móveis */}
             <div className="lg:hidden fixed top-0 left-0 right-0 bg-gray-900/50 backdrop-blur-sm z-20 p-2 flex justify-between items-center">
-                <h1 className="text-lg font-bold text-white">METRA CLOUD</h1>
+                <h1 className="text-lg font-bold text-white">CHECK LIST</h1>
                 <button onClick={() => setIsMobileMenuOpen(true)} className="text-white p-2">
                     <Menu size={24} />
                 </button>
@@ -106,7 +106,7 @@ export default function Sidebar() {
                             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="flex-shrink-0 text-yellow-400">
                                 <path d="M12 3V21" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/><path d="M3 12H21" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
                             </svg>
-                            <span className="font-bold text-xl whitespace-nowrap">METRA<span className="text-yellow-400">CLOUD</span></span>
+                            <span className="font-bold text-xl whitespace-nowrap">CHECK<span className="text-yellow-400">LIST</span></span>
                         </div>
                         <button onClick={() => isMobileMenuOpen ? setIsMobileMenuOpen(false) : setIsExpanded(p => !p)} className="p-2 rounded-lg text-gray-400 hover:bg-gray-700">
                             {isMobileMenuOpen ? <X size={20} /> : (isExpanded ? <PanelLeftClose size={20} /> : <PanelLeftOpen size={20} />)}

@@ -21,7 +21,7 @@ const deleteEmpresa = (id) => {
 };
 
 const gerarRelatorio = () => {
-    return api.get('/empresas/relatorio/pdf', {responseType: 'blob'});
+    return api.get('/empresas/relatorio/html');
 };
 
 const uploadLogo = (fileData) => {

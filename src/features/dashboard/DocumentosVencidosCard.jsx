@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import dashboardService from '../../api/services/dashboardService';
 import { toast } from 'react-toastify';
+import { ChevronLeft, ChevronRight } from 'lucide-react'; // ✅ ADICIONAR
 
 const DashboardCard = ({ title, children, className = '' }) => (
     <div className={`bg-white p-6 rounded-lg shadow-md transition-transform duration-300 hover:-translate-y-1 ${className}`}>
@@ -22,14 +23,25 @@ const StatusBadge = ({ status }) => {
 export default function DocumentosVencidosCard() {
     const [documentos, setDocumentos] = useState([]);
     const [loading, setLoading] = useState(true);
+    
+    // ✅ ADICIONAR Estados de Paginação
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const itemsPerPage = 2;
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // MUDANÇA: Usando o novo serviço que retorna apenas documentos vencidos
-                const response = await dashboardService.getDocumentosVencidos({ limit: 5 });
+                // ✅ MUDANÇA: Buscar mais documentos e paginar
+                const response = await dashboardService.getDocumentosVencidos({ limit: 20 }); // Buscar mais
                 if (Array.isArray(response.data)) {
-                    setDocumentos(response.data);
+                    const allDocumentos = response.data;
+                    const totalPagesCalc = Math.ceil(allDocumentos.length / itemsPerPage);
+                    const startIndex = (currentPage - 1) * itemsPerPage;
+                    const paginatedDocumentos = allDocumentos.slice(startIndex, startIndex + itemsPerPage);
+                    
+                    setDocumentos(paginatedDocumentos);
+                    setTotalPages(totalPagesCalc);
                 }
             } catch (error) {
                 toast.error('Não foi possível carregar os documentos vencidos.');
@@ -38,7 +50,14 @@ export default function DocumentosVencidosCard() {
             }
         };
         fetchData();
-    }, []);
+    }, [currentPage]); // ✅ MUDANÇA: Adicionar dependência
+
+    // ✅ ADICIONAR Função de mudança de página
+    const handlePageChange = (newPage) => {
+        if (newPage >= 1 && newPage <= totalPages) {
+            setCurrentPage(newPage);
+        }
+    };
 
     return (
         <DashboardCard title="Documentos Vencidos">
@@ -65,7 +84,53 @@ export default function DocumentosVencidosCard() {
                             </div>
                         )}
                     </div>
-            
+
+                    {/* ✅ ADICIONAR Controles de Paginação */}
+                    {totalPages > 1 && (
+                        <div className="flex justify-center items-center gap-2 mt-6 pt-4 border-t border-gray-200">
+                            <button
+                                onClick={() => handlePageChange(currentPage - 1)}
+                                disabled={currentPage === 1}
+                                className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                                    currentPage === 1
+                                        ? 'text-gray-400 bg-gray-100 cursor-not-allowed'
+                                        : 'text-red-600 bg-red-50 hover:bg-red-100'
+                                }`}
+                            >
+                                <ChevronLeft size={14} />
+                                Anterior
+                            </button>
+
+                            <div className="flex gap-1">
+                                {Array.from({ length: totalPages }, (_, i) => (
+                                    <button
+                                        key={i + 1}
+                                        onClick={() => handlePageChange(i + 1)}
+                                        className={`w-8 h-8 text-xs font-medium rounded-lg transition-colors ${
+                                            currentPage === i + 1
+                                                ? 'bg-red-600 text-white'
+                                                : 'text-red-600 hover:bg-red-50'
+                                        }`}
+                                    >
+                                        {i + 1}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <button
+                                onClick={() => handlePageChange(currentPage + 1)}
+                                disabled={currentPage === totalPages}
+                                className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                                    currentPage === totalPages
+                                        ? 'text-gray-400 bg-gray-100 cursor-not-allowed'
+                                        : 'text-red-600 bg-red-50 hover:bg-red-100'
+                                }`}
+                            >
+                                Próxima
+                                <ChevronRight size={14} />
+                            </button>
+                        </div>
+                    )}
                 </>
             )}
         </DashboardCard>

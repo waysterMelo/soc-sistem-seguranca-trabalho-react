@@ -162,10 +162,10 @@ const SetorSearchModal = ({
               <h3 className="text-2xl font-bold text-gray-800">
                 {multiSelect ? 'Selecionar Setores' : 'Selecionar Setor'}
               </h3>
-              <p className="text-sm text-gray-600 mt-0.5">
-                {empresaId ? `Empresa ID: ${empresaId}` : 'Selecione uma empresa primeiro'}
-              </p>
-            </div>
+                          <p className="text-sm text-gray-600 mt-0.5">
+                            {empresaId ? `Empresa ID: ${empresaId}` : 'Selecione uma empresa primeiro'}
+                            {unidadeOperacionalId && ` | Unidade ID: ${unidadeOperacionalId}`}
+                          </p>            </div>
           </div>
           <button
             onClick={onClose}

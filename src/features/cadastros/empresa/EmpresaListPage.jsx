@@ -252,20 +252,17 @@ export default function ListarEmpresas() {
         try {
             const response = await empresaService.gerarRelatorio();
 
-            // Criar um objeto URL para o arquivo recebido
-            const pdfUrl = window.URL.createObjectURL(new Blob([response.data]));
+            // A resposta agora é HTML, então 'response.data' contém o HTML como string
+            const htmlContent = response.data;
 
-            // Criar um link temporário para download
-            const link = document.createElement('a');
-            link.href = pdfUrl;
-            link.setAttribute('download', 'relatorio-empresas.pdf');
+            // Abrir uma nova aba
+            const newTab = window.open();
 
-            // Adicionar ao DOM, clicar e remover
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            // Escrever o conteúdo HTML na nova aba
+            newTab.document.write(htmlContent);
+            newTab.document.close(); // Finaliza a escrita
 
-            // Mostrar mensagem de sucesso
+            // Opcional: Mostrar mensagem de sucesso
             setAlertModal({
                 isOpen: true,
                 type: 'success',

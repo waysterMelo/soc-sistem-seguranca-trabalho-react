@@ -1,4 +1,3 @@
-// src/api/services/dashboardService.js
 import apiService from '../apiService';
 
 const dashboardService = {
@@ -17,6 +16,12 @@ const dashboardService = {
      getDocumentosVencidos: (params) => {
         return apiService.get('/dashboard/documentos-vencidos', { params });
     },
-};
+    getAsoProximosVencimentos: (dias = 30, limit = 5) => {
+        return apiService.get('/dashboard/aso/proximos-vencimentos', {
+            params: { dias, limit }
+        });
+    },
+}
+
 
 export default dashboardService;

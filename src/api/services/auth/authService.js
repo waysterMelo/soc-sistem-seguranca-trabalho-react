@@ -14,8 +14,22 @@ const authService = {
     }
   },
 
-  logout: () => {
-    localStorage.removeItem('userToken');
+  logout: async () => {
+    try {
+      const token = localStorage.getItem('userToken');
+      if (token) {
+        await apiService.post('/api/auth/logout', {}, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Erro no logout:', error);
+      // Mesmo que o logout da API falhe, remove o token local para deslogar o usuário da interface.
+    } finally {
+      localStorage.removeItem('userToken');
+    }
   },
 
   isAuthenticated: () => {

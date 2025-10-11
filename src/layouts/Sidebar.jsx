@@ -1,5 +1,5 @@
 import React, {createContext, useContext, useState} from 'react';
-import {Link, useLocation} from 'react-router-dom';
+import {Link, useLocation, useNavigate} from 'react-router-dom';
 import {
     Building,
     ChevronDown,
@@ -13,6 +13,7 @@ import {
     User as UserIcon,
     X
 } from 'lucide-react';
+import authService from "../api/services/auth/authService.js";
 
 // --- Contexto para a Sidebar ---
 const SidebarContext = createContext();
@@ -72,6 +73,12 @@ export default function Sidebar() {
     const [isExpanded, setIsExpanded] = useState(true);
     // Estado para controlar a sidebar em telas pequenas (aberta/fechada)
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const navigate = useNavigate();
+
+    const handleLogout = async () => {
+        await authService.logout();
+        navigate('/login');
+    };
 
     return (
         <>
@@ -140,7 +147,7 @@ export default function Sidebar() {
                                     <span className="text-xs text-gray-400">SAIR</span>
                                 </div>
                             </div>
-                            <button className="p-2 rounded-lg hover:bg-gray-700 text-red-500 hover:text-red-400"><LogOut size={20} /></button>
+                            <button onClick={handleLogout} className="p-2 rounded-lg hover:bg-gray-700 text-red-500 hover:text-red-400"><LogOut size={20} /></button>
                         </div>
                     </div>
                 </SidebarContext.Provider>

@@ -37,21 +37,28 @@ api.interceptors.request.use(
 api.interceptors.response.use(
     (response) => response, // sucesso passa direto
     (error) => {
-        // Nem todo erro vem “redondinho”, proteja-se
         const status = error?.response?.status;
-        const data   = error?.response?.data;
+        const data = error?.response?.data;
+
+        if (status === 401 || status === 403) {
+            toast.error("Sua sessão expirou. Por favor, faça login novamente.", { autoClose: 3000 });
+            localStorage.removeItem('userToken');
+            // Atraso para o usuário ver o toast
+            setTimeout(() => {
+                window.location.href = '/login';
+            }, 3000);
+            return Promise.reject(new Error("Sessão expirada")); // Para a execução
+        }
 
         let mensagem =
-            data?.mensagem ||          // campo padrão que você já recebe
-            data?.titulo   ||          // fallback
+            data?.mensagem ||
+            data?.titulo   ||
             error.message   || 'Erro inesperado.';
 
-        // Exibe toast para qualquer status >= 400
         if (status >= 400) {
             toast.error(mensagem, { autoClose: 5000 });
         }
 
-        // Continua rejeitando para permitir tratamento pontual
         return Promise.reject(error);
     }
 );

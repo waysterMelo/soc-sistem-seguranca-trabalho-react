@@ -11,7 +11,7 @@ import {
 import { empresaService } from "../../../api/services/cadastros/serviceEmpresas.js";
 import { X } from 'lucide-react';
 import CnaeSearchModal from "../../../components/modal/cnaeSearchModal.jsx";
-import MedicoSearchModal from "../../../components/modal/medicoSearchModal.jsx";
+import MedicoSearchModal from "../../../components/modal/MedicoSearchModal.jsx";
 
 
 // Um wrapper para seções do formulário com um título
@@ -192,6 +192,7 @@ export default function CadastrarEmpresa() {
     // Handler para o envio do formulário
     const handleSubmit = async (e) => {
         e.preventDefault();
+        console.log("[DEBUG] Estado final do formulário no SUBMIT:", formData);
 
         if (!validateForm()) {
             return;
@@ -201,11 +202,8 @@ export default function CadastrarEmpresa() {
         setApiError(null);
 
         try {
-            // Preparar os dados para envio
             const empresaData = {
                 ...formData,
-                telefonePrincipal: formData.telefonePrincipal,
-                telefoneSecundario: formData.telefoneSecundario,
                 endereco: {
                     cep: formData.cep,
                     logradouro: formData.logradouro,
@@ -217,6 +215,17 @@ export default function CadastrarEmpresa() {
                     regiao: formData.regiao
                 }
             };
+
+            // Remove campos desnecessários ou que foram aninhados
+            delete empresaData.medicoResponsavelNomeCompleto;
+            delete empresaData.cep;
+            delete empresaData.cidade;
+            delete empresaData.estado;
+            delete empresaData.logradouro;
+            delete empresaData.numero;
+            delete empresaData.bairro;
+            delete empresaData.complemento;
+            delete empresaData.regiao;
 
             // Se tiver um arquivo selecionado, envie-o primeiro e obtenha a URL
             if (selectedFile) {

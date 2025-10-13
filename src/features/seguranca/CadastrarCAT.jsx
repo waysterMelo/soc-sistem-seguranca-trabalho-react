@@ -4,7 +4,7 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import catService from '../../api/services/Cat/catService.js';
 import funcionarioService from '../../api/services/cadastros/funcionariosServices.js';
-import FuncionarioSearchModal from '../../components/modal/funcionarioSearchModal.jsx';
+import FuncionarioSearchModal from '../../components/modal/FuncionarioSearchModal.jsx';
 import PrestadorServico from '../../components/modal/PrestadorServico.jsx';
 import CidSearchModal from '../../components/modal/CidSearchModal.jsx';
 import EmpresaSearchModal from '../../components/modal/empresaSearchModal.jsx';

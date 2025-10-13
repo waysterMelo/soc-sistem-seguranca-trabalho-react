@@ -12,7 +12,7 @@ import {
 import { X } from 'lucide-react';
 import { empresaService } from "../../../api/services/cadastros/serviceEmpresas.js";
 import CnaeSearchModal from "../../../components/modal/cnaeSearchModal.jsx";
-import MedicoSearchModal from "../../../components/modal/medicoSearchModal.jsx";
+import MedicoSearchModal from "../../../components/modal/PrestadorServico.jsx";
 
 // Componentes reutilizáveis
 const FormSection = ({ title, children }) => (
@@ -100,25 +100,49 @@ export default function EditarEmpresa() {
                 setIsLoading(true);
                 const response = await empresaService.getById(id);
                 const empresa = response.data;
+            
+                const logoProperty = empresa.logomarcaUrl; 
+
+                if (logoProperty) {
+                    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'; 
+                    let fullUrl;
+
+                    if (logoProperty.startsWith('http')) {
+                        // A URL já está completa
+                        fullUrl = logoProperty;
+                    } else if (logoProperty.startsWith('/')) {
+                        // O caminho é relativo à raiz do servidor
+                        fullUrl = `${apiBaseUrl}${logoProperty}`;
+                    } else {
+                        // É apenas o nome do arquivo, então montamos o caminho completo
+                        fullUrl = `${apiBaseUrl}/uploads/logos/${logoProperty}`;
+                    }
+                    // Atualiza o objeto 'empresa' com a URL completa antes de setar no estado
+                    empresa.logomarcaUrl = fullUrl;
+                }
+
+                // The API response nests the full object within a property that is named like an ID.
+                const cnaeObject = empresa.cnaePrincipal;
+                const medicoObject = empresa.medicoResponsavelPcmsso;
+
+                if (cnaeObject) {
+                    setCnaePrincipal(cnaeObject);
+                }
+
+                if (medicoObject) {
+                    setMedicoResponsavel(medicoObject);
+                }
 
                 setFormData({
                     ...empresa,
                     ...empresa.endereco,
+                    cnaePrincipalId: cnaeObject?.id || null,
+                    medicoResponsavelPcmssoId: medicoObject?.id || null,
                     grauRisco: empresa.grauRisco || '',
-                    endereco: undefined
+                    endereco: undefined,
                 });
 
-                setOriginalLogo(empresa.logomarcaUrl);
-
-
-                if (empresa.cnaePrincipal) {
-                    setCnaePrincipal(empresa.cnaePrincipal);
-                }
-
-
-                if (empresa.medicoResponsavel) {
-                    setMedicoResponsavel(empresa.medicoResponsavel);
-                }
+                setOriginalLogo(empresa.logomarcaUrl || '');
 
             } catch (error) {
                 console.error('Erro ao carregar empresa:', error);
@@ -345,7 +369,7 @@ export default function EditarEmpresa() {
             <MedicoSearchModal
                 isOpen={isMedicoModalOpen}
                 onClose={() => setIsMedicoModalOpen(false)}
-                onMedicoSelect={handleMedicoSelect}
+                onSelect={handleMedicoSelect} 
             />
             <SuccessModal />
             <div className="container mx-auto">

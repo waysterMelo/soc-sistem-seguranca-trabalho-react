@@ -55,11 +55,14 @@ const ModalPrestador = ({ isOpen, onClose, onSelect }) => {
                     paginationParams
                 );
             }
-            const content = response.data.content || response.data || [];
-            const totalElements = response.data.totalElements || content.length;
-            const totalPage = response.data.totalPages || Math.ceil(totalElements / itemsPerPage);
+            const responseData = response.data;
+            const content = responseData?.content || responseData || [];
+            const prestadoresArray = Array.isArray(content) ? content : [];
 
-            setPrestadores(content);
+            const totalElements = responseData?.totalElements || prestadoresArray.length;
+            const totalPage = responseData?.totalPages || Math.ceil(totalElements / itemsPerPage);
+
+            setPrestadores(prestadoresArray);
             setTotalPages(totalPage);
             setTotalItems(totalElements);
             setHasSearched(true);

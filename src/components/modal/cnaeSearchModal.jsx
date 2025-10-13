@@ -25,7 +25,10 @@ export default function CnaeSearchModal({ isOpen, onClose, onCnaeSelect }) {
             setIsLoading(true);
             cnaeService.getAll()
                 .then(response => {
-                    setAllCnaes(response.data || []);
+                    const data = response.data;
+                    // Garante que 'allCnaes' seja sempre um array, verificando a resposta da API
+                    const cnaesArray = Array.isArray(data) ? data : (data && Array.isArray(data.content)) ? data.content : [];
+                    setAllCnaes(cnaesArray);
                 })
                 .catch(error => {
                     console.error("Erro ao buscar CNAEs:", error);

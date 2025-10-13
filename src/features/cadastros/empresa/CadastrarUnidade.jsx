@@ -8,8 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { unidadeService } from "../../../api/services/cadastros/serviceUnidadeOperacional.js";
 import EmpresaSearchModal from "../../../components/modal/empresaSearchModal.jsx";
 import CnaeSearchModal from "../../../components/modal/cnaeSearchModal.jsx";
-import SetorSearchModal from "../../../components/modal/setorSearchModal.jsx";
-import apiService from "../../../api/apiService.js";
+import SetorSearchModal from "../../../components/modal/SetorSearchModal.jsx";
 
 // Wrapper para seções do formulário
 const FormSection = ({ title, children, className = '' }) => (

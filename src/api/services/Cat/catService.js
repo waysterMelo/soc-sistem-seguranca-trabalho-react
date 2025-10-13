@@ -237,6 +237,18 @@ const catService = {
     }
   },
 
+  gerarRelatorioHtml: async (id) => {
+    try {
+      const response = await apiService.get(`/reports/cat/${id}`, {
+        responseType: 'text'
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Erro ao gerar relatório HTML da CAT ${id}:`, error);
+      throw error;
+    }
+  },
+
   /**
    * Busca estatísticas de CATs
    * @param {Object} filtros - Filtros para as estatísticas (período, setor, etc.)

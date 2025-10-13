@@ -92,6 +92,18 @@ const ltipService = {
             console.error("Erro ao buscar LTIPs por filtros:", error);
             throw error;
         }
+  },
+
+  gerarRelatorioHtml: async (ltipId) => {
+    try {
+      const response = await apiService.get(`/ltip/${ltipId}/report`, {
+        responseType: 'text',
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Erro ao gerar relatório HTML para o LTIP ${ltipId}:`, error);
+      throw error;
+    }
   }
 };
 

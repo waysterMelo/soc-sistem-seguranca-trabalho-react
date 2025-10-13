@@ -157,9 +157,16 @@ export default function ListarPGR() {
         setEntriesPerPage(newSize);
     };
 
-    const handlePrintPgr = (pgrId) => {
-        const reportUrl = `${apiService.defaults.baseURL}/reports/pgr/${pgrId}`;
-        window.open(reportUrl, '_blank');
+    const handlePrintPgr = async (pgrId) => {
+        try {
+            const htmlContent = await pgrService.gerarRelatorioHtml(pgrId);
+            const newTab = window.open();
+            newTab.document.write(htmlContent);
+            newTab.document.close();
+        } catch (err) {
+            console.error("Erro ao gerar relatório do PGR: ", err);
+            toast.error("Erro ao gerar relatório do PGR. Tente novamente.");
+        }
     };
 
     const handleInactivatePgr = (pgrId) => {

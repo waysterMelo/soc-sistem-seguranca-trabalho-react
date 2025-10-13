@@ -19,7 +19,6 @@ import {
 import pcmsoService from '../../api/services/pcmso/pcmsoService.js';
 import EmpresaSearchModal from '../../components/modal/empresaSearchModal.jsx';
 import UnidadesOperacionaisModal from '../../components/modal/unidadesOperacionaisModal.jsx';
-import apiService from '../../api/apiService.js';
 
 // --- Componentes Reutilizáveis ---
 
@@ -97,8 +96,10 @@ export default function ListarPcmso() {
     const [selectedUnidade, setSelectedUnidade] = useState(null);
 
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-    const [pcmsoToDelete, setPcmsoToDelete] = useState(null);
-    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [pcmsoToActOn, setPcmsoToActOn] = useState(null);
+    const [showInactivateSuggestion, setShowInactivateSuggestion] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
+
 
     const fetchPcmsos = useCallback(async () => {
         if (!selectedEmpresa?.id || !selectedUnidade?.id) {
@@ -175,37 +176,73 @@ export default function ListarPcmso() {
         navigate(`/medicina/editar-pcmso/${pcmso.id}`);
     };
 
-    const handleDelete = (id) => {
-        setPcmsoToDelete(id);
+    const handleDelete = (pcmso) => {
+        setPcmsoToActOn(pcmso);
         setIsDeleteModalOpen(true);
-    };
-
-    const confirmDelete = async () => {
-        if (pcmsoToDelete) {
-            try {
-                await pcmsoService.deletePcmso(pcmsoToDelete);
-                setIsDeleteModalOpen(false);
-                setShowSuccessModal(true);
-                toast.success('PCMSO excluído com sucesso!');
-                fetchPcmsos();
-                setTimeout(() => setShowSuccessModal(false), 2000);
-            } catch (error) {
-                const errorMessage = error.response?.data?.message || 'Erro ao excluir o PCMSO.';
-                toast.error(errorMessage);
-            } finally {
-                setPcmsoToDelete(null);
-            }
-        }
     };
 
     const cancelDelete = () => {
         setIsDeleteModalOpen(false);
-        setPcmsoToDelete(null);
+        setPcmsoToActOn(null);
     };
 
-    const handleGenerateReport = (pcmsoId) => {
-        const reportUrl = `${apiService.defaults.baseURL}/report/pcmso/${pcmsoId}`;
-        window.open(reportUrl, '_blank');
+    const confirmDelete = async () => {
+        if (!pcmsoToActOn) return;
+
+        setIsDeleteModalOpen(false);
+
+        try {
+            await pcmsoService.deletePcmso(pcmsoToActOn.id);
+            toast.success(`PCMSO #${pcmsoToActOn.id} excluído com sucesso!`);
+            setPcmsoToActOn(null);
+            fetchPcmsos();
+        } catch (error) {
+            const errorMsg = error.response?.data?.message || 'Erro ao excluir o PCMSO.';
+            if (errorMsg.toLowerCase().includes('constraint') || errorMsg.toLowerCase().includes('vinculado')) {
+                if (pcmsoToActOn.status === 'ATIVO') {
+                    setErrorMessage(`Este PCMSO (#${pcmsoToActOn.id}) não pode ser excluído pois possui vínculos. Deseja inativá-lo?`);
+                    setShowInactivateSuggestion(true);
+                } else {
+                    toast.error(`PCMSO #${pcmsoToActOn.id} não pode ser excluído pois ainda possui vínculos.`);
+                    setPcmsoToActOn(null);
+                }
+            } else {
+                toast.error(errorMsg);
+                setPcmsoToActOn(null);
+            }
+        }
+    };
+
+    const handleConfirmInactivate = async () => {
+        if (!pcmsoToActOn) return;
+
+        try {
+            await pcmsoService.inactivatePcmso(pcmsoToActOn.id);
+            toast.success(`PCMSO #${pcmsoToActOn.id} inativado com sucesso!`);
+            fetchPcmsos();
+        } catch (error) {
+            toast.error(`Erro ao inativar o PCMSO #${pcmsoToActOn.id}.`);
+        } finally {
+            setShowInactivateSuggestion(false);
+            setPcmsoToActOn(null);
+        }
+    };
+
+    const cancelInactivateSuggestion = () => {
+        setShowInactivateSuggestion(false);
+        setPcmsoToActOn(null);
+    };
+
+    const handleGenerateReport = async (pcmsoId) => {
+        try {
+            const htmlContent = await pcmsoService.gerarRelatorioHtml(pcmsoId);
+            const newTab = window.open();
+            newTab.document.write(htmlContent);
+            newTab.document.close();
+        } catch (err) {
+            console.error("Erro ao gerar relatório do PCMSO: ", err);
+            toast.error("Erro ao gerar relatório do PCMSO. Tente novamente.");
+        }
     };
 
     const formatDate = (dateString) => {
@@ -298,7 +335,7 @@ export default function ListarPcmso() {
                                             <Printer size={18} />
                                         </button>
                                         <button
-                                            onClick={() => handleDelete(item.id)}
+                                            onClick={() => handleDelete(item)}
                                             className="text-red-600 hover:text-red-800 transition-colors"
                                             title="Excluir PCMSO"
                                         >
@@ -517,7 +554,7 @@ export default function ListarPcmso() {
                             <div className="text-red-600 text-6xl mb-4">⚠️</div>
                             <h3 className="text-lg font-semibold text-gray-900 mb-2">Confirmar Exclusão</h3>
                             <p className="text-gray-600 mb-2">
-                                Deseja realmente excluir o PCMSO de ID: <strong className="text-red-600 font-bold text-lg">#{pcmsoToDelete}</strong>?
+                                Deseja realmente excluir o PCMSO de ID: <strong className="text-red-600 font-bold text-lg">#{pcmsoToActOn?.id}</strong>?
                             </p>
                             <p className="text-sm text-red-600 mb-6">Esta ação não pode ser desfeita.</p>
                             <div className="flex gap-4 justify-center">
@@ -541,13 +578,30 @@ export default function ListarPcmso() {
                 </div>
             )}
 
-            {/* Modal de Sucesso */}
-            {showSuccessModal && (
+            {/* Modal de Sugestão de Inativação */}
+            {showInactivateSuggestion && (
                 <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-                    <div className="bg-white p-6 rounded-lg shadow-lg">
+                    <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
                         <div className="text-center">
-                            <div className="text-green-600 text-6xl mb-4">✓</div>
-                            <h3 className="text-lg font-semibold text-gray-900 mb-2">PCMSO excluído com sucesso!</h3>
+                            <div className="text-yellow-500 text-6xl mb-4">⚠️</div>
+                            <h3 className="text-lg font-semibold text-gray-900 mb-2">Não foi possível excluir</h3>
+                            <p className="text-gray-600 mb-6">{errorMessage}</p>
+                            <div className="flex gap-4 justify-center">
+                                <button
+                                    type="button"
+                                    onClick={cancelInactivateSuggestion}
+                                    className="bg-gray-500 text-white px-6 py-2 rounded-md font-semibold hover:bg-gray-600 transition-colors"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleConfirmInactivate}
+                                    className="bg-orange-500 text-white px-6 py-2 rounded-md font-semibold hover:bg-orange-600 transition-colors"
+                                >
+                                    Inativar
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

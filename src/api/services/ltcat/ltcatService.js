@@ -72,6 +72,18 @@ const ltcatService = {
             console.error(`Erro ao deletar LTCAT com ID ${id}:`, error);
             throw error;
         }
+  },
+
+  gerarRelatorioHtml: async (ltcatId) => {
+    try {
+      const response = await apiService.get(`/ltcat/${ltcatId}/report`, {
+        responseType: 'text',
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Erro ao gerar relatório HTML para o LTCAT ${ltcatId}:`, error);
+      throw error;
+    }
   }
 };
 

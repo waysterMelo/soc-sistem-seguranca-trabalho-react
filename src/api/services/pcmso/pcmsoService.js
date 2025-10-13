@@ -85,6 +85,18 @@ const pcmsoService = {
     }
   },
 
+  gerarRelatorioHtml: async (pcmsoId) => {
+    try {
+      const response = await apiService.get(`/report/pcmso/${pcmsoId}`, {
+        responseType: 'text',
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Erro ao gerar relatório HTML para o PCMSO ${pcmsoId}:`, error);
+      throw error;
+    }
+  },
+
 
 };
 

@@ -395,10 +395,10 @@ export default function ListarCAT() {
     const handleGenerateReport = async (catId) => {
         setLoading(true);
         try {
-            const blob = await catService.gerarRelatorioPdf(catId);
-            const url = window.URL.createObjectURL(blob);
-            window.open(url, '_blank');
-            setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+            const htmlContent = await catService.gerarRelatorioHtml(catId);
+            const newTab = window.open();
+            newTab.document.write(htmlContent);
+            newTab.document.close();
         } catch (error) {
             setErrorMessage(`Erro ao gerar relatório: ${error.response?.data?.message || error.message}`);
             setShowErrorModal(true);

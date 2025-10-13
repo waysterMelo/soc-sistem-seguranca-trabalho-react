@@ -267,13 +267,14 @@ export default function ListarLTIP() {
 
     const handlePrintLtip = async (ltipId) => {
         try {
-            const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
-            const reportUrl = `${apiBaseUrl}/ltip/${ltipId}/report`;
-            window.open(reportUrl, '_blank');
-        } catch (error) {
+            const htmlContent = await ltipService.gerarRelatorioHtml(ltipId);
+            const newTab = window.open();
+            newTab.document.write(htmlContent);
+            newTab.document.close();
+        } catch (err) {
             setErrorMessage('Erro ao gerar relatório. Tente novamente.');
             setShowErrorModal(true);
-            console.error('Erro ao gerar relatório LTIP:', error);
+            console.error("Erro ao gerar relatório do LTIP: ", err);
         }
     };
 

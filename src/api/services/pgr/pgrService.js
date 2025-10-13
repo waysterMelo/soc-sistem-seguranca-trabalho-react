@@ -82,6 +82,19 @@ class PgrService {
         }
     }
 
+    async gerarRelatorioHtml(pgrId) {
+        try {
+            // A resposta esperada é um texto (HTML)
+            const response = await this.api.get(`/reports/pgr/html/${pgrId}`, {
+                responseType: 'text'
+            });
+            return response.data;
+        } catch (error) {
+            console.error(`Erro ao gerar relatório HTML para o PGR ${pgrId}:`, error);
+            throw error;
+        }
+    }
+
 }
 
 export default new PgrService();

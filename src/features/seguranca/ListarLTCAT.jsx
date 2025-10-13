@@ -220,9 +220,16 @@ export default function ListarLTCAT() {
         return date.toLocaleDateString('pt-BR');
     };
 
-    const handlePrintLtcat = (ltcatId) => {
-        const url = `${api.defaults.baseURL}/ltcat/${ltcatId}/report`;
-        window.open(url, '_blank');
+    const handlePrintLtcat = async (ltcatId) => {
+        try {
+            const htmlContent = await ltcatService.gerarRelatorioHtml(ltcatId);
+            const newTab = window.open();
+            newTab.document.write(htmlContent);
+            newTab.document.close();
+        } catch (err) {
+            console.error("Erro ao gerar relatório do LTCAT: ", err);
+            alert("Erro ao gerar relatório do LTCAT. Tente novamente.");
+        }
     };
 
     const renderContent = () => {

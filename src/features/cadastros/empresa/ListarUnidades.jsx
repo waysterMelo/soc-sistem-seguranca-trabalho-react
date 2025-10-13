@@ -10,6 +10,8 @@ import { Link } from "react-router-dom";
 import { unidadeService } from '../../../api/services/cadastros/serviceUnidadeOperacional.js';
 import EmpresaSearchModal from '../../../components/modal/empresaSearchModal.jsx';
 import empresaService from "../../../api/services/cadastros/serviceEmpresas.js";
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 // --- Componentes Reutilizáveis ---
 
@@ -284,6 +286,9 @@ export default function ListarUnidades() {
                     unidadeId: confirmacaoModal.unidadeId,
                     unidadeNome: confirmacaoModal.unidadeNome
                 });
+            } else {
+                // Mostrar notificação de erro para outras falhas
+                toast.error("Não foi possível excluir a unidade. Verifique se não há setores ou outros itens vinculados a ela antes de tentar novamente.");
             }
             
             fecharModalConfirmacao();

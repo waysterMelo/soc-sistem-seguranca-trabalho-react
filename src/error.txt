@@ -1,2 +1,0 @@
-erro Uncaught Error: Objects are not valid as a React child (found: object with keys {path, element}). If you meant to render a collection of children, use an array instead.
-An error occurred in the <Routes> component.

@@ -182,7 +182,7 @@ export default function CadastrarPrestador({ isModal = false, onClose = () => {}
                 if (isModal) {
                     onClose();
                 } else {
-                    navigate('/cadastros/listar/prestadores');
+                    navigate('/cadastros/prestador-servico');
                 }
             }, 1500);
         } catch (error) {

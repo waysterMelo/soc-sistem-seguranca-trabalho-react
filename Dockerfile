@@ -13,6 +13,9 @@ RUN npm install
 # Copia o resto dos arquivos da aplicação
 COPY . .
 
+# Adicione esta linha para dar permissão de execução
+RUN chmod +x ./node_modules/.bin/vite
+
 # Argumento para a URL da API
 ARG VITE_API_BASE_URL
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}

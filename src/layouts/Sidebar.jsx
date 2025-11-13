@@ -1,4 +1,4 @@
-import React, {createContext, useContext, useState} from 'react';
+import React, {createContext, useContext, useState, useEffect} from 'react';
 import {Link, useLocation, useNavigate} from 'react-router-dom';
 import {
     Building,
@@ -73,7 +73,21 @@ export default function Sidebar() {
     const [isExpanded, setIsExpanded] = useState(true);
     // Estado para controlar a sidebar em telas pequenas (aberta/fechada)
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [userName, setUserName] = useState('');
     const navigate = useNavigate();
+
+    useEffect(() => {
+        const token = localStorage.getItem('userToken');
+        if (token) {
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                setUserName(payload.nomeCompleto || payload.sub || 'Usuário');
+            } catch (e) {
+                console.error('Erro ao decodificar o token:', e);
+                setUserName('Usuário');
+            }
+        }
+    }, []);
 
     const handleLogout = async () => {
         await authService.logout();
@@ -124,8 +138,7 @@ export default function Sidebar() {
                     <div className="flex flex-col items-center p-4 border-b border-gray-700/50">
                         <UserIcon size={isExpanded ? 60 : 40} className="rounded-full bg-gray-900/50 p-2 text-gray-500 transition-all" />
                         <div className={`overflow-hidden text-center transition-all duration-300 ${isExpanded ? "max-h-40 opacity-100 mt-2" : "max-h-0 opacity-0"}`}>
-                            <h4 className="font-semibold text-lg">ADMIN</h4>
-                            <span className="text-xs text-gray-400">CLÍNICA - M.G.L</span>
+                            <h4 className="font-semibold text-lg">{userName}</h4>
                         </div>
                     </div>
 

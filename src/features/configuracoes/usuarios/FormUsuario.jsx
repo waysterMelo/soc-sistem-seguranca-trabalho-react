@@ -3,8 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import usuarioService from '../../../api/services/usuario/usuarioService';
 import { toast } from 'react-toastify';
-import EmpresaSearchModal from "../../../components/modal/empresaSearchModal.jsx";
-import { Search, Trash2, Save, X, User, Mail, Lock, Shield, Building2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Save, X, User, Mail, Lock, Shield, CheckCircle2, AlertCircle } from 'lucide-react';
 
 export default function FormUsuario() {
     const navigate = useNavigate();
@@ -17,10 +16,7 @@ export default function FormUsuario() {
         senha: '',
         nivelAcesso: 'USUARIO_PADRAO',
         status: 'ATIVO',
-        empresaId: null,
     });
-    const [empresa, setEmpresa] = useState(null);
-    const [showEmpresaModal, setShowEmpresaModal] = useState(false);
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState({});
     const [touched, setTouched] = useState({});
@@ -31,9 +27,6 @@ export default function FormUsuario() {
                 try {
                     const response = await usuarioService.getById(id);
                     setUsuario(response.data);
-                    if (response.data.empresa) {
-                        setEmpresa(response.data.empresa);
-                    }
                 } catch (error) {
                     toast.error('Erro ao carregar dados do usuário.');
                 }
@@ -89,17 +82,6 @@ export default function FormUsuario() {
         setTouched(prev => ({ ...prev, [name]: true }));
         const error = validateField(name, value);
         setErrors(prev => ({ ...prev, [name]: error }));
-    };
-
-    const handleSelectEmpresa = (selectedEmpresa) => {
-        setEmpresa(selectedEmpresa);
-        setUsuario(prev => ({ ...prev, empresaId: selectedEmpresa.id }));
-        setShowEmpresaModal(false);
-    };
-
-    const limparEmpresa = () => {
-        setEmpresa(null);
-        setUsuario(prev => ({ ...prev, empresaId: null }));
     };
 
     const handleSubmit = async (e) => {
@@ -311,51 +293,6 @@ export default function FormUsuario() {
                                     <option value="INATIVO">Inativo</option>
                                 </select>
                             </div>
-
-                            {/* Empresa Associada */}
-                            <div className="md:col-span-2">
-                                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                                    <div className="flex items-center gap-2">
-                                        <Building2 size={16} className="text-blue-600" />
-                                        Empresa Associada
-                                    </div>
-                                </label>
-                                <div className="flex gap-2">
-                                    <input
-                                        type="text"
-                                        placeholder="Nenhuma empresa selecionada"
-                                        value={empresa ? empresa.razaoSocial || empresa.nome : ''}
-                                        readOnly
-                                        className="flex-1 py-3 px-4 border-2 border-slate-200 rounded-xl bg-slate-50 text-slate-700 outline-none"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowEmpresaModal(true)}
-                                        className="px-4 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-md shadow-green-600/30 hover:shadow-lg hover:shadow-green-600/40 hover:scale-105 flex items-center gap-2"
-                                        title="Buscar empresa"
-                                    >
-                                        <Search size={18} />
-                                        <span className="hidden sm:inline">Buscar</span>
-                                    </button>
-                                    {empresa && (
-                                        <button
-                                            type="button"
-                                            onClick={limparEmpresa}
-                                            className="px-4 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl hover:from-red-700 hover:to-red-800 transition-all duration-200 shadow-md shadow-red-600/30 hover:shadow-lg hover:shadow-red-600/40 hover:scale-105"
-                                            title="Remover empresa"
-                                        >
-                                            <Trash2 size={18} />
-                                        </button>
-                                    )}
-                                </div>
-                                {empresa && (
-                                    <div className="mt-3 p-3 bg-blue-50 border-2 border-blue-200 rounded-lg">
-                                        <p className="text-sm text-blue-800 font-medium">
-                                            Empresa selecionada: {empresa.razaoSocial || empresa.nome}
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
                         </div>
                     </div>
 
@@ -391,12 +328,6 @@ export default function FormUsuario() {
                     </div>
                 </form>
             </div>
-
-            <EmpresaSearchModal
-                isOpen={showEmpresaModal}
-                onClose={() => setShowEmpresaModal(false)}
-                onSelect={handleSelectEmpresa}
-            />
         </div>
     );
 }

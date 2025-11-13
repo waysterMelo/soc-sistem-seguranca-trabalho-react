@@ -3,7 +3,7 @@ import apiService from '../../apiService';
 const authService = {
   login: async (email, senha) => {
     try {
-      const response = await apiService.post('/api/auth/login', { email, senha });
+      const response = await apiService.post('/auth/login', { email, senha });
       if (response.data.token) {
         localStorage.setItem('userToken', response.data.token);
       }
@@ -18,11 +18,7 @@ const authService = {
     try {
       const token = localStorage.getItem('userToken');
       if (token) {
-        await apiService.post('/api/auth/logout', {}, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
+        await apiService.post('/auth/logout', {});
       }
     } catch (error) {
       console.error('Erro no logout:', error);
